@@ -147,6 +147,13 @@ export interface SetupInfo {
   freshInstall: boolean
   adminEmail: string | null
   userCount: number
+  /** Single Sign-On eingerichtet – die Anmeldemaske zeigt dann den Microsoft-Knopf */
+  sso?: boolean
+}
+
+/** Startadresse der Microsoft-Anmeldung – der Browser wird dorthin geführt */
+export function ssoStartAdresse(): string {
+  return `${serverUrl()}/api/auth/sso/start?target=web`
 }
 
 export const api = {
@@ -191,6 +198,7 @@ export const api = {
   teamsTest: () => anfrage<{ ok: boolean }>('/integrations/teams/test', { method: 'POST' }),
   telephonyTest: () =>
     anfrage<{ ok: boolean; joinUrl?: string; hinweis?: string }>('/integrations/telephony/test', { method: 'POST' }),
+  ssoTest: () => anfrage<{ ok: boolean }>('/integrations/sso/test', { method: 'POST' }),
 
   /** LoRaWAN-Endpunkt: Adresse und Zugangstoken für die Konfiguration im Netzserver */
   lorawanInfo: () =>

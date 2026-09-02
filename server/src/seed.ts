@@ -988,7 +988,7 @@ export const SEED_INTEGRATIONS: IntegrationSettings = {
   telephony: { enabled: true, tenantId: 'sonnenberg-baar.onmicrosoft.com', clientId: '00000000-demo-4000-a000-000000000000', clientSecret: 'demo-geheim', organizerEmail: 'krisenstab@sonnenberg-baar.ch' },
   teams: { enabled: true, tenant: 'sonnenberg-baar.onmicrosoft.com', webhookUrl: 'https://sonnenbergbaar.webhook.office.com/webhookb2/demo' },
   lorawan: { enabled: true, provider: 'ttn', token: 'lw_demo0000000000000000000000000000000000000000000000' },
-  sso: { enabled: false, provider: 'Microsoft Entra ID / SAML 2.0', entityId: '' },
+  sso: { enabled: false, tenantId: '', clientId: '', clientSecret: '', adminGroupId: '', krisenstabGroupId: '', autoCreate: true },
   hrSync: { enabled: false, system: 'Abacus HR' },
   hotline: { enabled: true, number: '+41 41 767 49 48' },
   multiLanguage: true,

@@ -237,6 +237,8 @@ Alle Endpunkte unter `/api`, Authentifizierung über `Authorization: Bearer <tok
 | POST | `/hooks/lorawan` | Uplink der Alarmknöpfe (Token statt Anmeldung; TTN v3, ChirpStack v4 oder generisches JSON) |
 | POST | `/graph/callback` | Rückrufe der Microsoft-Graph-Anrufschnittstelle |
 | POST | `/geo/report` | Geofencing: Aufenthaltsmeldung der App (nur Standort-Name oder null) |
+| GET | `/auth/sso/start`, `/auth/sso/callback` | Single Sign-On über Microsoft Entra ID (`?target=web` oder `app`) |
+| POST | `/integrations/sso/test` | Verbindungstest SSO (nur Administration) |
 | POST | `/alarms` | Alarm auslösen |
 | POST | `/alarms/:id/ack` | Quittieren oder ablehnen |
 | POST | `/alarms/:id/end` | Entwarnung (Administration und Krisenstab) |
@@ -249,8 +251,21 @@ Alle Endpunkte unter `/api`, Authentifizierung über `Authorization: Bearer <tok
 
 ## Integrationen
 
-Alle vier Integrationen sind umgesetzt und werden ausschliesslich im
+Alle Integrationen sind umgesetzt und werden ausschliesslich im
 Administrationsportal unter **Integrationen** konfiguriert:
+
+- **Single Sign-On (Microsoft Entra ID)** – Anmeldung mit dem Microsoft-Konto
+  im Portal und in der App (OpenID Connect, Authorization Code mit PKCE; der
+  Server ist vertraulicher Client und tauscht den Code direkt mit seinem
+  Geheimnis). Konfiguration: Mandant, Anwendungs-ID, Geheimnis; als
+  Umleitungs-URI gehört `<Serveradresse>/api/auth/sso/callback` (Typ «Web»)
+  in die App-Registrierung, die App nutzt zusätzlich das Schema
+  `sobenotfall://auth`. Unbekannte Microsoft-Konten werden auf Wunsch beim
+  ersten Login automatisch als Mitarbeitende angelegt; über die Objekt-IDs
+  zweier Entra-Gruppen lassen sich die Rollen Administration und Krisenstab
+  zuweisen (der letzte Administrator wird nie herabgestuft, leere
+  Gruppenfelder verändern keine Rollen). Die Passwort-Anmeldung bleibt als
+  Rückfall bestehen.
 
 - **SMS-Gateway** – eCall oder ASPSMS (Schweizer Anbieter) mit Zugangsdaten und
   Absenderkennung, alternativ ein eigenes HTTP-Gateway über eine URL-Vorlage
@@ -296,11 +311,11 @@ npm run dev                                    # in einem Fenster
 SOBE_TEST_URL=http://localhost:3001 npm test   # in einem zweiten
 ```
 
-107 Integrationstests über Anmeldung, Rechte, Benutzerverwaltung, Alarme,
+113 Integrationstests über Anmeldung, Rechte, Benutzerverwaltung, Alarme,
 Alleinarbeit, Push-Registrierung, Integrationen (Geheimnis-Maskierung,
-Verbindungstests), den LoRaWAN-Endpunkt und das Geofencing. Die Aktualisierung
-ist zusätzlich gegen ein eigenes Testrepository geprüft (Ablauf, Fehlschlag,
-Rechte, iOS-Sperre).
+Verbindungstests), den LoRaWAN-Endpunkt, das Geofencing und das Single
+Sign-On. Die Aktualisierung ist zusätzlich gegen ein eigenes Testrepository
+geprüft (Ablauf, Fehlschlag, Rechte, iOS-Sperre).
 
 ## Push-Nachrichten
 

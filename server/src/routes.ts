@@ -11,6 +11,7 @@ import {
   mergeIntegrationen, neuesLorawanToken, normierteSerie, parseLorawanUplink, sendeSms, sendeTeamsKarte,
 } from './integrationen.js'
 import { sendeAlarmKanaele, sendeInfoKanaele } from './kanaele.js'
+import { rolleAusGruppen, ssoAbbruch, ssoCallback, ssoKonfiguriert, ssoStartUrl, ssoTest } from './sso.js'
 import { geraeteProPerson, letzterTestpush, pushDienstStatus, registerPushToken, removePushToken } from './push.js'
 import { readdirSync, statSync } from 'node:fs'
 import { homedir } from 'node:os'
@@ -81,7 +82,105 @@ router.get('/setup', (_req, res) => {
     freshInstall: frisch,
     adminEmail: frisch ? users[0].email : null,
     userCount: users.length,
+    // Zeigt die Anmeldemaske den Knopf «Mit Microsoft anmelden»?
+    sso: ssoKonfiguriert(integrations().sso),
   })
+})
+
+/** Öffentliche Adresse des Servers – für Weiterleitungen und Endpunkt-Auskünfte */
+function basisAdresse(req: Request): string {
+  return process.env.SOBE_PUBLIC_URL?.replace(/\/+$/, '') || `${req.protocol}://${req.get('host')}`
+}
+
+// ---------- Single Sign-On (Microsoft Entra ID, OpenID Connect) ----------
+
+router.get('/auth/sso/start', (req, res) => {
+  const sso = integrations().sso
+  if (!ssoKonfiguriert(sso)) {
+    res.status(400).send('Single Sign-On ist unter Integrationen nicht eingerichtet.')
+    return
+  }
+  const target = req.query.target === 'app' ? 'app' : 'web'
+  res.redirect(ssoStartUrl(sso, `${basisAdresse(req)}/api/auth/sso/callback`, target))
+})
+
+router.get('/auth/sso/callback', async (req, res) => {
+  const sso = integrations().sso
+  const basis = basisAdresse(req)
+  const zurueck = (target: 'web' | 'app', fehler?: string, token?: string) => {
+    const teil = fehler ? `error=${encodeURIComponent(fehler)}` : `token=${encodeURIComponent(token ?? '')}`
+    if (target === 'app') res.redirect(`sobenotfall://auth?${teil}`)
+    else res.redirect(fehler ? `${basis}/#ssoFehler=${encodeURIComponent(fehler)}` : `${basis}/#sso=${encodeURIComponent(token ?? '')}`)
+  }
+
+  const state = String(req.query.state ?? '')
+  if (req.query.error) {
+    zurueck(ssoAbbruch(state), String(req.query.error_description ?? 'Die Anmeldung bei Microsoft wurde abgebrochen.'))
+    return
+  }
+  if (!ssoKonfiguriert(sso)) {
+    zurueck('web', 'Single Sign-On ist unter Integrationen nicht eingerichtet.')
+    return
+  }
+  let ergebnis
+  try {
+    ergebnis = await ssoCallback(sso, `${basis}/api/auth/sso/callback`, String(req.query.code ?? ''), state)
+  } catch (fehler) {
+    zurueck('web', (fehler as Error).message)
+    return
+  }
+
+  let user = findStoredUserByEmail(ergebnis.email)
+  const rolle = rolleAusGruppen(sso, ergebnis.groups)
+  if (!user) {
+    if (!sso.autoCreate) {
+      zurueck(ergebnis.target, `Für ${ergebnis.email} besteht kein Konto. Bitte an die Administration wenden.`)
+      return
+    }
+    user = {
+      id: uid('u'),
+      firstName: ergebnis.firstName,
+      lastName: ergebnis.lastName,
+      email: ergebnis.email,
+      phone: '',
+      role: rolle ?? 'mitarbeiter',
+      groupIds: allGroups().some((g) => g.id === 'gr-alle') ? ['gr-alle'] : [],
+      locationId: allLocations()[0]?.id ?? '',
+      language: 'de',
+      lastLoginAt: Date.now(),
+    }
+    upsertUser(user)
+    addAudit('anmeldung', `Konto über Microsoft-Anmeldung angelegt: ${user.firstName} ${user.lastName} (${user.email})`, user.id)
+    broadcast('state')
+  } else {
+    // Rolle aus den Entra-Gruppen nachführen – aber nie den letzten Administrator herabstufen
+    if (rolle && rolle !== user.role && !(istLetzterAdmin(user.id) && rolle !== 'admin')) {
+      user = { ...user, role: rolle }
+      addAudit('admin', `Rolle über Entra-Gruppen angepasst: ${user.firstName} ${user.lastName} → ${rolle}`, user.id)
+      broadcast('state')
+    }
+    user = { ...user, lastLoginAt: Date.now() }
+    upsertUser(user)
+  }
+
+  const { token } = createSession(user.id)
+  addAudit('anmeldung', `Anmeldung über Microsoft: ${user.firstName} ${user.lastName} (${user.email})`, user.id)
+  zurueck(ergebnis.target, undefined, token)
+})
+
+/** Verbindungstest: Mandant erreichbar, Anwendungs-ID und Geheimnis gültig */
+router.post('/integrations/sso/test', auth, adminOnly, async (_req, res) => {
+  const sso = integrations().sso
+  if (!ssoKonfiguriert(sso)) {
+    res.status(400).json({ error: 'Single Sign-On ist nicht vollständig eingerichtet (Mandant, Anwendungs-ID, Geheimnis).' })
+    return
+  }
+  try {
+    await ssoTest(sso)
+    res.json({ ok: true })
+  } catch (fehler) {
+    res.status(502).json({ error: (fehler as Error).message })
+  }
 })
 
 router.post('/auth/login', (req, res) => {
@@ -423,8 +522,7 @@ router.post('/integrations/telephony/test', auth, adminOnly, async (req: AuthReq
 /** Endpunkt-Adresse und Token für die Konfiguration im Netzserver – nur Administration */
 router.get('/integrations/lorawan', auth, adminOnly, (req, res) => {
   const lorawan = integrations().lorawan
-  const basis = process.env.SOBE_PUBLIC_URL?.replace(/\/+$/, '') || `${req.protocol}://${req.get('host')}`
-  res.json({ url: `${basis}/api/hooks/lorawan`, token: lorawan.token || null, enabled: lorawan.enabled, provider: lorawan.provider })
+  res.json({ url: `${basisAdresse(req)}/api/hooks/lorawan`, token: lorawan.token || null, enabled: lorawan.enabled, provider: lorawan.provider })
 })
 
 /** Neues Token erzeugen – das alte gilt danach nicht mehr */

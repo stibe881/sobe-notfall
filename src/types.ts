@@ -284,12 +284,27 @@ export interface LorawanSettings {
   token: string
 }
 
+/** Single Sign-On über Microsoft Entra ID (OpenID Connect) */
+export interface SsoSettings {
+  enabled: boolean
+  tenantId: string
+  clientId: string
+  /** Geheimnis der App-Registrierung – maskiert */
+  clientSecret: string
+  /** Objekt-ID der Entra-Gruppe, deren Mitglieder Administrator werden (leer: keine Rollenzuweisung) */
+  adminGroupId: string
+  /** Objekt-ID der Entra-Gruppe, deren Mitglieder Krisenstab werden */
+  krisenstabGroupId: string
+  /** Unbekannte Microsoft-Konten beim ersten Login automatisch als Mitarbeitende anlegen */
+  autoCreate: boolean
+}
+
 export interface IntegrationSettings {
   smsGateway: SmsGatewaySettings
   telephony: TelephonySettings
   teams: TeamsSettings
   lorawan: LorawanSettings
-  sso: { enabled: boolean; provider: string; entityId: string }
+  sso: SsoSettings
   hrSync: { enabled: boolean; system: string; lastSync?: number }
   hotline: { enabled: boolean; number: string }
   multiLanguage: boolean

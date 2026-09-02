@@ -432,6 +432,32 @@ async function main(): Promise<void> {
   const geoZuruecksetzen = (await ruf('/state', { token: adminToken })).body.integrations
   await ruf('/integrations', { method: 'POST', token: adminToken, body: JSON.stringify({ ...geoZuruecksetzen, geofencing: false }) })
 
+  // --- Single Sign-On (Microsoft Entra ID) ---
+  pruefe('Anmeldemaske weiss, dass SSO aus ist', (await ruf('/setup')).body.sso === false)
+  pruefe('SSO-Start ohne Einrichtung abgewiesen', (await fetch(BASIS + '/api/auth/sso/start')).status === 400)
+
+  const ssoStand = (await ruf('/state', { token: adminToken })).body.integrations
+  await ruf('/integrations', {
+    method: 'POST', token: adminToken,
+    body: JSON.stringify({ ...ssoStand, sso: { ...ssoStand.sso, enabled: true, tenantId: 'test-tenant', clientId: 'client-123', clientSecret: 'sso-geheim' } }),
+  })
+  pruefe('Anmeldemaske zeigt den Microsoft-Knopf', (await ruf('/setup')).body.sso === true)
+
+  const ssoStart = await fetch(BASIS + '/api/auth/sso/start?target=web', { redirect: 'manual' })
+  const ssoStartZiel = String(ssoStart.headers.get('location') ?? '')
+  pruefe('SSO-Start leitet mit PKCE zu Microsoft weiter',
+    ssoStart.status === 302 && ssoStartZiel.includes('login.microsoftonline.com/test-tenant') &&
+      ssoStartZiel.includes('client_id=client-123') && ssoStartZiel.includes('code_challenge='))
+
+  const ssoRueck = await fetch(BASIS + '/api/auth/sso/callback?code=x&state=ungueltig', { redirect: 'manual' })
+  pruefe('Rücksprung mit unbekanntem Vorgang scheitert sauber',
+    ssoRueck.status === 302 && String(ssoRueck.headers.get('location')).includes('ssoFehler'))
+  pruefe('SSO-Geheimnis im Datenbestand maskiert',
+    (await ruf('/state', { token: adminToken })).body.integrations.sso.clientSecret === '••••••••')
+
+  const ssoAus = (await ruf('/state', { token: adminToken })).body.integrations
+  await ruf('/integrations', { method: 'POST', token: adminToken, body: JSON.stringify({ ...ssoAus, sso: { ...ssoAus.sso, enabled: false } }) })
+
   // --- Abmelden ---
   pruefe('Abmeldung möglich', (await ruf('/auth/logout', { method: 'POST', token: peterToken })).status === 200)
   pruefe('Token nach Abmeldung ungültig', (await ruf('/state', { token: peterToken })).status === 401)

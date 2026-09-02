@@ -1026,6 +1026,19 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
+  // Rücksprung der Microsoft-Anmeldung: Der Server hängt das Sitzungs-Token an
+  // die Adresse an (#sso=…). Token übernehmen, Adresse bereinigen, Stand laden.
+  useEffect(() => {
+    const treffer = window.location.hash.match(/[#&]sso=([^&]+)/)
+    if (!treffer) return
+    setAuthToken(decodeURIComponent(treffer[1]))
+    window.history.replaceState(null, '', window.location.pathname + '#/')
+    // SSO gibt es nur im Live-Modus
+    if (stateRef.current.mode !== 'live') rawDispatch({ type: 'SET_MODE', mode: 'live' })
+    void refresh()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const login = useCallback<StoreCtx['login']>(async (email, password) => {
     if (stateRef.current.mode === 'demo') {
       const ergebnis = authenticate(stateRef.current.users, email, password)

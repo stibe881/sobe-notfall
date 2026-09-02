@@ -13,7 +13,7 @@ export const INTEGRATION_VORGABEN: IntegrationSettings = {
   telephony: { enabled: false, tenantId: '', clientId: '', clientSecret: '', organizerEmail: '' },
   teams: { enabled: false, tenant: '', webhookUrl: '' },
   lorawan: { enabled: false, provider: 'ttn', token: '' },
-  sso: { enabled: false, provider: 'Microsoft Entra ID / SAML 2.0', entityId: '' },
+  sso: { enabled: false, tenantId: '', clientId: '', clientSecret: '', adminGroupId: '', krisenstabGroupId: '', autoCreate: true },
   hrSync: { enabled: false, system: '' },
   hotline: { enabled: true, number: '' },
   multiLanguage: true,
@@ -59,6 +59,7 @@ const GEHEIME_FELDER = [
   ['telephony', 'clientSecret'],
   ['teams', 'webhookUrl'],
   ['lorawan', 'token'],
+  ['sso', 'clientSecret'],
 ] as const
 
 export function maskiereIntegrationen(integ: IntegrationSettings): IntegrationSettings {
