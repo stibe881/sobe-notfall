@@ -124,6 +124,9 @@ function ensureColumn(table: string, column: string, definition: string): void {
 // Darf dieses Gerät Alarme auch bei stummem Telefon hörbar machen?
 ensureColumn('push_tokens', 'criticalAlerts', 'INTEGER NOT NULL DEFAULT 0')
 
+// Letzte Anmeldung über Microsoft (SSO) – kennzeichnet SSO-Konten
+ensureColumn('users', 'ssoLoginAt', 'INTEGER')
+
 // Geofencing: aktueller Aufenthaltsort pro Person – nur der Standort-Name,
 // nie GPS-Koordinaten. locationId NULL heisst: an keinem erfassten Standort.
 db.exec(`

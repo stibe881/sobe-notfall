@@ -31,6 +31,7 @@ function parseUser(row: Record<string, unknown>): StoredUser {
     passwordSalt: (row.passwordSalt as string) || undefined,
     mustChangePassword: Boolean(row.mustChangePassword),
     lastLoginAt: (row.lastLoginAt as number) || undefined,
+    ssoLoginAt: (row.ssoLoginAt as number) || undefined,
   }
 }
 
@@ -117,16 +118,16 @@ export function fullState(): ServerState {
 export function upsertUser(user: StoredUser): void {
   db.prepare(`
     INSERT INTO users (id, firstName, lastName, email, phone, role, groupIds, locationId, language,
-                       absence, partTimeNote, passwordHash, passwordSalt, mustChangePassword, lastLoginAt)
+                       absence, partTimeNote, passwordHash, passwordSalt, mustChangePassword, lastLoginAt, ssoLoginAt)
     VALUES (@id, @firstName, @lastName, @email, @phone, @role, @groupIds, @locationId, @language,
-            @absence, @partTimeNote, @passwordHash, @passwordSalt, @mustChangePassword, @lastLoginAt)
+            @absence, @partTimeNote, @passwordHash, @passwordSalt, @mustChangePassword, @lastLoginAt, @ssoLoginAt)
     ON CONFLICT(id) DO UPDATE SET
       firstName = excluded.firstName, lastName = excluded.lastName, email = excluded.email,
       phone = excluded.phone, role = excluded.role, groupIds = excluded.groupIds,
       locationId = excluded.locationId, language = excluded.language, absence = excluded.absence,
       partTimeNote = excluded.partTimeNote, passwordHash = excluded.passwordHash,
       passwordSalt = excluded.passwordSalt, mustChangePassword = excluded.mustChangePassword,
-      lastLoginAt = excluded.lastLoginAt
+      lastLoginAt = excluded.lastLoginAt, ssoLoginAt = excluded.ssoLoginAt
   `).run({
     ...user,
     groupIds: JSON.stringify(user.groupIds ?? []),
@@ -136,6 +137,7 @@ export function upsertUser(user: StoredUser): void {
     passwordSalt: user.passwordSalt ?? null,
     mustChangePassword: user.mustChangePassword ? 1 : 0,
     lastLoginAt: user.lastLoginAt ?? null,
+    ssoLoginAt: user.ssoLoginAt ?? null,
   })
 }
 
