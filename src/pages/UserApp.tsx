@@ -87,7 +87,7 @@ export default function UserApp() {
           <select
             id="vorschau-person"
             className="flex-1 min-w-0 rounded-md border border-amber-300 bg-white px-2 py-1 text-xs text-slate-800"
-            value={state.previewUserId ?? angemeldetId}
+            value={me.id}
             onChange={(e) => dispatch({ type: 'SET_PREVIEW_USER', userId: e.target.value === angemeldetId ? null : e.target.value })}
           >
             {[...state.users]
@@ -98,7 +98,7 @@ export default function UserApp() {
                 </option>
               ))}
           </select>
-          {state.previewUserId && (
+          {me.id !== angemeldetId && (
             <span className="shrink-0 font-semibold" title="Im Live-Betrieb sind Aktionen in der Vorschau gesperrt">
               {state.mode === 'live' ? 'nur Ansicht' : 'handelt als diese Person'}
             </span>
