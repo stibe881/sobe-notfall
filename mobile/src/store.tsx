@@ -6,6 +6,7 @@ import { CHANNEL_LABELS, LONE_WORK_DEFAULT_GROUPS } from './types'
 import { LIVE_INITIAL_PASSWORD, SCENARIO_CONTENT_VERSION, SEED_CONTACTS, SEED_GROUPS, SEED_INTEGRATIONS, SEED_LOCATIONS, SEED_SCENARIOS, SEED_USERS } from './seed'
 import { hashPassword, randomSalt } from './auth'
 import { criticalAlertsGranted, getPushToken, notifyNow } from './notifications'
+import { stopGeofencing, syncGeofencing, type GeofenceRegion } from './geofencing'
 import { ApiError, api, authToken, loadApiSettings, setAuthToken, type ServerData } from './api'
 import { authenticate, passwordProblem, verifyPassword } from './auth'
 
@@ -715,6 +716,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const logout = useCallback(() => {
     if (stateRef.current.mode === 'live') {
       void getPushToken().then((t) => (t ? api.unregisterPush(t) : undefined)).catch(() => undefined)
+      void stopGeofencing()
       api.logout().catch(() => {
         // Server nicht erreichbar – lokal trotzdem abmelden
       })
@@ -857,6 +859,20 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     const interval = setInterval(() => rawDispatch({ type: 'TICK', now: Date.now() }), 1000)
     return () => clearInterval(interval)
   }, [state.mode])
+
+  // Geofencing mit der Serverkonfiguration abgleichen. Der Schlüssel fasst die
+  // relevanten Teile zusammen, damit der Abgleich nur bei echten Änderungen
+  // läuft – nicht bei jedem Fünf-Sekunden-Datenabruf. syncGeofencing selbst
+  // ist zusätzlich idempotent.
+  const geoKonfig = JSON.stringify({
+    aktiv: state.mode === 'live' && Boolean(state.session) && Boolean(state.integrations?.geofencing),
+    regionen: state.locations.filter((l) => l.geofence).map((l) => ({ id: l.id, ...l.geofence! })),
+  })
+  useEffect(() => {
+    if (!hydrated) return
+    const { aktiv, regionen } = JSON.parse(geoKonfig) as { aktiv: boolean; regionen: GeofenceRegion[] }
+    void syncGeofencing(aktiv, regionen)
+  }, [hydrated, geoKonfig])
 
   return (
     <StoreContext.Provider

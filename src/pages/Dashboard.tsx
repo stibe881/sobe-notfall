@@ -192,6 +192,7 @@ function BereitschaftKarte() {
                       <span className="text-slate-700">{s.name}</span>
                       <span className={anteil < 0.5 ? 'text-alarm-600 font-semibold' : 'text-slate-600'}>
                         {s.mitGeraet}/{s.personen}{s.critical > 0 ? ` · ${s.critical} mit Critical Alerts` : ''}
+                        {daten.geofencing && s.vorOrt != null ? ` · ${s.vorOrt} vor Ort` : ''}
                       </span>
                     </div>
                     <div className="mt-1 h-1.5 rounded-full bg-slate-100 overflow-hidden">
@@ -224,6 +225,11 @@ function BereitschaftKarte() {
               detail={daten.letzterTestpush ? formatRelative(daten.letzterTestpush) : 'noch nie – folgt werktags am Vormittag'}
             />
             <StatusRow label="Registrierte Geräte" ok={daten.tokensGesamt > 0} detail={`${daten.tokensGesamt}`} />
+            <StatusRow
+              label="Geofencing"
+              ok={Boolean(daten.geofencing)}
+              detail={daten.geofencing ? `${daten.ortsmeldungen ?? 0} aktuelle Ortsmeldung(en)` : 'unter Integrationen einschaltbar'}
+            />
           </ul>
         </div>
       )}

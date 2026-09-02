@@ -5,7 +5,7 @@ import {
 } from './push.js'
 import {
   addAudit, allAlarms, allLoneWork, allScenarios, allStoredUsers, buildDeliveries, createAlarm,
-  integrations, resolveRecipients, saveAlarm, upsertDoc,
+  integrations, purgePresence, resolveRecipients, saveAlarm, upsertDoc,
 } from './store.js'
 import { LONE_WORK_DEFAULT_GROUPS, type Alarm, type AlarmLogEntry, type AlarmUpdate, type LoneWorkSession } from './types.js'
 
@@ -197,6 +197,8 @@ export async function tick(): Promise<void> {
     letzteDienstpruefung = jetzt
     await pruefePushDienst()
     await woechentlicherTestpush(jetzt)
+    // Alte Aufenthaltsmeldungen entfernen – es entsteht nie eine Bewegungshistorie
+    purgePresence()
   }
 }
 

@@ -182,14 +182,53 @@ export function addAudit(type: string, message: string, userId?: string): AuditE
   return entry
 }
 
+// ---------- Geofencing: Aufenthaltsort pro Person ----------
+
+/**
+ * Wie lange eine Aufenthaltsmeldung für die Alarmierung zählt. Verlässt jemand
+ * einen Standort, meldet die App das sofort; stirbt das Telefon vorher, soll
+ * ein tagealter Eintrag niemanden mehr fälschlich alarmieren.
+ */
+export const AUFENTHALT_GILT_MS = 12 * 3600_000
+
+export function setPresence(userId: string, locationId: string | null): void {
+  db.prepare(`
+    INSERT INTO presence (userId, locationId, updatedAt) VALUES (?, ?, ?)
+    ON CONFLICT(userId) DO UPDATE SET locationId = excluded.locationId, updatedAt = excluded.updatedAt
+  `).run(userId, locationId, Date.now())
+}
+
+/** Aktuelle Aufenthaltsorte, nur hinreichend frische Meldungen */
+export function presenceMap(maxAgeMs = AUFENTHALT_GILT_MS): Map<string, { locationId: string | null; updatedAt: number }> {
+  const zeilen = db
+    .prepare('SELECT userId, locationId, updatedAt FROM presence WHERE updatedAt > ?')
+    .all(Date.now() - maxAgeMs) as { userId: string; locationId: string | null; updatedAt: number }[]
+  return new Map(zeilen.map((z) => [z.userId, { locationId: z.locationId, updatedAt: z.updatedAt }]))
+}
+
+/** Alte Aufenthaltsmeldungen entfernen – es bleibt nie eine Bewegungshistorie liegen */
+export function purgePresence(maxAgeMs = 48 * 3600_000): void {
+  db.prepare('DELETE FROM presence WHERE updatedAt < ?').run(Date.now() - maxAgeMs)
+}
+
 // ---------- Alarmlogik ----------
 
-/** Empfänger bestimmen: Gruppen ∩ Standorte, Abwesende ausfiltern */
+/**
+ * Empfänger bestimmen: Gruppen ∩ Standorte, Abwesende ausfiltern.
+ *
+ * Mit aktivem Geofencing zählt zusätzlich der gemeldete Aufenthaltsort: Wer
+ * sich gerade an einem alarmierten Standort aufhält, wird alarmiert, auch wenn
+ * sein Profil an einem anderen Standort hängt. Der Aufenthalt erweitert die
+ * Auswahl nur – niemand fällt wegen einer (womöglich veralteten) Ortsmeldung
+ * aus der Alarmierung seines Profilstandorts heraus.
+ */
 export function resolveRecipients(users: User[] | StoredUser[], groupIds: string[], locationIds: string[]): (User | StoredUser)[] {
   const today = new Date().toISOString().slice(0, 10)
+  const aufenthalt = ladeIntegrationen().geofencing ? presenceMap() : null
   return users.filter((u) => {
     const inGroup = groupIds.length === 0 || u.groupIds.some((g) => groupIds.includes(g))
-    const inLocation = locationIds.length === 0 || locationIds.includes(u.locationId)
+    const vorOrt = aufenthalt?.get(u.id)?.locationId
+    const inLocation = locationIds.length === 0 || locationIds.includes(u.locationId) || (vorOrt != null && locationIds.includes(vorOrt))
     const absent = u.absence && u.absence.from <= today && today <= u.absence.to
     return inGroup && inLocation && !absent
   })
@@ -249,7 +288,7 @@ export function createAlarm(opts: TriggerOptions): Alarm {
         ts: now,
         message: `Alarm ausgelöst (${opts.triggeredVia}) – ${recipients.length} Empfänger über ${opts.channels
           .map((c) => CHANNEL_LABELS[c])
-          .join(', ')}`,
+          .join(', ')}${!opts.recipientUserIds && ladeIntegrationen().geofencing ? ' (Aufenthaltsort berücksichtigt)' : ''}`,
       },
     ],
   }
