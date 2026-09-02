@@ -89,6 +89,8 @@ export interface SetupInfo {
   freshInstall: boolean
   adminEmail: string | null
   userCount: number
+  /** Single Sign-On eingerichtet – die Anmeldemaske zeigt dann den Microsoft-Knopf */
+  sso?: boolean
 }
 
 export const api = {

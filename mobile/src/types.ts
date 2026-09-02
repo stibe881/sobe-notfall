@@ -245,7 +245,7 @@ export interface IntegrationSettings {
   telephony: { enabled: boolean; tenantId: string; clientId: string; clientSecret: string; organizerEmail: string }
   teams: { enabled: boolean; tenant: string; webhookUrl: string }
   lorawan: { enabled: boolean; provider: string; token: string }
-  sso: { enabled: boolean; provider: string; entityId: string }
+  sso: { enabled: boolean; tenantId: string; clientId: string; clientSecret: string; adminGroupId: string; krisenstabGroupId: string; autoCreate: boolean }
   hrSync: { enabled: boolean; system: string; lastSync?: number }
   hotline: { enabled: boolean; number: string }
   multiLanguage: boolean

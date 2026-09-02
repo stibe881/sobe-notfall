@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { CheckCircle2, Copy, KeyRound, Link2, Loader2, MessageSquare, Phone, PhoneCall, Plus, Radio, RefreshCw, Trash2, XCircle } from 'lucide-react'
-import { api } from '../lib/api'
+import { api, serverUrl } from '../lib/api'
 import { uid, useStore } from '../store'
 import type { IntegrationSettings, Webhook } from '../types'
 import { Badge, Button, Card, Field, Modal, Toggle, VORBEREITET, Vorbereitet, formatDateTime, inputClass } from '../components/ui'
@@ -21,7 +21,8 @@ export default function Integrations() {
         <p className="text-sm text-slate-500">Anbindung von Drittanwendungen, Kommunikationskanälen und Deployment-Optionen</p>
         <p className="text-xs text-slate-500 mt-2 flex items-center gap-2 flex-wrap">
           Angebunden sind Push-Mitteilungen, die interne Notfallnummer, ausgehende Webhooks, das SMS-Gateway,
-          Microsoft Teams, Sprachanruf/Telefonkonferenz über Teams und der LoRaWAN-Endpunkt für Alarmknöpfe.
+          Microsoft Teams, Sprachanruf/Telefonkonferenz über Teams, Single Sign-On (Microsoft Entra ID),
+          Geofencing und der LoRaWAN-Endpunkt für Alarmknöpfe.
           {state.mode === 'demo' && ' Im Demo-Modus wird der Versand simuliert – die Einstellungen lassen sich trotzdem erfassen.'}
         </p>
       </div>
@@ -41,6 +42,10 @@ export default function Integrations() {
 
         <Card title={<span className="flex items-center gap-2"><Radio size={16} /> LoRaWAN-Netz / Alarmknöpfe</span>}>
           <LorawanEinstellungen />
+        </Card>
+
+        <Card title={<span className="flex items-center gap-2"><KeyRound size={16} /> Single Sign-On (Microsoft Entra ID)</span>}>
+          <SsoEinstellungen />
         </Card>
 
         <Card title="Notfallnummer &amp; Identität">
@@ -64,19 +69,6 @@ export default function Integrations() {
               )}
             </div>
             <div className="pt-2 border-t border-slate-100">
-              <Toggle checked={integ.sso.enabled} onChange={(v) => update({ sso: { ...integ.sso, enabled: v } })} label={`Single Sign-On (SSO) – ${VORBEREITET}`} />
-              {integ.sso.enabled && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2 pl-11">
-                  <Field label="Provider">
-                    <input className={inputClass} value={integ.sso.provider} onChange={(e) => update({ sso: { ...integ.sso, provider: e.target.value } })} />
-                  </Field>
-                  <Field label="Entity-ID">
-                    <input className={inputClass} value={integ.sso.entityId} onChange={(e) => update({ sso: { ...integ.sso, entityId: e.target.value } })} />
-                  </Field>
-                </div>
-              )}
-            </div>
-            <div>
               <Toggle checked={integ.hrSync.enabled} onChange={(v) => update({ hrSync: { ...integ.hrSync, enabled: v, lastSync: v ? Date.now() : integ.hrSync.lastSync } })} label={`Automatische Synchronisation mit Personalsystem – ${VORBEREITET}`} />
               {integ.hrSync.enabled && (
                 <div className="mt-2 pl-11 space-y-2">
@@ -407,6 +399,81 @@ function TeamsEinstellungen() {
               «Testmeldung SOBE Notfall» erscheinen. Die URL gilt als Geheimnis und wird maskiert gespeichert.
             </p>
           </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function SsoEinstellungen() {
+  const { state, dispatch } = useStore()
+  const integ = state.integrations
+  const sso = integ.sso
+  const [entwurf, patch, geaendert, gespeichert] = useEntwurf(sso)
+  const [test, setTest] = useState<TestStatus>(null)
+
+  function speichern() {
+    dispatch({ type: 'UPDATE_INTEGRATIONS', integrations: { ...integ, sso: { ...entwurf, enabled: sso.enabled } } })
+    gespeichert()
+  }
+
+  async function testen() {
+    setTest({ laeuft: true })
+    try {
+      await api.ssoTest()
+      setTest({ ok: true, text: 'Verbindung steht – Mandant, Anwendungs-ID und Geheimnis stimmen.' })
+    } catch (fehler) {
+      setTest({ ok: false, text: (fehler as Error).message })
+    }
+  }
+
+  const callbackUrl = `${serverUrl()}/api/auth/sso/callback`
+
+  return (
+    <div className="space-y-3">
+      <Toggle
+        checked={sso.enabled}
+        onChange={(v) => dispatch({ type: 'UPDATE_INTEGRATIONS', integrations: { ...integ, sso: { ...sso, enabled: v } } })}
+        label="Anmeldung mit dem Microsoft-Konto im Portal und in der App"
+      />
+      {sso.enabled && (
+        <div className="pl-11 space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Field label="Mandant (Tenant-ID)">
+              <input className={inputClass} placeholder="00000000-0000-0000-0000-000000000000" value={entwurf.tenantId} onChange={(e) => patch({ tenantId: e.target.value })} />
+            </Field>
+            <Field label="Anwendungs-ID (Client-ID)">
+              <input className={inputClass} value={entwurf.clientId} onChange={(e) => patch({ clientId: e.target.value })} />
+            </Field>
+          </div>
+          <Field label="Geheimnis (Client Secret)">
+            <input className={inputClass} type="password" value={entwurf.clientSecret} onChange={(e) => patch({ clientSecret: e.target.value })} placeholder="gespeichert – zum Ändern neu eingeben" />
+          </Field>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Field label="Entra-Gruppe für Administration (Objekt-ID, optional)">
+              <input className={inputClass} value={entwurf.adminGroupId} onChange={(e) => patch({ adminGroupId: e.target.value })} />
+            </Field>
+            <Field label="Entra-Gruppe für Krisenstab (Objekt-ID, optional)">
+              <input className={inputClass} value={entwurf.krisenstabGroupId} onChange={(e) => patch({ krisenstabGroupId: e.target.value })} />
+            </Field>
+          </div>
+          <Toggle
+            checked={entwurf.autoCreate}
+            onChange={(v) => patch({ autoCreate: v })}
+            label="Unbekannte Microsoft-Konten beim ersten Login automatisch als Mitarbeitende anlegen"
+          />
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button onClick={speichern} disabled={!geaendert}>Speichern</Button>
+            {state.mode === 'live' && <Button variant="secondary" onClick={testen} disabled={geaendert}>Verbindung testen</Button>}
+            <TestErgebnis status={test} />
+          </div>
+          <p className="text-xs text-slate-400">
+            In der App-Registrierung als Umleitungs-URI (Typ «Web») hinterlegen:{' '}
+            <code className="bg-slate-50 border border-slate-200 rounded px-1">{callbackUrl}</code>.
+            Benötigte delegierte Berechtigungen: openid, profile, email (mit Administratorzustimmung); für die
+            Rollen aus Gruppen zusätzlich unter «Tokenkonfiguration» den Gruppenanspruch (groups claim) hinzufügen.
+            Die Passwort-Anmeldung bleibt als Rückfall bestehen – sind die Gruppenfelder leer, verändert SSO keine Rollen.
+          </p>
         </div>
       )}
     </div>

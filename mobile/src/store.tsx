@@ -587,6 +587,8 @@ interface StoreCtx {
   switchMode: (mode: AppMode) => void
   /** Anmelden – im Demo-Modus lokal, im Live-Modus über den Alarmserver */
   login: (email: string, password: string) => Promise<{ ok: true } | { ok: false; error: string }>
+  /** Anmeldung über Single Sign-On: Der Server hat das Sitzungs-Token bereits ausgestellt */
+  loginWithToken: (token: string) => Promise<{ ok: true } | { ok: false; error: string }>
   logout: () => void
   changePassword: (aktuell: string, neu: string) => Promise<{ ok: true } | { ok: false; error: string }>
   serverStatus: ServerStatus
@@ -709,6 +711,21 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       void registerPush()
       return { ok: true }
     } catch (fehler) {
+      return { ok: false, error: fehler instanceof ApiError ? fehler.message : 'Anmeldung fehlgeschlagen.' }
+    }
+  }, [refresh, registerPush])
+
+  /** SSO-Rücksprung: Sitzungs-Token übernehmen und den Serverstand laden */
+  const loginWithToken = useCallback<StoreCtx['loginWithToken']>(async (token) => {
+    try {
+      await setAuthToken(token)
+      // wirft bei ungültigem oder abgelaufenem Token
+      await api.me()
+      await refresh()
+      void registerPush()
+      return { ok: true }
+    } catch (fehler) {
+      await setAuthToken(null)
       return { ok: false, error: fehler instanceof ApiError ? fehler.message : 'Anmeldung fehlgeschlagen.' }
     }
   }, [refresh, registerPush])
@@ -876,7 +893,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <StoreContext.Provider
-      value={{ state, dispatch, switchMode, login, logout, changePassword, serverStatus, knownPassword, refresh: () => void refresh(), toasts, hydrated }}
+      value={{ state, dispatch, switchMode, login, loginWithToken, logout, changePassword, serverStatus, knownPassword, refresh: () => void refresh(), toasts, hydrated }}
     >
       {children}
     </StoreContext.Provider>

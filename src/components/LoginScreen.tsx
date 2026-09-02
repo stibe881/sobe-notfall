@@ -3,7 +3,7 @@ import { AlertTriangle, Eye, EyeOff, Info, KeyRound, LogIn, Mail, Server as Serv
 import { useStore } from '../store'
 import { DEMO_PASSWORD, LIVE_INITIAL_PASSWORD } from '../data/seed'
 import { MIN_PASSWORD_LENGTH, passwordProblem } from '../lib/auth'
-import { ApiError, DEFAULT_SERVER_URL, api, serverUrl, setServerUrl, type SetupInfo } from '../lib/api'
+import { ApiError, DEFAULT_SERVER_URL, api, serverUrl, setServerUrl, ssoStartAdresse, type SetupInfo } from '../lib/api'
 import type { User } from '../types'
 
 const fieldClass =
@@ -71,6 +71,15 @@ export default function LoginScreen() {
       .catch((f) => { if (!abgebrochen) setServerErreichbar(!(f instanceof ApiError && f.status === 0)) })
     return () => { abgebrochen = true }
   }, [state.mode])
+
+  // Rücksprung einer gescheiterten Microsoft-Anmeldung: Der Server hängt den
+  // Grund an die Adresse an (#ssoFehler=…)
+  useEffect(() => {
+    const treffer = window.location.hash.match(/[#&]ssoFehler=([^&]+)/)
+    if (!treffer) return
+    setError(decodeURIComponent(treffer[1]))
+    window.history.replaceState(null, '', window.location.pathname + '#/')
+  }, [])
 
   // Erstinbetriebnahme: Der Server meldet, solange nur das ausgelieferte
   // Administratorkonto mit unverändertem Erstpasswort besteht
@@ -141,6 +150,27 @@ export default function LoginScreen() {
         >
           <LogIn size={16} /> {busy ? 'Anmelden …' : 'Anmelden'}
         </button>
+
+        {state.mode === 'live' && setup?.sso && (
+          <>
+            <div className="flex items-center gap-3 text-[11px] text-slate-500">
+              <span className="flex-1 h-px bg-slate-700" /> oder <span className="flex-1 h-px bg-slate-700" />
+            </div>
+            <button
+              type="button"
+              onClick={() => { window.location.href = ssoStartAdresse() }}
+              className="w-full flex items-center justify-center gap-2.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 text-sm transition"
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden>
+                <rect x="0" y="0" width="7.5" height="7.5" fill="#f25022" />
+                <rect x="8.5" y="0" width="7.5" height="7.5" fill="#7fba00" />
+                <rect x="0" y="8.5" width="7.5" height="7.5" fill="#00a4ef" />
+                <rect x="8.5" y="8.5" width="7.5" height="7.5" fill="#ffb900" />
+              </svg>
+              Mit Microsoft anmelden
+            </button>
+          </>
+        )}
       </form>
 
       {state.mode === 'demo' && (

@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
+import * as WebBrowser from 'expo-web-browser'
 import { AlertTriangle, Eye, EyeOff, LogIn, ShieldCheck } from 'lucide-react-native'
+import Svg, { Rect } from 'react-native-svg'
 import { useStore } from './store'
 import { DEMO_PASSWORD, LIVE_INITIAL_PASSWORD } from './seed'
 import { MIN_PASSWORD_LENGTH, passwordProblem } from './auth'
@@ -48,7 +50,7 @@ function Shell({ subtitle, children, showModeSwitch = false }: { subtitle: strin
 
 /** Anmeldung mit E-Mail und Passwort */
 export default function LoginScreen() {
-  const { state, login } = useStore()
+  const { state, login, loginWithToken } = useStore()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [show, setShow] = useState(false)
@@ -80,6 +82,36 @@ export default function LoginScreen() {
     const ergebnis = await login(email, password)
     setBusy(false)
     if (!ergebnis.ok) setError(ergebnis.error)
+  }
+
+  /**
+   * Single Sign-On: Anmeldung bei Microsoft im Systembrowser-Fenster. Der
+   * Server leitet danach auf sobenotfall://auth zurück und übergibt das
+   * Sitzungs-Token (oder den Grund des Scheiterns).
+   */
+  async function microsoftAnmeldung() {
+    setBusy(true)
+    setError(null)
+    try {
+      const ergebnis = await WebBrowser.openAuthSessionAsync(
+        `${serverUrl()}/api/auth/sso/start?target=app`,
+        'sobenotfall://auth',
+      )
+      if (ergebnis.type === 'success') {
+        const token = ergebnis.url.match(/[?&]token=([^&]+)/)?.[1]
+        const fehler = ergebnis.url.match(/[?&]error=([^&]+)/)?.[1]
+        if (token) {
+          const anmeldung = await loginWithToken(decodeURIComponent(token))
+          if (!anmeldung.ok) setError(anmeldung.error)
+        } else {
+          setError(fehler ? decodeURIComponent(fehler).replace(/\+/g, ' ') : 'Die Microsoft-Anmeldung wurde abgebrochen.')
+        }
+      }
+    } catch {
+      setError('Die Microsoft-Anmeldung konnte nicht gestartet werden.')
+    } finally {
+      setBusy(false)
+    }
   }
 
   return (
@@ -128,6 +160,18 @@ export default function LoginScreen() {
           <LogIn size={16} color="#fff" />
           <Text style={s.primaryText}>{busy ? 'Anmelden …' : 'Anmelden'}</Text>
         </Pressable>
+
+        {state.mode === 'live' && setup?.sso && (
+          <Pressable style={[s.microsoft, busy && { opacity: 0.6 }]} onPress={microsoftAnmeldung} disabled={busy}>
+            <Svg width={15} height={15} viewBox="0 0 16 16">
+              <Rect x={0} y={0} width={7.5} height={7.5} fill="#f25022" />
+              <Rect x={8.5} y={0} width={7.5} height={7.5} fill="#7fba00" />
+              <Rect x={0} y={8.5} width={7.5} height={7.5} fill="#00a4ef" />
+              <Rect x={8.5} y={8.5} width={7.5} height={7.5} fill="#ffb900" />
+            </Svg>
+            <Text style={s.primaryText}>Mit Microsoft anmelden</Text>
+          </Pressable>
+        )}
       </View>
 
       {state.mode === 'demo' && (
@@ -304,6 +348,7 @@ const s = StyleSheet.create({
   notice: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, backgroundColor: '#78350f55', borderWidth: 1, borderColor: '#b45309', borderRadius: 12, padding: 11, marginBottom: 16 },
   noticeText: { color: '#fde68a', fontSize: 13, flex: 1 },
   primary: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: colors.brand, borderRadius: 12, paddingVertical: 14, marginTop: 16 },
+  microsoft: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: '#334155', borderRadius: 12, paddingVertical: 14, marginTop: 10 },
   primaryText: { color: '#fff', fontWeight: '700', fontSize: 15 },
   link: { color: '#64748b', fontSize: 12, textAlign: 'center', marginTop: 14 },
   hint: { backgroundColor: '#1e293b66', borderWidth: 1, borderColor: '#1e293b', borderRadius: 18, padding: 16, marginTop: 16 },
