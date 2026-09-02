@@ -62,6 +62,11 @@ export function ssoAbbruch(state: string): 'web' | 'app' {
   return vorgang?.target ?? 'web'
 }
 
+/** Ziel eines laufenden Vorgangs nachschlagen, ohne ihn zu schliessen – für Fehlermeldungen an die richtige Stelle */
+export function ssoZiel(state: string): 'web' | 'app' | null {
+  return vorgaenge.get(state)?.target ?? null
+}
+
 // ---------- Rückkehr von Microsoft ----------
 
 export interface SsoErgebnis {

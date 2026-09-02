@@ -98,11 +98,16 @@ export default function LoginScreen() {
         'sobenotfall://auth',
       )
       if (ergebnis.type === 'success') {
-        const token = ergebnis.url.match(/[?&]token=([^&]+)/)?.[1]
+        const token = ergebnis.url.match(/[?&]token=([^&#]+)/)?.[1]
         const fehler = ergebnis.url.match(/[?&]error=([^&]+)/)?.[1]
         if (token) {
-          const anmeldung = await loginWithToken(decodeURIComponent(token))
-          if (!anmeldung.ok) setError(anmeldung.error)
+          const anmeldung = await loginWithToken(decodeURIComponent(token).trim())
+          if (!anmeldung.ok) {
+            setError(
+              `Microsoft-Anmeldung: Der Alarmserver hat das Sitzungs-Token nicht angenommen (${anmeldung.error}). ` +
+                'Bitte prüfen, ob die Serveradresse unten mit der Portal-Adresse übereinstimmt, und erneut versuchen.',
+            )
+          }
         } else {
           setError(fehler ? decodeURIComponent(fehler).replace(/\+/g, ' ') : 'Die Microsoft-Anmeldung wurde abgebrochen.')
         }

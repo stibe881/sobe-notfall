@@ -11,7 +11,7 @@ import {
   mergeIntegrationen, neuesLorawanToken, normierteSerie, parseLorawanUplink, sendeSms, sendeTeamsKarte,
 } from './integrationen.js'
 import { sendeAlarmKanaele, sendeInfoKanaele } from './kanaele.js'
-import { rolleAusGruppen, ssoAbbruch, ssoCallback, ssoKonfiguriert, ssoStartUrl, ssoTest } from './sso.js'
+import { rolleAusGruppen, ssoAbbruch, ssoCallback, ssoKonfiguriert, ssoStartUrl, ssoTest, ssoZiel } from './sso.js'
 import { geraeteProPerson, letzterTestpush, pushDienstStatus, registerPushToken, removePushToken } from './push.js'
 import { readdirSync, statSync } from 'node:fs'
 import { homedir } from 'node:os'
@@ -115,18 +115,24 @@ router.get('/auth/sso/callback', async (req, res) => {
 
   const state = String(req.query.state ?? '')
   if (req.query.error) {
-    zurueck(ssoAbbruch(state), String(req.query.error_description ?? 'Die Anmeldung bei Microsoft wurde abgebrochen.'))
+    const meldung = String(req.query.error_description ?? 'Die Anmeldung bei Microsoft wurde abgebrochen.')
+    addAudit('anmeldung', `Microsoft-Anmeldung von Microsoft abgewiesen: ${meldung.slice(0, 200)}`)
+    zurueck(ssoAbbruch(state), meldung)
     return
   }
   if (!ssoKonfiguriert(sso)) {
-    zurueck('web', 'Single Sign-On ist unter Integrationen nicht eingerichtet.')
+    zurueck(ssoAbbruch(state), 'Single Sign-On ist unter Integrationen nicht eingerichtet.')
     return
   }
+  // Das Ziel vor dem Token-Tausch bestimmen – auch ein Fehler muss an die
+  // richtige Stelle zurück (App-Schema statt Portal-Adresse)
+  const ziel = ssoZiel(state) ?? 'web'
   let ergebnis
   try {
     ergebnis = await ssoCallback(sso, `${basis}/api/auth/sso/callback`, String(req.query.code ?? ''), state)
   } catch (fehler) {
-    zurueck('web', (fehler as Error).message)
+    addAudit('anmeldung', `Microsoft-Anmeldung fehlgeschlagen (${ziel}): ${(fehler as Error).message}`)
+    zurueck(ziel, (fehler as Error).message)
     return
   }
 
@@ -134,6 +140,7 @@ router.get('/auth/sso/callback', async (req, res) => {
   const rolle = rolleAusGruppen(sso, ergebnis.groups)
   if (!user) {
     if (!sso.autoCreate) {
+      addAudit('anmeldung', `Microsoft-Anmeldung ohne Konto abgewiesen: ${ergebnis.email} (automatische Kontenanlage ist aus)`)
       zurueck(ergebnis.target, `Für ${ergebnis.email} besteht kein Konto. Bitte an die Administration wenden.`)
       return
     }
