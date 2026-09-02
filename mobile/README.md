@@ -82,11 +82,18 @@ Build plus eine Apple-Sonderberechtigung – in Expo Go sind keine Remote-Pushes
 
 ## Android
 
-Der Code ist plattformgemeinsam – dieselbe App läuft auf Android. Auf iOS-Spezialitäten
-(Critical Alerts, Live-Aktivitäten) verzichtet Android automatisch; laute Alarme laufen dort
-über den Benachrichtigungskanal **«Alarme»** (höchste Wichtigkeit, Umgehung von «Nicht stören» –
-die App legt ihn beim Start an, der Server adressiert ihn beim Versand). Stille Alarme nutzen
-den lautlosen Kanal «Stille Alarme und Entwarnung».
+Der Code ist plattformgemeinsam – dieselbe App läuft auf Android, mit eigenen Gegenstücken
+zu den iOS-Spezialitäten:
+
+- **Laute Alarme (Gegenstück zu Critical Alerts):** Der Benachrichtigungskanal **«Alarme»**
+  hat die höchste Wichtigkeit, umgeht «Nicht stören» und spielt den Ton über den
+  **Alarm-Audiokanal** – wie ein Wecker klingt er damit auch bei Lautlos- und
+  Vibrationsmodus (massgeblich ist die Wecker-Lautstärke). Die App legt den Kanal beim
+  Start an, der Server adressiert ihn beim Versand. Stille Alarme nutzen den lautlosen
+  Kanal «Stille Alarme und Entwarnung».
+- **Alleinarbeits-Countdown (Gegenstück zur Live-Aktivität):** Während einer laufenden
+  Alleinarbeit zeigt eine dauerhafte, nicht wegwischbare Benachrichtigung den Countdown
+  bis zum Ablauf – auch auf dem Sperrbildschirm (Notifee-Chronometer, `src/androidTimer.ts`).
 
 **Bauen** (im Verzeichnis `mobile/`; `npx --yes eas-cli@latest` funktioniert ohne globale
 Installation – wer die CLI global hat, kürzt auf `eas …` ab; Anmeldung über `EXPO_TOKEN`

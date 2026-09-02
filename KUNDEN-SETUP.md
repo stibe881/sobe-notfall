@@ -68,9 +68,12 @@ Einmalig nötig: Signatur-Schlüssel bei Expo (erster Build interaktiv) und für
 Remote-Push ein Firebase-Projekt (FCM) – Anleitung in `mobile/README.md`,
 Abschnitt «Android». Danach `SOBE_EAS_PLATFORMS=all` in `server/.env` setzen,
 und der Update-Knopf baut iOS und Android zusammen. Laute Alarme laufen auf
-Android über den Benachrichtigungskanal «Alarme» (höchste Wichtigkeit,
-Umgehung von «Nicht stören») – die Apple-Sonderbewilligung für Critical
-Alerts ist ein reines iOS-Thema.
+Android über den Benachrichtigungskanal «Alarme»: höchste Wichtigkeit,
+Umgehung von «Nicht stören», Ton über den Alarm-Audiokanal – er klingt wie
+ein Wecker auch bei Lautlos- und Vibrationsmodus. Die Apple-Sonderbewilligung
+für Critical Alerts ist ein reines iOS-Thema; das Gegenstück zur
+Live-Aktivität ist auf Android eine dauerhafte Countdown-Benachrichtigung
+während der Alleinarbeit.
 
 ## 4. Redundanz: zweiter Alarmserver (optional, jederzeit nachrüstbar)
 

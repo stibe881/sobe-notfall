@@ -289,8 +289,10 @@ KOERPER = r"""
       App die Berechtigungen für zeitkritische Mitteilungen und Critical Alerts &ndash;
       Einrichtung siehe <code>mobile/CRITICAL-ALERTS.md</code>; bis dahin kommen Alarme als
       normale Mitteilung an. <b>Android:</b> Laute Alarme laufen über den
-      Benachrichtigungskanal «Alarme» (höchste Wichtigkeit, Umgehung von «Nicht stören»),
-      den die App selbst anlegt &ndash; eine Sonderbewilligung braucht es nicht.
+      Benachrichtigungskanal «Alarme», den die App selbst anlegt &ndash; höchste Wichtigkeit,
+      Umgehung von «Nicht stören», und der Ton spielt wie bei einem Wecker über den
+      Alarm-Audiokanal: Er klingt auch bei Lautlos- und Vibrationsmodus (massgeblich ist
+      die Wecker-Lautstärke). Eine Sonderbewilligung braucht es nicht.
     </p>
   </div>
   <h3>Android einmalig einrichten</h3>

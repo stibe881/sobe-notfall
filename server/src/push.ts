@@ -96,9 +96,14 @@ export interface PushNachricht {
   wichtig?: boolean
 }
 
-/** Android-Kanäle – die App legt sie beim Start mit passender Lautstärke an */
-export const KANAL_ALARM = 'alarme'
-export const KANAL_STILL = 'alarme-still'
+/**
+ * Android-Kanäle – die App legt sie beim Start an. «Alarme» läuft über den
+ * Alarm-Audiokanal (klingt wie ein Wecker auch bei Lautlos), «still» bleibt
+ * lautlos. Die Ids müssen mit der App übereinstimmen (notifications.ts);
+ * «-v2», weil Android Kanal-Einstellungen nach dem Anlegen einfriert.
+ */
+export const KANAL_ALARM = 'alarme-v2'
+export const KANAL_STILL = 'alarme-still-v2'
 
 /**
  * Versand an alle Geräte der genannten Personen. Fehler werden protokolliert,

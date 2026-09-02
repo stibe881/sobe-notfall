@@ -6,6 +6,7 @@ import { BellRing, BookOpen, CheckCircle2, MapPin, Phone, Siren, Timer, User } f
 import { StoreProvider, useStore } from './src/store'
 import { ensurePermissions, onNotificationTap, type PushDaten } from './src/notifications'
 import { alleinarbeitAbgleichen } from './src/liveActivity'
+import { alleinarbeitAndroidAbgleichen } from './src/androidTimer'
 import type { Alarm, Scenario } from './src/types'
 import { colors } from './src/ui'
 import { AlarmAuswahlScreen, ContactsScreen, LoneWorkScreen, ProfileScreen, ScenarioDetailScreen, ScenariosScreen, StartScreen } from './src/screens'
@@ -88,7 +89,10 @@ function Root() {
   // in der App oder im Portal gestartet wurde
   useEffect(() => {
     if (!hydrated || !state.session) return
-    void alleinarbeitAbgleichen(state.loneWorkSessions.filter((s) => s.userId === state.currentUserId))
+    const eigene = state.loneWorkSessions.filter((s) => s.userId === state.currentUserId)
+    void alleinarbeitAbgleichen(eigene)
+    // Android: dauerhafte Countdown-Benachrichtigung statt Live-Aktivität
+    void alleinarbeitAndroidAbgleichen(eigene)
   }, [hydrated, state.session, state.currentUserId, state.loneWorkSessions])
 
   // Antippen der Live-Aktivität öffnet die Alleinarbeit (sobenotfall://alleinarbeit);

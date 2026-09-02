@@ -14,12 +14,19 @@ Notifications.setNotificationHandler({
 })
 
 /**
- * Kanal für Alarme auf Android: höchste Wichtigkeit und Umgehung von «Nicht stören».
- * Der Server verweist beim Versand auf diesen Kanal.
+ * Kanal für Alarme auf Android: höchste Wichtigkeit, Umgehung von «Nicht stören»,
+ * und der Ton läuft über den Alarm-Audiokanal – wie bei einer Wecker-App klingt
+ * er damit auch bei Lautlos und Vibrationsmodus (massgeblich ist die
+ * Wecker-Lautstärke). Der Server verweist beim Versand auf diesen Kanal.
+ *
+ * «-v2», weil Android Kanal-Einstellungen nach dem Anlegen einfriert: Die
+ * Audio-Attribute liessen sich auf dem alten Kanal nicht mehr ändern.
  */
-export const ALARM_CHANNEL_ID = 'alarme'
+export const ALARM_CHANNEL_ID = 'alarme-v2'
 /** Stille Alarme und Entwarnungen: sichtbar, aber ohne Ton und Vibration */
-export const SILENT_CHANNEL_ID = 'alarme-still'
+export const SILENT_CHANNEL_ID = 'alarme-still-v2'
+/** Kanal-Ids früherer Versionen – beim Start entfernen, damit die Einstellungen sauber bleiben */
+const ALTE_KANAELE = ['alarme', 'alarme-still']
 
 /** Was der Server einer Mitteilung mitgibt – Antippen öffnet die passende Ansicht */
 export interface PushDaten {
@@ -33,10 +40,16 @@ async function ensureAlarmChannel(): Promise<void> {
   try {
     await Notifications.setNotificationChannelAsync(ALARM_CHANNEL_ID, {
       name: 'Alarme',
-      description: 'Notfallalarme – klingeln auch bei «Nicht stören».',
+      description: 'Notfallalarme – klingeln wie ein Wecker, auch bei Lautlos und «Nicht stören».',
       importance: Notifications.AndroidImportance.MAX,
       bypassDnd: true,
       sound: 'default',
+      // Ton über den Alarm-Audiokanal: unabhängig von Klingel- und
+      // Benachrichtigungslautstärke, klingt auch im Lautlos-Modus
+      audioAttributes: {
+        usage: Notifications.AndroidAudioUsage.ALARM,
+        contentType: Notifications.AndroidAudioContentType.SONIFICATION,
+      },
       vibrationPattern: [0, 400, 200, 400],
       lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
       enableVibrate: true,
@@ -51,6 +64,9 @@ async function ensureAlarmChannel(): Promise<void> {
       lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
       enableVibrate: false,
     })
+    for (const alt of ALTE_KANAELE) {
+      await Notifications.deleteNotificationChannelAsync(alt).catch(() => {})
+    }
   } catch {
     // Kanal nicht anlegbar – Benachrichtigungen laufen über den Standardkanal
   }
