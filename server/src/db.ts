@@ -124,6 +124,17 @@ function ensureColumn(table: string, column: string, definition: string): void {
 // Darf dieses Gerät Alarme auch bei stummem Telefon hörbar machen?
 ensureColumn('push_tokens', 'criticalAlerts', 'INTEGER NOT NULL DEFAULT 0')
 
+// Geofencing: aktueller Aufenthaltsort pro Person – nur der Standort-Name,
+// nie GPS-Koordinaten. locationId NULL heisst: an keinem erfassten Standort.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS presence (
+    userId TEXT PRIMARY KEY,
+    locationId TEXT,
+    updatedAt INTEGER NOT NULL,
+    FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
+  );
+`)
+
 // Push-Tickets: Expo bestätigt die Zustellung erst später über eine Quittung
 db.exec(`
   CREATE TABLE IF NOT EXISTS push_tickets (

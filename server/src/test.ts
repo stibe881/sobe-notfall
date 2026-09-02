@@ -378,6 +378,60 @@ async function main(): Promise<void> {
   aufraeumen.lorawan.enabled = false
   await ruf('/integrations', { method: 'POST', token: adminToken, body: JSON.stringify(aufraeumen) })
 
+  // --- Geofencing: Alarmierung nach Aufenthaltsort ---
+  const geoAus = (await ruf('/state', { token: adminToken })).body.integrations
+  pruefe('Geofencing ist anfänglich aus', geoAus.geofencing === false)
+  pruefe('Ortsmeldung bei ausgeschaltetem Geofencing wird ignoriert',
+    (await ruf('/geo/report', { method: 'POST', token: peterToken, body: JSON.stringify({ locationId: 'loc-menzingen' }) })).body.disabled === true)
+
+  const ohneGeo = await ruf('/alarms', {
+    method: 'POST', token: adminToken,
+    body: JSON.stringify({
+      scenarioId: 'sc-brand', message: 'Testalarm Menzingen ohne Geofencing', requireAck: true,
+      channels: ['push'], groupIds: ['gr-ersthelfer'], locationIds: ['loc-menzingen'], triggeredVia: 'web',
+    }),
+  })
+  pruefe('ohne Geofencing zählt nur der Profilstandort',
+    ohneGeo.status === 200 && !ohneGeo.body.alarm.deliveries.some((d: any) => d.userId === peterId))
+  await ruf(`/alarms/${ohneGeo.body.alarm.id}/end`, { method: 'POST', token: adminToken })
+
+  await ruf('/integrations', { method: 'POST', token: adminToken, body: JSON.stringify({ ...geoAus, geofencing: true }) })
+  pruefe('unbekannter Standort wird abgewiesen',
+    (await ruf('/geo/report', { method: 'POST', token: peterToken, body: JSON.stringify({ locationId: 'loc-nirgendwo' }) })).status === 400)
+  pruefe('Ortsmeldung angenommen',
+    (await ruf('/geo/report', { method: 'POST', token: peterToken, body: JSON.stringify({ locationId: 'loc-menzingen' }) })).body.ok === true)
+
+  const mitGeo = await ruf('/alarms', {
+    method: 'POST', token: adminToken,
+    body: JSON.stringify({
+      scenarioId: 'sc-evak', message: 'Testalarm Menzingen mit Geofencing', requireAck: true,
+      channels: ['push'], groupIds: ['gr-ersthelfer'], locationIds: ['loc-menzingen'], triggeredVia: 'web',
+    }),
+  })
+  pruefe('Aufenthalt am Standort macht die Person zum Empfänger',
+    mitGeo.body.alarm.deliveries.some((d: any) => d.userId === peterId))
+  await ruf(`/alarms/${mitGeo.body.alarm.id}/end`, { method: 'POST', token: adminToken })
+
+  const trotzdemBaar = await ruf('/alarms', {
+    method: 'POST', token: adminToken,
+    body: JSON.stringify({
+      scenarioId: 'sc-brand', message: 'Testalarm Baar trotz Aufenthalt in Menzingen', requireAck: true,
+      channels: ['push'], groupIds: ['gr-ersthelfer'], locationIds: ['loc-baar'], triggeredVia: 'web',
+    }),
+  })
+  pruefe('der Profilstandort fällt nie aus der Alarmierung',
+    trotzdemBaar.body.alarm.deliveries.some((d: any) => d.userId === peterId))
+  await ruf(`/alarms/${trotzdemBaar.body.alarm.id}/end`, { method: 'POST', token: adminToken })
+
+  pruefe('Abmeldung vom Standort («nirgends») angenommen',
+    (await ruf('/geo/report', { method: 'POST', token: peterToken, body: JSON.stringify({ locationId: null }) })).body.ok === true)
+  const bereitGeo = await ruf('/bereitschaft', { token: adminToken })
+  pruefe('Bereitschaft zeigt den Geofencing-Stand',
+    bereitGeo.body.geofencing === true && typeof bereitGeo.body.ortsmeldungen === 'number')
+
+  const geoZuruecksetzen = (await ruf('/state', { token: adminToken })).body.integrations
+  await ruf('/integrations', { method: 'POST', token: adminToken, body: JSON.stringify({ ...geoZuruecksetzen, geofencing: false }) })
+
   // --- Abmelden ---
   pruefe('Abmeldung möglich', (await ruf('/auth/logout', { method: 'POST', token: peterToken })).status === 200)
   pruefe('Token nach Abmeldung ungültig', (await ruf('/state', { token: peterToken })).status === 401)

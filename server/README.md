@@ -236,6 +236,7 @@ Alle Endpunkte unter `/api`, Authentifizierung über `Authorization: Bearer <tok
 | GET/POST | `/integrations/lorawan`, `/integrations/lorawan/token` | LoRaWAN-Endpunkt: Adresse und Zugangstoken (nur Administration) |
 | POST | `/hooks/lorawan` | Uplink der Alarmknöpfe (Token statt Anmeldung; TTN v3, ChirpStack v4 oder generisches JSON) |
 | POST | `/graph/callback` | Rückrufe der Microsoft-Graph-Anrufschnittstelle |
+| POST | `/geo/report` | Geofencing: Aufenthaltsmeldung der App (nur Standort-Name oder null) |
 | POST | `/alarms` | Alarm auslösen |
 | POST | `/alarms/:id/ack` | Quittieren oder ablehnen |
 | POST | `/alarms/:id/end` | Entwarnung (Administration und Krisenstab) |
@@ -266,6 +267,15 @@ Administrationsportal unter **Integrationen** konfiguriert:
   klingeln; Kanal «Telefonkonferenz» eröffnet eine Teams-Besprechung im Namen
   des hinterlegten Organisators und verteilt den Beitrittslink per Push und in
   den Teams-Kanal.
+- **Geofencing (Alarmierung nach Aufenthaltsort)** – Schalter unter
+  Integrationen, Radius je Standort unter Standorte. Die App überwacht die
+  Standort-Geofences und meldet beim Betreten oder Verlassen nur den
+  Standort-Namen (nie GPS-Koordinaten) an `/api/geo/report`. Wer sich gerade an
+  einem alarmierten Standort aufhält, wird zusätzlich alarmiert; der
+  Profilstandort fällt nie aus der Alarmierung heraus (Aufenthalt erweitert die
+  Auswahl nur). Meldungen zählen 12 Stunden, ältere werden automatisch
+  gelöscht – es entsteht keine Bewegungshistorie. Die Bereitschaftsübersicht
+  zeigt pro Standort, wie viele Personen laut App vor Ort sind.
 - **LoRaWAN-Netz / Alarmknöpfe** – der Endpunkt `/api/hooks/lorawan` nimmt
   Uplinks von The Things Network (v3), ChirpStack (v4) oder generischem JSON
   entgegen, geschützt durch ein Zugangstoken aus dem Portal. Statusmeldungen
@@ -286,10 +296,11 @@ npm run dev                                    # in einem Fenster
 SOBE_TEST_URL=http://localhost:3001 npm test   # in einem zweiten
 ```
 
-98 Integrationstests über Anmeldung, Rechte, Benutzerverwaltung, Alarme,
+107 Integrationstests über Anmeldung, Rechte, Benutzerverwaltung, Alarme,
 Alleinarbeit, Push-Registrierung, Integrationen (Geheimnis-Maskierung,
-Verbindungstests) und den LoRaWAN-Endpunkt. Die Aktualisierung ist zusätzlich
-gegen ein eigenes Testrepository geprüft (Ablauf, Fehlschlag, Rechte, iOS-Sperre).
+Verbindungstests), den LoRaWAN-Endpunkt und das Geofencing. Die Aktualisierung
+ist zusätzlich gegen ein eigenes Testrepository geprüft (Ablauf, Fehlschlag,
+Rechte, iOS-Sperre).
 
 ## Push-Nachrichten
 

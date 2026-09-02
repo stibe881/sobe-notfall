@@ -1,5 +1,8 @@
 import { registerRootComponent } from 'expo';
 
+// Muss vor der App geladen sein: registriert die Geofence-Hintergrundaufgabe,
+// damit iOS sie auch beim Wecken der beendeten App findet
+import './src/geofencing';
 import App from './App';
 
 // registerRootComponent calls AppRegistry.registerComponent('main', () => App);

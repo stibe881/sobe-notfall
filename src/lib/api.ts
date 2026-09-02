@@ -130,12 +130,16 @@ async function anfrage<T>(pfad: string, optionen: RequestInit = {}): Promise<T> 
 }
 
 export interface Bereitschaft {
-  standorte: { id: string; name: string; personen: number; mitGeraet: number; critical: number }[]
+  standorte: { id: string; name: string; personen: number; mitGeraet: number; critical: number; vorOrt?: number | null }[]
   ohneGeraet: { id: string; name: string; locationId: string }[]
   tokensGesamt: number
   letzteSicherung: { ts: number; datei: string } | null
   pushDienst: { ok: boolean; geprueft: number } | null
   letzterTestpush: number | null
+  /** Geofencing eingeschaltet? Dann zählt «vorOrt» pro Standort */
+  geofencing?: boolean
+  /** Anzahl frischer Aufenthaltsmeldungen insgesamt */
+  ortsmeldungen?: number | null
 }
 
 export interface SetupInfo {

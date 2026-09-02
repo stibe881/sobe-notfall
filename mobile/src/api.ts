@@ -116,6 +116,12 @@ export const api = {
   extendLoneWork: (id: string, minutes: number) =>
     anfrage<{ session: AppState['loneWorkSessions'][number] }>(`/lone-work/${id}/extend`, { method: 'POST', body: JSON.stringify({ minutes }) }),
   completeLoneWork: (id: string) => anfrage<{ ok: boolean }>(`/lone-work/${id}/complete`, { method: 'POST' }),
+  /**
+   * Geofencing: aktuellen Aufenthaltsort melden – nur der Standort-Name
+   * (locationId) oder null («an keinem erfassten Standort»), nie GPS.
+   */
+  geoReport: (locationId: string | null) =>
+    anfrage<{ ok: boolean; disabled?: boolean }>('/geo/report', { method: 'POST', body: JSON.stringify({ locationId }) }),
   /** criticalAlerts: Darf dieses Gerät Alarme auch bei stummem Telefon hörbar machen? */
   registerPush: (token: string, criticalAlerts: boolean) =>
     anfrage<{ ok: boolean }>('/push/register', {

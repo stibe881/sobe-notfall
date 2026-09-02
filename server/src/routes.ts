@@ -19,8 +19,8 @@ import { aktuellerJob, starteUpdate, updateLaeuft, versionsInfo, type UpdateScop
 import { ensureAdmin } from './setup.js'
 import {
   addAudit, allAlarms, allButtons, allGroups, allLocations, allLoneWork, allStoredUsers, createAlarm, deleteDoc, deleteUser, findAlarm,
-  findStoredUser, findStoredUserByEmail, fullState, integrations, saveAlarm, saveIntegrations, uid, upsertDoc, upsertGroup,
-  upsertLocation, upsertUser,
+  findStoredUser, findStoredUserByEmail, fullState, integrations, presenceMap, saveAlarm, saveIntegrations, setPresence, uid,
+  upsertDoc, upsertGroup, upsertLocation, upsertUser,
 } from './store.js'
 import type { AckStatus, Alarm, AlarmUpdate, Role, StoredUser } from './types.js'
 
@@ -521,6 +521,30 @@ router.post('/graph/callback', (_req, res) => {
   res.status(202).end()
 })
 
+// ---------- Geofencing: Aufenthaltsmeldung der App ----------
+
+/**
+ * Die App meldet beim Betreten oder Verlassen eines Standort-Geofences nur den
+ * Standort-Namen (locationId) oder null («an keinem erfassten Standort») –
+ * nie GPS-Koordinaten. Die Meldung dient allein der Empfängerauflösung.
+ */
+router.post('/geo/report', auth, (req: AuthRequest, res) => {
+  if (!integrations().geofencing) {
+    // Kein Fehler: Die App kann eine ältere Konfiguration haben – sie soll
+    // daraus keinen Alarmzustand machen, sondern nur aufhören zu melden.
+    res.json({ ok: false, disabled: true })
+    return
+  }
+  const roh = req.body?.locationId
+  const locationId = roh === null || roh === undefined || roh === '' ? null : String(roh)
+  if (locationId !== null && !allLocations().some((l) => l.id === locationId)) {
+    res.status(400).json({ error: 'Unbekannter Standort.' })
+    return
+  }
+  setPresence(req.user!.id, locationId)
+  res.json({ ok: true })
+})
+
 // ---------- Alarme ----------
 
 /** Meldungen, die kein eigenes Ereignis sind (Einzelinfo, Krisenteam-Aufgebot) */
@@ -684,6 +708,8 @@ router.post('/alarms/:id/update', auth, async (req: AuthRequest, res) => {
 router.get('/bereitschaft', auth, staffOnly, (_req, res) => {
   const geraete = geraeteProPerson()
   const personen = allStoredUsers()
+  const geofencing = integrations().geofencing
+  const aufenthalt = geofencing ? presenceMap() : new Map<string, { locationId: string | null; updatedAt: number }>()
   const standorte = allLocations().map((l) => {
     const dort = personen.filter((u) => u.locationId === l.id)
     return {
@@ -692,6 +718,8 @@ router.get('/bereitschaft', auth, staffOnly, (_req, res) => {
       personen: dort.length,
       mitGeraet: dort.filter((u) => geraete.has(u.id)).length,
       critical: dort.filter((u) => geraete.get(u.id)?.critical).length,
+      // Geofencing: wie viele Personen sich laut App gerade hier aufhalten
+      vorOrt: geofencing ? personen.filter((u) => aufenthalt.get(u.id)?.locationId === l.id).length : null,
     }
   })
   const ohneGeraet = personen
@@ -704,6 +732,8 @@ router.get('/bereitschaft', auth, staffOnly, (_req, res) => {
     letzteSicherung: letzteSicherung(),
     pushDienst: pushDienstStatus(),
     letzterTestpush: letzterTestpush(),
+    geofencing,
+    ortsmeldungen: geofencing ? aufenthalt.size : null,
   })
 })
 

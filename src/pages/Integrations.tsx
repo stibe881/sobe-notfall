@@ -94,7 +94,17 @@ export default function Integrations() {
             </div>
             <div className="pt-2 border-t border-slate-100 space-y-3">
               <Toggle checked={integ.multiLanguage} onChange={(v) => update({ multiLanguage: v })} label={`Mehrsprachige App-Inhalte (DE/EN/FR/IT) – ${VORBEREITET}`} />
-              <Toggle checked={integ.geofencing} onChange={(v) => update({ geofencing: v })} label={`Geofencing (automatische Standortzuweisung) – ${VORBEREITET}`} />
+              <div>
+                <Toggle checked={integ.geofencing} onChange={(v) => update({ geofencing: v })} label="Geofencing (Alarmierung nach Aufenthaltsort)" />
+                {integ.geofencing && (
+                  <p className="text-xs text-slate-400 pl-11 mt-1">
+                    Die App meldet beim Betreten und Verlassen eines Standort-Geofences nur den Standort-Namen –
+                    nie GPS-Koordinaten. Wer sich gerade an einem alarmierten Standort aufhält, wird zusätzlich
+                    alarmiert; ohne aktuelle Ortsmeldung gilt der Profilstandort. Radius je Standort unter
+                    «Standorte»; die Mitarbeitenden müssen der Standortfreigabe in der App zustimmen.
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         </Card>
