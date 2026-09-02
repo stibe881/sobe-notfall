@@ -17,7 +17,11 @@ import { readdirSync, statSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { aktuellerJob, starteUpdate, updateLaeuft, versionsInfo, type UpdateScope } from './update.js'
-import { ensureAdmin } from './setup.js'
+import { einrichtungAbschliessen, einrichtungOffen, ensureAdmin } from './setup.js'
+import {
+  erzeugeAbzug, neuesRedundanzGeheimnis, peerErreichbar, redundanzConfig, redundanzStatus,
+  replikationsZugriffErlaubt, serverInfo, speichereRedundanz, uebernehmeRueckmeldung,
+} from './replikation.js'
 import {
   addAudit, allAlarms, allButtons, allGroups, allLocations, allLoneWork, allStoredUsers, createAlarm, deleteDoc, deleteUser, findAlarm,
   findStoredUser, findStoredUserByEmail, fullState, integrations, presenceMap, saveAlarm, saveIntegrations, setPresence, uid,
@@ -78,13 +82,66 @@ router.get('/setup', (_req, res) => {
   const users = allStoredUsers()
   const frisch =
     users.length === 1 && users[0].role === 'admin' && users[0].mustChangePassword === true
+  const info = serverInfo()
   res.json({
     freshInstall: frisch,
     adminEmail: frisch ? users[0].email : null,
     userCount: users.length,
     // Zeigt die Anmeldemaske den Knopf «Mit Microsoft anmelden»?
     sso: ssoKonfiguriert(integrations().sso),
+    // Name der Organisation – App und Portal zeigen ihn vor der Anmeldung
+    organization: integrations().organization.name || null,
+    // Der Einrichtungsassistent im Portal steht noch aus
+    setupPending: einrichtungOffen(),
+    // Redundanz: Rolle dieses Servers und Ausweichadresse für die App
+    serverRolle: info.rolle,
+    fallbackUrl: info.fallbackUrl,
+    failover: info.failover,
   })
+})
+
+/**
+ * Einrichtungsassistent: Grunddaten eines neuen Kunden in einem Schritt –
+ * Organisation, interne Notfallnummer und erster Standort.
+ */
+router.post('/einrichtung', auth, adminOnly, (req: AuthRequest, res) => {
+  const o = req.body ?? {}
+  const name = String(o.name ?? '').trim()
+  if (!name) {
+    res.status(400).json({ error: 'Bitte den Namen der Organisation angeben.' })
+    return
+  }
+  const shortName = String(o.shortName ?? '').trim().slice(0, 11)
+  const hotline = String(o.hotline ?? '').trim()
+  const standortName = String(o.standortName ?? '').trim()
+
+  const integ = integrations()
+  integ.organization = { name, shortName }
+  if (hotline) integ.hotline = { enabled: true, number: hotline }
+  // SMS-Absender nur setzen, solange noch die Vorgabe drinsteht
+  const senderAusKurzname = shortName.replace(/[^A-Za-z0-9]/g, '').slice(0, 11)
+  if (senderAusKurzname && (integ.smsGateway.senderId === 'ALARM' || !integ.smsGateway.senderId)) {
+    integ.smsGateway.senderId = senderAusKurzname
+  }
+  saveIntegrations(integ)
+
+  if (standortName) {
+    const standort = {
+      id: uid('loc'),
+      name: standortName,
+      address: String(o.standortAdresse ?? '').trim(),
+      operatingHours: { days: 'Mo–Fr', open: '07:00', close: '18:00' },
+    }
+    upsertLocation(standort)
+    // Das Admin-Konto hängt noch an keinem Standort – jetzt gibt es einen
+    const admin = req.user!
+    if (!admin.locationId) upsertUser({ ...admin, locationId: standort.id })
+  }
+
+  einrichtungAbschliessen()
+  addAudit('admin', `Einrichtung abgeschlossen: ${name}${standortName ? ` – erster Standort «${standortName}»` : ''}`, req.user!.id)
+  broadcast('state')
+  res.json({ ok: true })
 })
 
 /** Öffentliche Adresse des Servers – für Weiterleitungen und Endpunkt-Auskünfte */
@@ -267,7 +324,8 @@ router.post('/auth/password', auth, (req: AuthRequest, res) => {
 // ---------- Datenbestand ----------
 
 router.get('/state', auth, (_req, res) => {
-  res.json(fullState())
+  // serverInfo: Rolle und Ausweichadresse – die App merkt sich den Partner
+  res.json({ ...fullState(), serverInfo: serverInfo() })
 })
 
 /** Live-Aktualisierung: Der Client lädt bei jedem Ereignis den Stand neu */
@@ -465,6 +523,74 @@ router.post('/integrations', auth, adminOnly, (req, res) => {
   addAudit('admin', 'Integrationen gespeichert')
   broadcast('state')
   res.json({ ok: true })
+})
+
+// ---------- Redundanz: zweiter Alarmserver ----------
+
+/** Konfiguration dieser Instanz samt Abgleich-Status – nur Administration */
+router.get('/redundanz', auth, adminOnly, async (_req, res) => {
+  const cfg = redundanzConfig()
+  res.json({
+    config: cfg,
+    status: redundanzStatus(),
+    peerErreichbar: await peerErreichbar(),
+  })
+})
+
+router.post('/redundanz', auth, adminOnly, (req: AuthRequest, res) => {
+  const o = req.body ?? {}
+  const bisher = redundanzConfig()
+  const peerUrl = String(o.peerUrl ?? '').trim().replace(/\/+$/, '')
+  if (o.enabled && peerUrl && !/^https?:\/\//.test(peerUrl)) {
+    res.status(400).json({ error: 'Die Adresse des Partnerservers muss mit http:// oder https:// beginnen.' })
+    return
+  }
+  const cfg = {
+    enabled: Boolean(o.enabled),
+    role: o.role === 'standby' ? ('standby' as const) : ('primary' as const),
+    peerUrl,
+    // Leeres Feld: gespeichertes Geheimnis behalten; beim Einschalten ohne Geheimnis eines erzeugen
+    secret: String(o.secret ?? '').trim() || bisher.secret || (o.enabled ? neuesRedundanzGeheimnis() : ''),
+    intervalS: Math.min(600, Math.max(10, Number(o.intervalS) || 30)),
+  }
+  speichereRedundanz(cfg)
+  addAudit('admin', `Redundanz ${cfg.enabled ? `aktiviert – Rolle ${cfg.role === 'primary' ? 'Hauptserver' : 'Standby'}, Partner ${cfg.peerUrl || '–'}` : 'deaktiviert'}.`, req.user!.id)
+  broadcast('state')
+  res.json({ config: redundanzConfig() })
+})
+
+/** Neues gemeinsames Geheimnis erzeugen – muss auf beiden Servern gleich sein */
+router.post('/redundanz/schluessel', auth, adminOnly, (req: AuthRequest, res) => {
+  const cfg = redundanzConfig()
+  cfg.secret = neuesRedundanzGeheimnis()
+  speichereRedundanz(cfg)
+  addAudit('admin', 'Neues Redundanz-Geheimnis erzeugt – auf dem Partnerserver eintragen.', req.user!.id)
+  res.json({ secret: cfg.secret })
+})
+
+// ---------- Replikation (Server-zu-Server, geschützt durch das gemeinsame Geheimnis) ----------
+
+/** Vollständiger Datenbank-Abzug für den Partner */
+router.get('/replikation/abzug', (req, res) => {
+  if (!replikationsZugriffErlaubt(req.header('authorization'))) {
+    res.status(401).json({ error: 'Replikation nicht erlaubt – Redundanz aus oder Geheimnis falsch.' })
+    return
+  }
+  res.json(erzeugeAbzug())
+})
+
+/** Rückmeldung des Standby: während eines Failovers Erfasstes einarbeiten */
+router.post('/replikation/rueckmeldung', (req, res) => {
+  if (!replikationsZugriffErlaubt(req.header('authorization'))) {
+    res.status(401).json({ error: 'Replikation nicht erlaubt – Redundanz aus oder Geheimnis falsch.' })
+    return
+  }
+  const uebernommen = uebernehmeRueckmeldung(req.body ?? {})
+  if (uebernommen > 0) {
+    addAudit('system', `Redundanz: ${uebernommen} Einträge vom Standby-Server übernommen (während eines Ausfalls erfasst).`)
+    broadcast('state')
+  }
+  res.json({ ok: true, uebernommen })
 })
 
 // ---------- Integrationen: Verbindungstests ----------

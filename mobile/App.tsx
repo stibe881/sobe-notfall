@@ -27,7 +27,7 @@ type ScenarioModus = 'entdecker' | 'empfaenger' | 'entwarnung'
 const PUSH_WARTEZEIT_MS = 20_000
 
 function Root() {
-  const { state, toasts, hydrated, refresh } = useStore()
+  const { state, toasts, hydrated, refresh, uebernehmeServerLink } = useStore()
   const [tab, setTab] = useState<Tab>('start')
 
   useEffect(() => {
@@ -91,19 +91,34 @@ function Root() {
     void alleinarbeitAbgleichen(state.loneWorkSessions.filter((s) => s.userId === state.currentUserId))
   }, [hydrated, state.session, state.currentUserId, state.loneWorkSessions])
 
-  // Antippen der Live-Aktivität öffnet die Alleinarbeit (sobenotfall://alleinarbeit)
+  // Antippen der Live-Aktivität öffnet die Alleinarbeit (sobenotfall://alleinarbeit);
+  // ein Verbindungs-Link aus dem Portal (sobenotfall://verbinden?server=…) trägt
+  // Serveradresse und Ausweichserver ein – für die Einrichtung per QR-Code.
   useEffect(() => {
     const oeffne = (url: string | null) => {
-      if (url && /alleinarbeit/i.test(url)) {
+      if (!url) return
+      if (/alleinarbeit/i.test(url)) {
         setOpenScenario(null)
         setAlarmWahl(false)
         setTab('alleinarbeit')
+        return
+      }
+      const verbinden = url.match(/verbinden\?([^#]*)/i)
+      if (verbinden) {
+        const lies = (schluessel: string) => {
+          const treffer = verbinden[1].match(new RegExp(`(?:^|&)${schluessel}=([^&]*)`))
+          return treffer ? decodeURIComponent(treffer[1]) : null
+        }
+        const server = lies('server')
+        if (server && /^https?:\/\//.test(server)) {
+          uebernehmeServerLink(server.replace(/\/+$/, ''), lies('fallback'), lies('name'))
+        }
       }
     }
     Linking.getInitialURL().then(oeffne).catch(() => {})
     const abo = Linking.addEventListener('url', (e) => oeffne(e.url))
     return () => abo.remove()
-  }, [])
+  }, [uebernehmeServerLink])
   const myLocation = state.locations.find((l) => l.id === me.locationId)
   const myAlarms = state.alarms.filter(
     (a) => a.status === 'active' && (a.deliveries.some((d) => d.userId === me.id) || a.triggeredByUserId === me.id),

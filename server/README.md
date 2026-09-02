@@ -69,7 +69,8 @@ von bekannten Geheimnissen bereinigt.
 | `HOST` | Netzwerkschnittstelle (`127.0.0.1` = nur lokal) | `0.0.0.0` |
 | `SOBE_WEB_ROOT` | Verzeichnis mit dem gebauten Portal | `../dist` |
 | `SOBE_DB_PATH` | Pfad der Datenbankdatei | `data/sobe-notfall.sqlite` |
-| `SOBE_ADMIN_EMAIL` | Konto des ersten Administrators | `stefan.gross@sonnenberg-baar.ch` |
+| `SOBE_ADMIN_EMAIL` | Konto des ersten Administrators | `admin@sobe-notfall.local` |
+| `SOBE_SEED_PROFILE` | Erstbefüllung: `standard` (neutral, mit Einrichtungsassistent) oder `sonnenberg` | `standard` – bestehende Installationen bleiben automatisch `sonnenberg` |
 | `SOBE_ADMIN_PASSWORD` | Erstpasswort dieses Kontos | `SOBE-Start2026!` |
 | `SOBE_REPO_ROOT` | Arbeitsverzeichnis für die Aktualisierung | ein Verzeichnis über `server/` |
 | `SOBE_AUTO_RESTART` | Neustart nach der Aktualisierung (`false` schaltet ihn ab) | an |

@@ -1,10 +1,14 @@
 /**
  * Integrationstest gegen die laufende API.
+ *
+ * Der Testserver muss mit dem Sonnenberg-Erstbefüllungsprofil laufen – die
+ * Prüfungen erwarten dessen Standorte und Alarmpläne:
+ *   PORT=3099 SOBE_SEED_PROFILE=sonnenberg SOBE_DB_PATH=/tmp/sobe-test.sqlite npm run dev
  * Aufruf: SOBE_TEST_URL=http://localhost:3099 npx tsx src/test.ts
  */
 const BASIS = process.env.SOBE_TEST_URL ?? 'http://localhost:3099'
 const ERSTPASSWORT = process.env.SOBE_ADMIN_PASSWORD ?? 'SOBE-Start2026!'
-const ADMIN_MAIL = process.env.SOBE_ADMIN_EMAIL ?? 'stefan.gross@sonnenberg-baar.ch'
+const ADMIN_MAIL = process.env.SOBE_ADMIN_EMAIL ?? 'admin@sobe-notfall.local'
 
 let bestanden = 0
 let gescheitert = 0
@@ -457,6 +461,53 @@ async function main(): Promise<void> {
 
   const ssoAus = (await ruf('/state', { token: adminToken })).body.integrations
   await ruf('/integrations', { method: 'POST', token: adminToken, body: JSON.stringify({ ...ssoAus, sso: { ...ssoAus.sso, enabled: false } }) })
+
+  // --- Organisation & Einrichtung ---
+  pruefe('Anmeldemaske kennt den Organisationsnamen',
+    (await ruf('/setup')).body.organization === 'SONNENBERG Kompetenzzentrum')
+  pruefe('Einrichtung ohne Anmeldung gesperrt',
+    (await ruf('/einrichtung', { method: 'POST', body: JSON.stringify({ name: 'X' }) })).status === 401)
+  const einrichtung = await ruf('/einrichtung', {
+    method: 'POST', token: adminToken,
+    body: JSON.stringify({ name: 'Muster AG', shortName: 'MUSTER', hotline: '+41 44 000 00 00', standortName: 'Hauptsitz Test', standortAdresse: 'Musterstrasse 1' }),
+  })
+  pruefe('Einrichtungsassistent speichert die Grunddaten', einrichtung.status === 200)
+  const nachEinrichtung = await ruf('/state', { token: adminToken })
+  pruefe('Organisationsname übernommen', nachEinrichtung.body.integrations.organization.name === 'Muster AG')
+  pruefe('Hotline übernommen', nachEinrichtung.body.integrations.hotline.number === '+41 44 000 00 00')
+  pruefe('Standort aus der Einrichtung angelegt',
+    nachEinrichtung.body.locations.some((l: any) => l.name === 'Hauptsitz Test'))
+  pruefe('Einrichtung gilt als abgeschlossen', (await ruf('/setup')).body.setupPending === false)
+
+  // --- Redundanz ---
+  pruefe('Redundanz-Konfiguration nur für die Administration',
+    (await ruf('/redundanz', { token: peterToken })).status === 403)
+  pruefe('Replikations-Abzug ohne Geheimnis gesperrt',
+    (await ruf('/replikation/abzug')).status === 401)
+  const redundanzAn = await ruf('/redundanz', {
+    method: 'POST', token: adminToken,
+    body: JSON.stringify({ enabled: true, role: 'primary', peerUrl: 'https://standby.example', intervalS: 30 }),
+  })
+  pruefe('Redundanz einschaltbar – Geheimnis wird erzeugt',
+    redundanzAn.status === 200 && String(redundanzAn.body.config.secret).startsWith('rd_'))
+  const geheim = String(redundanzAn.body.config.secret)
+  pruefe('Abzug mit falschem Geheimnis gesperrt',
+    (await ruf('/replikation/abzug', { headers: { Authorization: 'Bearer falsch' } })).status === 401)
+  const abzug = await ruf('/replikation/abzug', { headers: { Authorization: `Bearer ${geheim}` } })
+  pruefe('Abzug mit Geheimnis enthält alle Tabellen',
+    abzug.status === 200 && Array.isArray(abzug.body.tabellen.users) && Array.isArray(abzug.body.tabellen.sessions) && Array.isArray(abzug.body.settings))
+  pruefe('Abzug repliziert die eigene Redundanz-Konfiguration nicht',
+    abzug.body.settings.every((s: any) => s.key !== 'redundanz'))
+  pruefe('Datenbestand nennt Rolle und Ausweichadresse',
+    (await ruf('/state', { token: adminToken })).body.serverInfo?.rolle === 'primary' &&
+      (await ruf('/setup')).body.fallbackUrl === 'https://standby.example')
+  const rueckmeldung = await ruf('/replikation/rueckmeldung', {
+    method: 'POST', headers: { Authorization: `Bearer ${geheim}` },
+    body: JSON.stringify({ audit: [{ id: 'audit-standby-test', ts: Date.now(), type: 'system', message: 'Test-Rückmeldung vom Standby' }] }),
+  })
+  pruefe('Rückmeldung des Standby wird übernommen', rueckmeldung.status === 200 && rueckmeldung.body.uebernommen === 1)
+  await ruf('/redundanz', { method: 'POST', token: adminToken, body: JSON.stringify({ enabled: false, role: 'primary', peerUrl: '', intervalS: 30 }) })
+  pruefe('Redundanz wieder aus', (await ruf('/setup')).body.serverRolle === null)
 
   // --- Abmelden ---
   pruefe('Abmeldung möglich', (await ruf('/auth/logout', { method: 'POST', token: peterToken })).status === 200)

@@ -7,7 +7,7 @@ import { LIVE_INITIAL_PASSWORD, SCENARIO_CONTENT_VERSION, SEED_CONTACTS, SEED_GR
 import { hashPassword, randomSalt } from './auth'
 import { criticalAlertsGranted, getPushToken, notifyNow } from './notifications'
 import { stopGeofencing, syncGeofencing, type GeofenceRegion } from './geofencing'
-import { ApiError, api, authToken, loadApiSettings, setAuthToken, type ServerData } from './api'
+import { ApiError, api, authToken, loadApiSettings, merkeServerInfo, setAuthToken, setFallbackUrl, setServerUrl, type ServerData } from './api'
 import { authenticate, passwordProblem, verifyPassword } from './auth'
 
 export type AppMode = 'demo' | 'live'
@@ -595,6 +595,8 @@ interface StoreCtx {
   /** Bei der Anmeldung eingegebenes Passwort – nur im Arbeitsspeicher */
   knownPassword: string | null
   refresh: () => void
+  /** Verbindungs-Link (QR-Code aus dem Portal): Serveradresse samt Ausweichserver übernehmen */
+  uebernehmeServerLink: (server: string, fallback: string | null, name: string | null) => void
   toasts: Toast[]
   hydrated: boolean
 }
@@ -670,6 +672,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const [{ user }, daten] = await Promise.all([api.me(), api.state()])
       rawDispatch({ type: 'ADOPT_SERVER', data: daten, session: { userId: user.id, loginAt: Date.now() } })
       setServerStatus('verbunden')
+      // Redundanz: Ausweichadresse merken; hängt die App am Standby, regelmässig
+      // prüfen, ob der Hauptserver zurück ist
+      void merkeServerInfo(daten.serverInfo)
     } catch (fehler) {
       if (fehler instanceof ApiError && fehler.status === 401) {
         await setAuthToken(null)
@@ -856,6 +861,24 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     [pushToast],
   )
 
+  /**
+   * Verbindungs-Link aus dem Portal (QR-Code oder verteilter Link): Die App
+   * übernimmt Serveradresse und Ausweichserver und wechselt in den Live-Modus –
+   * niemand muss eine Adresse eintippen.
+   */
+  const uebernehmeServerLink = useCallback<StoreCtx['uebernehmeServerLink']>(
+    (server, fallback, name) => {
+      void (async () => {
+        await setServerUrl(server)
+        await setFallbackUrl(fallback)
+        pushToast(`Mit Alarmserver verbunden: ${name || server}`)
+        if (stateRef.current.mode !== 'live') switchMode('live')
+        else void refresh()
+      })()
+    },
+    [pushToast, switchMode, refresh],
+  )
+
   // Im Live-Modus regelmässig abgleichen. React Native kennt kein EventSource,
   // deshalb wird abgefragt statt abonniert – im Vordergrund alle fünf Sekunden.
   useEffect(() => {
@@ -893,7 +916,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <StoreContext.Provider
-      value={{ state, dispatch, switchMode, login, loginWithToken, logout, changePassword, serverStatus, knownPassword, refresh: () => void refresh(), toasts, hydrated }}
+      value={{ state, dispatch, switchMode, login, loginWithToken, logout, changePassword, serverStatus, knownPassword, refresh: () => void refresh(), uebernehmeServerLink, toasts, hydrated }}
     >
       {children}
     </StoreContext.Provider>

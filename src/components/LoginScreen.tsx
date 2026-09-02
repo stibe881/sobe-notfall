@@ -94,8 +94,13 @@ export default function LoginScreen() {
     if (!ergebnis.ok) setError(ergebnis.error)
   }
 
+  // Der Name der Organisation kommt vom Server – die App bleibt für alle Kunden dieselbe
+  const untertitel =
+    (state.mode === 'live' ? setup?.organization : state.integrations.organization?.name) ||
+    'Notfall- & Krisenmanagement'
+
   return (
-    <Shell subtitle="Kompetenzzentrum Baar · Menzingen · Kloten" showModeSwitch>
+    <Shell subtitle={untertitel} showModeSwitch>
       <form onSubmit={submit} className="rounded-2xl bg-slate-800/60 border border-slate-800 p-5 space-y-3.5">
         <label className="block">
           <span className="text-xs text-slate-400">E-Mail-Adresse</span>
@@ -106,7 +111,7 @@ export default function LoginScreen() {
               autoComplete="username"
               autoFocus
               className={fieldClass}
-              placeholder="vorname.name@sonnenberg-baar.ch"
+              placeholder="vorname.name@firma.ch"
               value={email}
               onChange={(e) => { setEmail(e.target.value); setError(null) }}
             />

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import { CheckCircle2, Copy, KeyRound, Link2, Loader2, MessageSquare, Phone, PhoneCall, Plus, Radio, RefreshCw, Trash2, XCircle } from 'lucide-react'
-import { api, serverUrl } from '../lib/api'
+import qrcode from 'qrcode-generator'
+import { Building2, CheckCircle2, Copy, KeyRound, Link2, Loader2, MessageSquare, Phone, PhoneCall, Plus, QrCode, Radio, RefreshCw, ServerCog, Smartphone, Trash2, XCircle } from 'lucide-react'
+import { api, serverUrl, type RedundanzConfig, type RedundanzStatus } from '../lib/api'
 import { uid, useStore } from '../store'
 import type { IntegrationSettings, Webhook } from '../types'
 import { Badge, Button, Card, Field, Modal, Toggle, VORBEREITET, Vorbereitet, formatDateTime, inputClass } from '../components/ui'
@@ -28,6 +29,18 @@ export default function Integrations() {
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6">
+        <Card title={<span className="flex items-center gap-2"><Building2 size={16} /> Organisation &amp; Auftritt</span>}>
+          <OrganisationEinstellungen />
+        </Card>
+
+        <Card title={<span className="flex items-center gap-2"><ServerCog size={16} /> Redundanz – zweiter Alarmserver</span>}>
+          <RedundanzEinstellungen />
+        </Card>
+
+        <Card title={<span className="flex items-center gap-2"><Smartphone size={16} /> App-Verbindung (iOS)</span>}>
+          <AppVerbindung />
+        </Card>
+
         <Card title={<span className="flex items-center gap-2"><MessageSquare size={16} /> SMS-Gateway</span>}>
           <SmsEinstellungen />
         </Card>
@@ -160,6 +173,242 @@ export default function Integrations() {
 }
 
 // ---------- Bausteine ----------
+
+/** Name und Auftritt der Organisation – erscheint in Portal, App und als SMS-Absender */
+function OrganisationEinstellungen() {
+  const { state, dispatch } = useStore()
+  const integ = state.integrations
+  const org = integ.organization ?? { name: '', shortName: '' }
+  const [entwurf, patch, geaendert, gespeichert] = useEntwurf(org)
+
+  function speichern() {
+    dispatch({
+      type: 'UPDATE_INTEGRATIONS',
+      integrations: { ...integ, organization: { name: entwurf.name.trim(), shortName: entwurf.shortName.trim().slice(0, 11) } },
+    })
+    gespeichert()
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <Field label="Name der Organisation">
+          <input className={inputClass} placeholder="Muster AG" value={entwurf.name} onChange={(e) => patch({ name: e.target.value })} />
+        </Field>
+        <Field label="Kurzname (max. 11 Zeichen, für SMS-Absender)">
+          <input className={inputClass} maxLength={11} placeholder="MUSTER" value={entwurf.shortName} onChange={(e) => patch({ shortName: e.target.value })} />
+        </Field>
+      </div>
+      <div className="flex items-center gap-2">
+        <Button onClick={speichern} disabled={!geaendert}>Speichern</Button>
+      </div>
+      <p className="text-xs text-slate-400">
+        Der Name erscheint auf der Anmeldemaske des Portals und in der iOS-App, sobald sie mit diesem
+        Alarmserver verbunden ist – die App selbst bleibt für alle Kunden dieselbe.
+      </p>
+    </div>
+  )
+}
+
+/**
+ * Redundanz: Dieser Server und ein Partnerserver sichern sich gegenseitig ab.
+ * Konfiguration gilt pro Instanz – auf beiden Servern einrichten (gespiegelte
+ * Rollen, gleiches Geheimnis).
+ */
+function RedundanzEinstellungen() {
+  const { state } = useStore()
+  const [daten, setDaten] = useState<{ config: RedundanzConfig; status: RedundanzStatus; peerErreichbar: boolean | null } | null>(null)
+  const [entwurf, setEntwurf] = useState<RedundanzConfig | null>(null)
+  const [fehler, setFehler] = useState<string | null>(null)
+  const [meldung, setMeldung] = useState<string | null>(null)
+  const [kopiert, setKopiert] = useState(false)
+
+  const laden = () => {
+    api.redundanz()
+      .then((d) => { setDaten(d); setEntwurf(d.config); setFehler(null) })
+      .catch((f: Error) => setFehler(f.message))
+  }
+  useEffect(() => {
+    if (state.mode !== 'live') return
+    laden()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.mode])
+
+  if (state.mode !== 'live') {
+    return <p className="text-sm text-slate-500">Die Redundanz wird auf dem Alarmserver eingerichtet – im Live-Modus verfügbar.</p>
+  }
+  if (fehler && !daten) return <p className="text-sm text-alarm-600">{fehler}</p>
+  if (!daten || !entwurf) return <p className="text-sm text-slate-500">Lade Konfiguration …</p>
+
+  async function speichern() {
+    setFehler(null)
+    setMeldung(null)
+    try {
+      const { config } = await api.saveRedundanz(entwurf!)
+      setDaten((d) => (d ? { ...d, config } : d))
+      setEntwurf(config)
+      setMeldung('Gespeichert. Dieselbe Einrichtung mit vertauschten Rollen auf dem Partnerserver vornehmen.')
+      laden()
+    } catch (f) {
+      setFehler((f as Error).message)
+    }
+  }
+
+  async function neuerSchluessel() {
+    setFehler(null)
+    try {
+      const { secret } = await api.redundanzNeuerSchluessel()
+      setEntwurf((e) => (e ? { ...e, secret } : e))
+      setMeldung('Neues Geheimnis erzeugt und gespeichert – jetzt auf dem Partnerserver eintragen.')
+    } catch (f) {
+      setFehler((f as Error).message)
+    }
+  }
+
+  const status = daten.status
+  return (
+    <div className="space-y-3">
+      <Toggle
+        checked={entwurf.enabled}
+        onChange={(v) => setEntwurf({ ...entwurf, enabled: v })}
+        label="Zweiten Alarmserver anbinden (Ausfallsicherheit)"
+      />
+      {entwurf.enabled && (
+        <div className="pl-11 space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Field label="Rolle dieses Servers">
+              <select className={inputClass} value={entwurf.role} onChange={(e) => setEntwurf({ ...entwurf, role: e.target.value as RedundanzConfig['role'] })}>
+                <option value="primary">Hauptserver (führt die Daten)</option>
+                <option value="standby">Standby (spiegelt, übernimmt bei Ausfall)</option>
+              </select>
+            </Field>
+            <Field label="Adresse des Partnerservers">
+              <input className={inputClass} placeholder="https://notfall2.firma.ch" value={entwurf.peerUrl} onChange={(e) => setEntwurf({ ...entwurf, peerUrl: e.target.value })} />
+            </Field>
+          </div>
+          <Field label="Gemeinsames Geheimnis (auf beiden Servern identisch)">
+            <div className="flex items-center gap-2">
+              <code className="text-xs bg-slate-50 border border-slate-200 rounded px-2 py-1.5 flex-1 min-w-0 truncate">
+                {entwurf.secret || '– wird beim Speichern erzeugt –'}
+              </code>
+              {entwurf.secret && (
+                <Button
+                  variant="ghost"
+                  onClick={() => { navigator.clipboard?.writeText(entwurf.secret); setKopiert(true); setTimeout(() => setKopiert(false), 2000) }}
+                  aria-label="Geheimnis kopieren"
+                >
+                  <Copy size={13} />
+                </Button>
+              )}
+              {kopiert && <span className="text-xs text-emerald-700">kopiert</span>}
+            </div>
+          </Field>
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button onClick={speichern}>Speichern</Button>
+            <Button variant="secondary" onClick={neuerSchluessel}><RefreshCw size={13} /> Neues Geheimnis</Button>
+            <Button variant="ghost" onClick={laden}><RefreshCw size={13} /> Status aktualisieren</Button>
+          </div>
+          {(fehler || meldung) && (
+            <p className={`text-xs ${fehler ? 'text-alarm-600' : 'text-emerald-700'}`}>{fehler ?? meldung}</p>
+          )}
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600 space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="font-semibold">Partner:</span>
+              {daten.peerErreichbar === null ? 'unbekannt' : daten.peerErreichbar
+                ? <span className="text-emerald-700 inline-flex items-center gap-1"><CheckCircle2 size={12} /> erreichbar</span>
+                : <span className="text-alarm-600 inline-flex items-center gap-1"><XCircle size={12} /> nicht erreichbar</span>}
+            </div>
+            {daten.config.role === 'standby' && (
+              <>
+                <div>
+                  <span className="font-semibold">Letzter Abgleich:</span>{' '}
+                  {status.lastSyncAt ? `${formatDateTime(status.lastSyncAt)} – ${status.lastSyncOk ? 'erfolgreich' : `fehlgeschlagen (${status.lastSyncError})`}` : 'noch keiner'}
+                </div>
+                {status.failoverAktiv && (
+                  <div className="text-alarm-600 font-semibold">
+                    Failover aktiv: Der Hauptserver ist nicht erreichbar – dieser Server verarbeitet die Alarme.
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+          <p className="text-xs text-slate-400">
+            Der Standby holt sich alle {entwurf.intervalS} Sekunden den vollständigen Datenbestand des Hauptservers –
+            inklusive Konten, Sitzungen und Push-Registrierungen, damit angemeldete Geräte beim Ausweichen angemeldet
+            bleiben. <b>Achtung:</b> Beim Einrichten als Standby wird der dortige Datenbestand vollständig durch den
+            des Hauptservers ersetzt. Fällt der Hauptserver länger als 90 Sekunden aus, übernimmt der Standby; danach
+            meldet er dort erfasste Alarme an den Hauptserver zurück. Auf dem Partnerserver dieselbe Einrichtung mit
+            vertauschten Rollen und demselben Geheimnis vornehmen.
+          </p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+/** Verbindungs-Link samt QR-Code, mit dem sich die iOS-App diesem Server zuordnet */
+function AppVerbindung() {
+  const { state } = useStore()
+  const [fallback, setFallback] = useState<string>('')
+  const [kopiert, setKopiert] = useState(false)
+
+  useEffect(() => {
+    if (state.mode !== 'live') return
+    // Ausweichadresse aus der Redundanz-Konfiguration übernehmen, falls vorhanden
+    api.redundanz().then((d) => { if (d.config.enabled && d.config.peerUrl) setFallback(d.config.peerUrl) }).catch(() => {})
+  }, [state.mode])
+
+  if (state.mode !== 'live') {
+    return <p className="text-sm text-slate-500">Den Verbindungs-QR-Code zeigt der Alarmserver im Live-Modus an.</p>
+  }
+
+  const orgName = state.integrations.organization?.name ?? ''
+  const link =
+    `sobenotfall://verbinden?server=${encodeURIComponent(serverUrl())}` +
+    (fallback ? `&fallback=${encodeURIComponent(fallback)}` : '') +
+    (orgName ? `&name=${encodeURIComponent(orgName)}` : '')
+
+  const qr = qrcode(0, 'M')
+  qr.addData(link)
+  qr.make()
+  const svg = qr.createSvgTag({ cellSize: 4, margin: 2, scalable: true })
+
+  return (
+    <div className="space-y-3">
+      <p className="text-sm text-slate-500">
+        Mitarbeitende scannen diesen Code mit der iPhone-Kamera: Die SOBE-Notfall-App übernimmt die
+        Serveradresse{fallback ? ' samt Ausweichserver' : ''} automatisch – niemand muss eine Adresse eintippen.
+      </p>
+      <div className="flex items-start gap-4 flex-wrap">
+        <div
+          className="w-40 h-40 shrink-0 rounded-lg border border-slate-200 bg-white p-2 [&_svg]:w-full [&_svg]:h-full"
+          role="img"
+          aria-label="QR-Code für die App-Verbindung"
+          dangerouslySetInnerHTML={{ __html: svg }}
+        />
+        <div className="flex-1 min-w-[200px] space-y-2 text-xs text-slate-500">
+          <div className="flex items-center gap-2">
+            <QrCode size={13} className="shrink-0" />
+            <code className="bg-slate-50 border border-slate-200 rounded px-2 py-1 flex-1 min-w-0 truncate">{link}</code>
+            <Button
+              variant="ghost"
+              onClick={() => { navigator.clipboard?.writeText(link); setKopiert(true); setTimeout(() => setKopiert(false), 2000) }}
+              aria-label="Verbindungs-Link kopieren"
+            >
+              <Copy size={13} />
+            </Button>
+            {kopiert && <span className="text-emerald-700">kopiert</span>}
+          </div>
+          <p>
+            Der Link lässt sich auch per E-Mail oder MDM verteilen; Antippen auf dem iPhone öffnet die App und
+            übernimmt die Adresse. Voraussetzung: Die App ist installiert. Anmelden müssen sich die
+            Mitarbeitenden anschliessend wie gewohnt mit ihrem Konto.
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 type TestStatus = { laeuft?: boolean; ok?: boolean; text?: string } | null
 

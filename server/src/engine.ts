@@ -3,6 +3,7 @@ import { sendeAlarmKanaele } from './kanaele.js'
 import {
   letzterTestpush, markiereOhneGeraet, merkeTestpush, pruefeEmpfangsbestaetigungen, pruefePushDienst, sendPush,
 } from './push.js'
+import { standbyPassiv } from './replikation.js'
 import {
   addAudit, allAlarms, allLoneWork, allScenarios, allStoredUsers, buildDeliveries, createAlarm,
   integrations, purgePresence, resolveRecipients, saveAlarm, upsertDoc,
@@ -120,6 +121,9 @@ export async function ausgehendeWebhooks(alarm: Alarm): Promise<void> {
 
 /** Eine Runde Eskalationsprüfung und Timer-Überwachung */
 export async function tick(): Promise<void> {
+  // Ein passiver Standby-Server verarbeitet nichts – Eskalationen, Timer und
+  // Meldungen übernimmt der Hauptserver; sonst ginge alles doppelt raus.
+  if (standbyPassiv()) return
   const jetzt = Date.now()
   let veraendert = false
 

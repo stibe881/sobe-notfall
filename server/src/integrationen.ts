@@ -9,7 +9,8 @@ import type { IntegrationSettings, LorawanSettings, SmsGatewaySettings, TeamsSet
  */
 
 export const INTEGRATION_VORGABEN: IntegrationSettings = {
-  smsGateway: { enabled: false, provider: 'ecall', senderId: 'SONNENBERG', username: '', password: '', httpUrl: '', sentCount: 0 },
+  organization: { name: '', shortName: '' },
+  smsGateway: { enabled: false, provider: 'ecall', senderId: 'ALARM', username: '', password: '', httpUrl: '', sentCount: 0 },
   telephony: { enabled: false, tenantId: '', clientId: '', clientSecret: '', organizerEmail: '' },
   teams: { enabled: false, tenant: '', webhookUrl: '' },
   lorawan: { enabled: false, provider: 'ttn', token: '' },
@@ -32,6 +33,7 @@ export function mitVorgaben(roh: Partial<IntegrationSettings> | null | undefined
   return {
     ...INTEGRATION_VORGABEN,
     ...r,
+    organization: { ...INTEGRATION_VORGABEN.organization, ...r.organization },
     smsGateway: { ...INTEGRATION_VORGABEN.smsGateway, ...r.smsGateway },
     telephony: { ...INTEGRATION_VORGABEN.telephony, ...r.telephony },
     teams: { ...INTEGRATION_VORGABEN.teams, ...r.teams },
