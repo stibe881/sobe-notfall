@@ -320,4 +320,6 @@ def titelseite(rolle, titel, untertitel, vorspann, stand='August 2026'):
 
 
 def seite(titel, koerper):
-    return f"<title>{titel}</title>\n{STIL}\n{koerper}"
+    # Ohne ausdrückliches charset raten Browser bei file:// und einfachen
+    # Webservern windows-1252 - aus «Für» würde «FÃ¼r».
+    return f'<meta charset="utf-8">\n<title>{titel}</title>\n{STIL}\n{koerper}'

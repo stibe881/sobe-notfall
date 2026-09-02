@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 TITEL = 'SOBE Handbuch Mitarbeitende'
 TITELSEITE = dict(
-    rolle='SOBE Notfall &middot; Handbuch 3 von 3',
+    rolle='SOBE Notfall &middot; Handbuch 3 von 4',
     titel='Die App im Alltag',
     untertitel='Für alle Mitarbeitenden',
     vorspann='Die App auf Ihrem Telefon macht zwei Dinge: Sie holt im Notfall in Sekunden Hilfe, und sie sagt Ihnen Schritt für Schritt, was zu tun ist. Mehr müssen Sie nicht können. Dieses Handbuch zeigt jeden Bildschirm, den Sie brauchen.',
@@ -507,7 +507,7 @@ KOERPER = r"""
 
 <footer>
   <p>
-    <b>SOBE Notfall &middot; Handbuch 3 von 3 &middot; Mitarbeitende.</b>
+    <b>SOBE Notfall &middot; Handbuch 3 von 4 &middot; Mitarbeitende.</b>
     Fragen zu Ihrem Konto, Ihrem Standort oder Ihren Gruppen beantwortet die Schulleitung.
   </p>
   <p>
