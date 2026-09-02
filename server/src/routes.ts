@@ -1169,7 +1169,7 @@ router.post('/update', auth, adminOnly, async (req: AuthRequest, res) => {
     }
   }
   const person = req.user!
-  const job = starteUpdate(scope, `${person.firstName} ${person.lastName}`)
+  const job = await starteUpdate(scope, `${person.firstName} ${person.lastName}`)
   addAudit('system', `Aktualisierung gestartet (${scope === 'server+ios' ? 'Server und iOS-App' : 'Server'})`, person.id)
   res.json({ job })
 })

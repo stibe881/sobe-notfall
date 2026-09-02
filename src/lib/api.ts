@@ -97,6 +97,8 @@ export interface VersionsInfo {
   commitDatum: string
   commitTitel: string
   hinterher: number
+  /** Gibt es diesen Branch auch auf dem Repository (origin)? */
+  remoteVorhanden?: boolean
   iosMoeglich: boolean
   iosHinweis?: string
   neustartMoeglich: boolean

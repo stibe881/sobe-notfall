@@ -155,10 +155,18 @@ function VersionsKarte({ version, onPruefen }: { version: VersionsInfo; onPruefe
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="text-xs text-slate-500">Aktueller Stand</div>
-          <div className="text-sm font-medium text-slate-800 truncate">{version.commitTitel || 'Unbekannt'}</div>
-          <div className="text-xs text-slate-500 mt-0.5">
-            {version.branch} · {version.commitKurz}
-            {version.commitDatum && ` · ${formatRelative(new Date(version.commitDatum).getTime())}`}
+          {/* Zuerst der Branch – der Titel des letzten Commits kann selbst
+              Branch-Namen enthalten (z. B. «Merge branch …») und führt sonst
+              in die Irre, auf welchem Branch der Server steht. */}
+          <div className="text-sm font-medium text-slate-800 truncate">
+            Branch <code className="bg-white border border-slate-200 rounded px-1">{version.branch}</code>
+            {version.commitKurz && <span className="text-slate-500 font-normal"> · {version.commitKurz}</span>}
+            {version.commitDatum && (
+              <span className="text-slate-500 font-normal"> · {formatRelative(new Date(version.commitDatum).getTime())}</span>
+            )}
+          </div>
+          <div className="text-xs text-slate-500 mt-0.5 truncate">
+            Letzter Commit: {version.commitTitel || 'unbekannt'}
           </div>
         </div>
         <button
@@ -175,12 +183,24 @@ function VersionsKarte({ version, onPruefen }: { version: VersionsInfo; onPruefe
             <ArrowRight size={13} />
             {version.hinterher} neue {version.hinterher === 1 ? 'Änderung' : 'Änderungen'} verfügbar
           </span>
+        ) : version.remoteVorhanden === false ? (
+          <span className="inline-flex items-center gap-1.5 rounded-lg bg-amber-50 text-amber-800 border border-amber-200 px-2.5 py-1 text-xs font-medium">
+            <AlertTriangle size={13} /> Diesen Branch gibt es nur auf diesem Server – es gibt nichts zu holen
+          </span>
         ) : (
           <span className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-1 text-xs font-medium">
             <Check size={13} /> Auf dem neuesten Stand
           </span>
         )}
       </div>
+
+      {version.remoteVorhanden === false && (
+        <p className="text-xs text-slate-500 mt-2.5">
+          Die Aktualisierung funktioniert trotzdem: Sie überspringt das Holen und baut den vorhandenen
+          Stand neu. Neue Änderungen kommen erst an, wenn der Branch auf dem Repository liegt oder der
+          Server auf einen dort vorhandenen Branch wechselt.
+        </p>
+      )}
 
       {!version.neustartMoeglich && (
         <p className="text-xs text-slate-500 mt-2.5">
