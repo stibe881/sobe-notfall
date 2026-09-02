@@ -375,10 +375,38 @@ function TeamsEinstellungen() {
             {state.mode === 'live' && <Button variant="secondary" onClick={testen} disabled={geaendert}>Testmeldung senden</Button>}
             <TestErgebnis status={test} />
           </div>
-          <p className="text-xs text-slate-400">
-            Die URL stammt aus Teams: im Zielkanal «Workflows» → «Bei Webhookanforderung eine Karte veröffentlichen»
-            (oder ein klassischer Incoming Webhook). Sie gilt als Geheimnis und wird maskiert gespeichert.
-          </p>
+
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-3.5 text-xs text-slate-600 space-y-2">
+            <div className="font-semibold text-slate-700">Teil 1 – In Microsoft Teams (einmalig, ~3 Minuten)</div>
+            <ol className="list-decimal pl-4 space-y-1">
+              <li>
+                Öffne in Teams den Kanal, in dem die Meldungen landen sollen (z. B. ein Kanal «Krisenstab» –
+                am besten ein Kanal, den nur der Krisenstab sieht, denn dort erscheinen auch stille Alarme).
+              </li>
+              <li>Klicke neben dem Kanalnamen auf <b>«…» → Workflows</b>.</li>
+              <li>
+                Wähle die Vorlage <b>«Bei Empfang einer Webhookanforderung in einem Kanal posten»</b>
+                {' '}(englisch: <i>Post to a channel when a webhook request is received</i>).
+              </li>
+              <li>Melde dich an, prüfe Team und Kanal, und klicke <b>«Workflow hinzufügen»</b>.</li>
+              <li>
+                Teams zeigt dir jetzt eine lange URL an (beginnt mit <code>https://prod-…logic.azure.com/workflows/…</code>{' '}
+                oder ähnlich) – <b>sofort kopieren</b>, sie wird nur hier angezeigt.
+              </li>
+            </ol>
+            <p>
+              <b>Hinweis:</b> Die Vorlage läuft unter deinem Konto – nimm dafür idealerweise ein Funktionskonto
+              (z. B. das Krisenstab-Konto), damit der Workflow nicht an deinem persönlichen Konto hängt. Der alte Weg
+              über «Connectors → Incoming Webhook» funktioniert teils noch, wird von Microsoft aber abgeschaltet –
+              nimm die Workflows-Variante.
+            </p>
+            <div className="font-semibold text-slate-700 pt-1">Teil 2 – Hier im Portal</div>
+            <p>
+              Die kopierte URL oben in das Feld <b>«Kanal-Webhook-URL»</b> einsetzen (der Mandant ist rein informativ),
+              dann <b>Speichern</b> und <b>«Testmeldung senden»</b> – im Kanal sollte innert Sekunden die Karte
+              «Testmeldung SOBE Notfall» erscheinen. Die URL gilt als Geheimnis und wird maskiert gespeichert.
+            </p>
+          </div>
         </div>
       )}
     </div>
