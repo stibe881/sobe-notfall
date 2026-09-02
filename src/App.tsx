@@ -334,7 +334,9 @@ export default function App() {
   // Ohne gültige Anmeldung ist nichts erreichbar
   if (!sessionUser) return <LoginScreen />
   // Erstpasswort muss geändert werden, bevor es weitergeht
-  if (sessionUser.mustChangePassword) return <ForcePasswordChange user={sessionUser} />
+  // Der erzwungene Wechsel betrifft das Passwort – nach einer Microsoft-Anmeldung
+  // (SSO) gibt es nichts zu wechseln, die Sperre bliebe sonst unpassierbar
+  if (sessionUser.mustChangePassword && state.session?.via !== 'sso') return <ForcePasswordChange user={sessionUser} />
 
   const currentUser = state.users.find((u) => u.id === state.currentUserId) ?? sessionUser
 

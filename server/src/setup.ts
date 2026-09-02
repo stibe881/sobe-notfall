@@ -1,5 +1,6 @@
 import { db, getSetting, setSetting } from './db.js'
-import { hashPassword, newSalt } from './auth.js'
+import { hashPassword, newSalt, verifyPassword } from './auth.js'
+import { ssoKonfiguriert } from './sso.js'
 import { INTEGRATION_VORGABEN } from './integrationen.js'
 import {
   SCENARIO_CONTENT_VERSION, SEED_CONTACTS, SEED_GROUPS, SEED_LOCATIONS, SEED_PLANS, SEED_SCENARIOS,
@@ -122,6 +123,7 @@ export function seedDatabase(): void {
     saveIntegrations(bisher)
   }
 
+  entferneUnbeabsichtigteErstpasswoerter()
   ensureAdmin()
 
   if (erstinstallation) {
@@ -137,12 +139,33 @@ export function seedDatabase(): void {
 }
 
 /**
+ * Frühere Versionen setzten einem Administrator ohne Passwort bei jedem Start
+ * das Erstpasswort samt Wechselzwang – auch wenn er sich längst über Microsoft
+ * anmeldete und gar kein Passwort brauchte. Das hinterliess ein allgemein
+ * bekanntes Passwort auf dem Konto und zwang nach der SSO-Anmeldung zur
+ * Passwortvergabe. Hier wird genau dieser Zustand wieder rückgängig gemacht.
+ */
+function entferneUnbeabsichtigteErstpasswoerter(): void {
+  if (!ssoKonfiguriert(integrations().sso)) return
+  for (const u of allStoredUsers()) {
+    if (u.role !== 'admin' || !u.ssoLoginAt || !u.mustChangePassword) continue
+    if (!u.passwordHash || !u.passwordSalt || !verifyPassword(u, INITIAL_ADMIN_PASSWORD)) continue
+    upsertUser({ ...u, passwordHash: undefined, passwordSalt: undefined, mustChangePassword: false })
+    addAudit('system', `Unbeabsichtigt gesetztes Erstpasswort entfernt: ${u.email} meldet sich über Microsoft an, das Konto braucht kein Passwort.`)
+  }
+}
+
+/**
  * Es muss immer mindestens ein anmeldefähiger Administrator existieren,
- * sonst liesse sich der Server nicht mehr verwalten.
+ * sonst liesse sich der Server nicht mehr verwalten. Anmeldefähig heisst:
+ * mit Passwort – oder über Microsoft, solange SSO eingerichtet ist.
  */
 export function ensureAdmin(): void {
   const users = allStoredUsers()
-  const anmeldefaehigeAdmins = users.filter((u) => u.role === 'admin' && u.passwordHash && u.passwordSalt)
+  const ssoAktiv = ssoKonfiguriert(integrations().sso)
+  const anmeldefaehigeAdmins = users.filter(
+    (u) => u.role === 'admin' && ((u.passwordHash && u.passwordSalt) || (ssoAktiv && u.ssoLoginAt)),
+  )
   if (anmeldefaehigeAdmins.length > 0) return
 
   const vorhandenerAdmin = users.find((u) => u.role === 'admin')

@@ -127,7 +127,9 @@ function Root() {
   if (!hydrated) return <View style={{ flex: 1, backgroundColor: colors.dark }} />
   // Ohne gültige Anmeldung ist die App gesperrt
   if (!sessionUser) return <LoginScreen />
-  if (sessionUser.mustChangePassword) return <ForcePasswordChange user={sessionUser} />
+  // Der erzwungene Wechsel betrifft das Passwort – nach einer Microsoft-Anmeldung
+  // (SSO) gibt es nichts zu wechseln, die Sperre bliebe sonst unpassierbar
+  if (sessionUser.mustChangePassword && state.session?.via !== 'sso') return <ForcePasswordChange user={sessionUser} />
 
   return (
     <SafeAreaView style={styles.root} edges={['top', 'left', 'right']}>

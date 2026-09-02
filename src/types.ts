@@ -343,6 +343,12 @@ export interface AuditEntry {
 export interface Session {
   userId: string
   loginAt: number
+  /**
+   * Wie die Anmeldung zustande kam. Nach einer Microsoft-Anmeldung (sso) wird
+   * ein erzwungener Passwortwechsel nicht angezeigt – er betrifft nur die
+   * Passwort-Anmeldung.
+   */
+  via?: 'password' | 'sso'
 }
 
 export interface AppState {

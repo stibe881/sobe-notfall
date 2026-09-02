@@ -541,7 +541,11 @@ function reducer(state: AppState, action: Action): AppState {
       // Fehlt eine Sammlung in der Antwort, bleibt die bisherige stehen – so führt
       // eine unvollständige Antwort nie zu undefined im Zustand.
       const d = action.data
+      // Die Anmeldeart überlebt den regelmässigen Abgleich – sie ist beim
+      // Anmelden bekannt, nicht bei jedem Neuladen des Datenbestands
       const session = action.session
+        ? { ...action.session, via: action.session.via ?? state.session?.via }
+        : action.session
       return {
         ...state,
         users: d.users ?? state.users,
@@ -996,6 +1000,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const stateRef = useRef(state)
+  // Wie die laufende Anmeldung zustande kam – für den erzwungenen Passwortwechsel
+  const anmeldeArt = useRef<Session['via']>(undefined)
   stateRef.current = state
   /** markiert einen Zustand, der aus einem anderen Tab stammt */
   const adopted = useRef(false)
@@ -1012,7 +1018,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }
     try {
       const [{ user }, daten] = await Promise.all([api.me(), api.state()])
-      rawDispatch({ type: 'ADOPT_SERVER', data: daten, session: { userId: user.id, loginAt: Date.now() } })
+      rawDispatch({ type: 'ADOPT_SERVER', data: daten, session: { userId: user.id, loginAt: Date.now(), via: anmeldeArt.current } })
       setServerStatus('verbunden')
     } catch (fehler) {
       if (fehler instanceof ApiError && fehler.status === 401) {
@@ -1033,6 +1039,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     if (!treffer) return
     setAuthToken(decodeURIComponent(treffer[1]))
     window.history.replaceState(null, '', window.location.pathname + '#/')
+    anmeldeArt.current = 'sso'
     // SSO gibt es nur im Live-Modus
     if (stateRef.current.mode !== 'live') rawDispatch({ type: 'SET_MODE', mode: 'live' })
     void refresh()
@@ -1051,6 +1058,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const { token } = await api.login(email, password)
       setAuthToken(token)
       setKnownPassword(password)
+      anmeldeArt.current = 'password'
       await refresh()
       return { ok: true }
     } catch (fehler) {

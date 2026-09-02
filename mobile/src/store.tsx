@@ -377,8 +377,12 @@ function reducer(state: MobileState, action: Action): MobileState {
         loneWorkSessions: state.loneWorkSessions.map((s) => (s.id === action.sessionId ? { ...s, status: 'completed' as const } : s)),
       }
     case 'ADOPT_SERVER': {
-      // Im Live-Modus ist der Server die Wahrheit; Modus und Anmeldung bleiben lokal
+      // Im Live-Modus ist der Server die Wahrheit; Modus und Anmeldung bleiben lokal.
+      // Die Anmeldeart überlebt den regelmässigen Abgleich – sie ist beim
+      // Anmelden bekannt, nicht bei jedem Neuladen des Datenbestands
       const session = action.session
+        ? { ...action.session, via: action.session.via ?? state.session?.via }
+        : action.session
       return {
         ...state,
         users: action.data.users ?? state.users,
@@ -650,6 +654,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const stateRef = useRef(state)
   stateRef.current = state
   const [hydrated, setHydrated] = useState(false)
+  // Wie die laufende Anmeldung zustande kam – für den erzwungenen Passwortwechsel
+  const anmeldeArt = useRef<Session['via']>(undefined)
   const [toasts, setToasts] = useState<Toast[]>([])
   const toastId = useRef(0)
   const [serverStatus, setServerStatus] = useState<ServerStatus>('lokal')
@@ -670,7 +676,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }
     try {
       const [{ user }, daten] = await Promise.all([api.me(), api.state()])
-      rawDispatch({ type: 'ADOPT_SERVER', data: daten, session: { userId: user.id, loginAt: Date.now() } })
+      rawDispatch({ type: 'ADOPT_SERVER', data: daten, session: { userId: user.id, loginAt: Date.now(), via: anmeldeArt.current } })
       setServerStatus('verbunden')
       // Redundanz: Ausweichadresse merken; hängt die App am Standby, regelmässig
       // prüfen, ob der Hauptserver zurück ist
@@ -710,6 +716,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const { token } = await api.login(email, password)
       await setAuthToken(token)
       setKnownPassword(password)
+      anmeldeArt.current = 'password'
       await refresh()
       // Gerät für echte Push-Nachrichten anmelden; scheitert es, bleibt die
       // Anmeldung trotzdem gültig – Alarme erscheinen dann nur in der App
@@ -726,6 +733,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       await setAuthToken(token)
       // wirft bei ungültigem oder abgelaufenem Token
       await api.me()
+      anmeldeArt.current = 'sso'
       await refresh()
       void registerPush()
       return { ok: true }
