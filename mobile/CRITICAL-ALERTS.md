@@ -119,9 +119,19 @@ Fehlt eines davon, sieht es so aus:
 - Es entsteht keine Übermittlung, oder der Schritt danach scheitert.
 - In TestFlight erscheint nichts.
 
-Das Portal erkennt beide Fälle: Der Schritt gilt als erfolgreich, darunter
-steht ein Hinweis mit dem Grund (fehlende `ascAppId` oder die Fehlermeldung
-von EAS). Der Server startet dann wie vorgesehen neu.
+Sonderfall erste Einrichtung: Steht die `ascAppId` in `eas.json`, aber die
+App-Store-Connect-Zugangsdaten sind bei Expo noch gar nicht hinterlegt, bricht
+`eas build --auto-submit` ohne Rückfragen schon **vor** dem Build ab («Failed
+to set up credentials … Run this command again in interactive mode») – dann
+erscheint bei Expo **gar kein** Build. Der Update-Knopf erkennt diesen Abbruch
+und startet den Build automatisch ein zweites Mal ohne Übermittlung; der
+fertige Build lässt sich danach von Hand übergeben
+(`npx eas-cli submit --platform ios --latest`), bis die Zugangsdaten einmalig
+interaktiv hinterlegt sind (unten).
+
+Das Portal erkennt alle Fälle: Der Schritt gilt als erfolgreich, darunter
+steht ein Hinweis mit dem Grund (fehlende `ascAppId`, fehlende Zugangsdaten
+oder die Fehlermeldung von EAS). Der Server startet dann wie vorgesehen neu.
 
 ### Einmalig einrichten
 

@@ -326,8 +326,21 @@ function easFehlerzeilen(text: string): string {
 }
 
 function findeBuildUrl(text: string): string | undefined {
-  const treffer = text.match(/https:\/\/expo\.dev\/accounts\/[^\s)]+/g)
+  // Nur echte Build-Adressen zählen: Fehlermeldungen enthalten auch Links auf
+  // Projekt- oder Credentials-Seiten unter expo.dev/accounts/… – die belegen
+  // keinen angelegten Build.
+  const treffer = text.match(/https:\/\/expo\.dev\/accounts\/[^\s)]+\/builds\/[^\s)]+/g)
   return treffer?.[treffer.length - 1]
+}
+
+/**
+ * Fehlen bei Expo die App-Store-Connect-Zugangsdaten, bricht eas-cli mit
+ * --auto-submit im nicht interaktiven Betrieb den ganzen Befehl ab, bevor
+ * überhaupt ein Build angelegt ist («Run this command again in interactive
+ * mode»). Dann lohnt sich ein zweiter Versuch ohne Übermittlung.
+ */
+function istCredentialsAbbruch(ausgabe: string, buildUrl: string | undefined): boolean {
+  return !buildUrl && /credentials|interactive mode/i.test(ausgabe)
 }
 
 export function updateLaeuft(): boolean {
@@ -384,6 +397,42 @@ async function abarbeiten(job: UpdateJob, plan: SchrittDefinition[]): Promise<vo
     let fehlgeschlagen = code !== 0
     if (definition.id === 'ios-build') {
       job.buildUrl = findeBuildUrl(ausgabe)
+
+      // Übermittlungs-Zugangsdaten fehlen bei Expo: Der Abbruch kommt vor dem
+      // Build. Zweiter Versuch ohne --auto-submit, damit der Build wenigstens
+      // läuft; die Übermittlung braucht die einmalige interaktive Einrichtung.
+      if (fehlgeschlagen && istCredentialsAbbruch(ausgabe, job.buildUrl)) {
+        schritt.ausgabe = (schritt.ausgabe +
+          '\n\n[Die App-Store-Connect-Zugangsdaten sind bei Expo nicht hinterlegt – zweiter Versuch ohne Übermittlung an TestFlight …]\n'
+        ).slice(-MAX_AUSGABE)
+        speichereJob(job)
+        const zweiter = await fuehreAus(
+          definition.befehl,
+          definition.argumente.filter((a) => a !== '--auto-submit'),
+          definition.verzeichnis(root),
+          (text) => {
+            schritt.ausgabe = (schritt.ausgabe + text).slice(-MAX_AUSGABE)
+            if (Date.now() - letzterFunk > 1000) {
+              letzterFunk = Date.now()
+              speichereJob(job)
+            }
+          },
+          definition.timeoutMs,
+          definition.umgebung,
+        )
+        job.buildUrl = findeBuildUrl(zweiter.ausgabe)
+        if (zweiter.code === 0 || job.buildUrl) {
+          fehlgeschlagen = false
+          schritt.status = 'erfolgreich'
+          job.hinweis =
+            'Der iOS-Build läuft bei Expo – aber ohne automatische Übermittlung an TestFlight: ' +
+            'Die App-Store-Connect-Zugangsdaten sind bei Expo noch nicht hinterlegt. Einmalig auf einem Rechner ' +
+            '«npx eas-cli build --platform ios --profile production --auto-submit» mit Rückfragen ausführen ' +
+            '(mobile/CRITICAL-ALERTS.md, Abschnitt «Übermittlung an TestFlight»); danach übermittelt auch der ' +
+            'Server automatisch. Diesen Build von Hand übergeben: «npx eas-cli submit --platform ios --latest».'
+          schritt.ausgabe = (schritt.ausgabe + `\n\n[${job.hinweis}]`).slice(-MAX_AUSGABE)
+        }
+      }
       // Steht eine Build-Adresse in der Ausgabe, wurde der Build bei Expo
       // angelegt und läuft dort weiter. Ein Fehler danach betrifft die
       // Übermittlung an TestFlight, nicht den Build. Der Auftrag darf deshalb
