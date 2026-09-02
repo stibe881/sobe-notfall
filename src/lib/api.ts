@@ -181,6 +181,18 @@ export const api = {
   saveIntegrations: (integrations: AppState['integrations']) =>
     anfrage<{ ok: boolean }>('/integrations', { method: 'POST', body: JSON.stringify(integrations) }),
 
+  /** Verbindungstests der Integrationen – nur Administration */
+  smsTest: (to?: string) =>
+    anfrage<{ ok: boolean }>('/integrations/sms/test', { method: 'POST', body: JSON.stringify({ to }) }),
+  teamsTest: () => anfrage<{ ok: boolean }>('/integrations/teams/test', { method: 'POST' }),
+  telephonyTest: () =>
+    anfrage<{ ok: boolean; joinUrl?: string; hinweis?: string }>('/integrations/telephony/test', { method: 'POST' }),
+
+  /** LoRaWAN-Endpunkt: Adresse und Zugangstoken für die Konfiguration im Netzserver */
+  lorawanInfo: () =>
+    anfrage<{ url: string; token: string | null; enabled: boolean; provider: string }>('/integrations/lorawan'),
+  lorawanNewToken: () => anfrage<{ token: string }>('/integrations/lorawan/token', { method: 'POST' }),
+
   triggerAlarm: (daten: Record<string, unknown>) =>
     anfrage<{ alarm: AppState['alarms'][number]; merged?: boolean }>('/alarms', { method: 'POST', body: JSON.stringify(daten) }),
   ackAlarm: (id: string, ack: 'acknowledged' | 'declined') =>

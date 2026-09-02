@@ -10,6 +10,7 @@ export default function Buttons() {
   const navigate = useNavigate()
   const [editing, setEditing] = useState<AlarmButton | null>(null)
   const { ask, confirmEl } = useConfirm()
+  const lorawanAktiv = state.integrations.lorawan.enabled
 
   function newButton(): AlarmButton {
     return {
@@ -21,7 +22,7 @@ export default function Buttons() {
 
   function testFire(button: AlarmButton) {
     const alarm = createAlarm(state, {
-      scenarioId: 'sc-gewalt',
+      scenarioId: button.scenarioId ?? 'sc-gewalt',
       message: `${button.messageTemplate} (Knopf: ${button.name}, ${button.serial}${button.gps ? `, GPS ${button.gps.lat.toFixed(4)}/${button.gps.lng.toFixed(4)}` : ''})`,
       silent: true,
       requireAck: true,
@@ -42,10 +43,14 @@ export default function Buttons() {
     <div className="space-y-6">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-3">Physische Alarmknöpfe <Vorbereitet /></h1>
+          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-3">
+            Physische Alarmknöpfe {!lorawanAktiv && <Vorbereitet />}
+          </h1>
           <p className="text-sm text-slate-500">
             LoRaWAN- und GSM-Notfallknöpfe – app-unabhängig, diskret, mit Standortübertragung und automatischer Eskalation.
-            Die Geräte sind noch nicht angebunden: Die Einträge hier dienen der Planung, ein Knopfdruck löst heute keinen Alarm aus.
+            {lorawanAktiv
+              ? ' Der Uplink-Endpunkt ist aktiv: Ein Knopfdruck löst den hier hinterlegten stillen Alarm aus, Statusmeldungen aktualisieren Batterie und «letztes Signal».'
+              : ' Der Uplink-Endpunkt ist unter Integrationen noch nicht aktiviert – die Einträge hier dienen der Planung, ein Knopfdruck löst noch keinen Alarm aus.'}
           </p>
         </div>
         <Button onClick={() => setEditing(newButton())}><Plus size={16} /> Knopf registrieren</Button>
@@ -132,6 +137,11 @@ function ButtonEditor({ button, onClose }: { button: AlarmButton; onClose: () =>
       </div>
       <Field label="Individuelle Alarmnachricht">
         <textarea className={inputClass} rows={2} value={draft.messageTemplate} onChange={(e) => setDraft({ ...draft, messageTemplate: e.target.value })} />
+      </Field>
+      <Field label="Ausgelöstes Szenario">
+        <select className={inputClass} value={draft.scenarioId ?? 'sc-gewalt'} onChange={(e) => setDraft({ ...draft, scenarioId: e.target.value })}>
+          {state.scenarios.filter((s) => s.active !== false).map((s) => <option key={s.id} value={s.id}>{s.title}</option>)}
+        </select>
       </Field>
       <Field label="Alarmierte Personengruppen">
         <div className="space-y-1">

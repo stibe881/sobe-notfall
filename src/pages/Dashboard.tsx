@@ -73,10 +73,10 @@ export default function Dashboard() {
             <StatusRow label="Alarmserver" ok detail={state.mode === 'live' ? 'Hetzner-Hosting' : 'Demo – lokal im Browser'} />
             <StatusRow label="Push-Dienst (Critical Alerts)" ok detail="iOS über Expo – Stand unter Bereitschaft" />
             <StatusRow label="Interne Notfallnummer" ok={state.integrations.hotline.enabled} detail={state.integrations.hotline.number} />
-            <StatusRow label="SMS-Gateway" vorbereitet detail={state.integrations.smsGateway.provider || undefined} />
-            <StatusRow label="Sprachanrufe / Telefonkonferenz" vorbereitet />
-            <StatusRow label="Microsoft Teams" vorbereitet detail={state.integrations.teams.tenant || undefined} />
-            <StatusRow label="LoRaWAN-Netz / Alarmknöpfe" vorbereitet detail={`${state.buttons.length} Knöpfe erfasst`} />
+            <StatusRow label="SMS-Gateway" ok={state.integrations.smsGateway.enabled} detail={state.integrations.smsGateway.enabled ? state.integrations.smsGateway.provider : undefined} />
+            <StatusRow label="Sprachanrufe / Telefonkonferenz" ok={state.integrations.telephony.enabled} detail={state.integrations.telephony.enabled ? 'über Microsoft Teams' : undefined} />
+            <StatusRow label="Microsoft Teams" ok={state.integrations.teams.enabled} detail={state.integrations.teams.tenant || undefined} />
+            <StatusRow label="LoRaWAN-Netz / Alarmknöpfe" ok={state.integrations.lorawan.enabled} detail={`${state.buttons.length} Knöpfe erfasst`} />
           </ul>
           {lowBattery.length > 0 && (
             <div className="mt-4 text-sm text-amber-700 bg-amber-50 rounded-lg p-3 flex items-center gap-2">

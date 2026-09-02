@@ -987,9 +987,10 @@ export const SEED_CONTACTS: EmergencyContact[] = [
 ]
 
 export const SEED_INTEGRATIONS: IntegrationSettings = {
-  smsGateway: { enabled: true, provider: 'Swisscom Messaging', senderId: 'SONNENBERG' },
-  voip: { enabled: false, sipServer: '' },
-  teams: { enabled: true, tenant: 'sonnenberg-baar.onmicrosoft.com' },
+  smsGateway: { enabled: true, provider: 'ecall', senderId: 'SONNENBERG', username: 'sonnenberg-demo', password: 'demo-geheim', httpUrl: '', sentCount: 128 },
+  telephony: { enabled: true, tenantId: 'sonnenberg-baar.onmicrosoft.com', clientId: '00000000-demo-4000-a000-000000000000', clientSecret: 'demo-geheim', organizerEmail: 'krisenstab@sonnenberg-baar.ch' },
+  teams: { enabled: true, tenant: 'sonnenberg-baar.onmicrosoft.com', webhookUrl: 'https://sonnenbergbaar.webhook.office.com/webhookb2/demo' },
+  lorawan: { enabled: true, provider: 'ttn', token: 'lw_demo0000000000000000000000000000000000000000000000' },
   sso: { enabled: false, provider: 'Microsoft Entra ID / SAML 2.0', entityId: '' },
   hrSync: { enabled: false, system: 'Abacus HR' },
   hotline: { enabled: true, number: '+41 41 767 49 48' },
@@ -1004,6 +1005,42 @@ export const SEED_INTEGRATIONS: IntegrationSettings = {
     { code: 'ME-7Q1R8T', locationId: 'loc-menzingen', role: 'mitarbeiter', createdAt: Date.now() - 86400_000 * 30, used: 21 },
     { code: 'KL-2P5W9V', locationId: 'loc-kloten', role: 'mitarbeiter', createdAt: Date.now() - 86400_000 * 30, used: 17 },
   ],
+}
+
+/** Vorgaben für die Integrationen – ergänzt Speicherstände aus früheren Versionen */
+export const INTEGRATION_VORGABEN: IntegrationSettings = {
+  smsGateway: { enabled: false, provider: 'ecall', senderId: 'SONNENBERG', username: '', password: '', httpUrl: '', sentCount: 0 },
+  telephony: { enabled: false, tenantId: '', clientId: '', clientSecret: '', organizerEmail: '' },
+  teams: { enabled: false, tenant: '', webhookUrl: '' },
+  lorawan: { enabled: false, provider: 'ttn', token: '' },
+  sso: { enabled: false, provider: 'Microsoft Entra ID / SAML 2.0', entityId: '' },
+  hrSync: { enabled: false, system: '' },
+  hotline: { enabled: false, number: '' },
+  multiLanguage: true,
+  geofencing: false,
+  webhooks: [],
+  accessCodes: [],
+}
+
+/**
+ * Gespeicherte Integrations-Einstellungen um fehlende Abschnitte und Felder
+ * neuer Versionen ergänzen, ohne Bestehendes zu verlieren.
+ */
+export function integrationenMitVorgaben(roh: Partial<IntegrationSettings> | undefined): IntegrationSettings {
+  const r = roh ?? {}
+  return {
+    ...INTEGRATION_VORGABEN,
+    ...r,
+    smsGateway: { ...INTEGRATION_VORGABEN.smsGateway, ...r.smsGateway },
+    telephony: { ...INTEGRATION_VORGABEN.telephony, ...r.telephony },
+    teams: { ...INTEGRATION_VORGABEN.teams, ...r.teams },
+    lorawan: { ...INTEGRATION_VORGABEN.lorawan, ...r.lorawan },
+    sso: { ...INTEGRATION_VORGABEN.sso, ...r.sso },
+    hrSync: { ...INTEGRATION_VORGABEN.hrSync, ...r.hrSync },
+    hotline: { ...INTEGRATION_VORGABEN.hotline, ...r.hotline },
+    webhooks: r.webhooks ?? [],
+    accessCodes: r.accessCodes ?? [],
+  }
 }
 
 /** Passwort aller Demo-Benutzer – wird auf der Anmeldemaske im Demo-Modus angezeigt */
@@ -1061,9 +1098,10 @@ export function createLiveInitialState(): AppState {
     buttons: [],
     loneWorkSessions: [],
     integrations: {
-      smsGateway: { enabled: false, provider: '', senderId: 'SONNENBERG' },
-      voip: { enabled: false, sipServer: '' },
-      teams: { enabled: false, tenant: '' },
+      smsGateway: { enabled: false, provider: 'ecall', senderId: 'SONNENBERG', username: '', password: '', httpUrl: '', sentCount: 0 },
+      telephony: { enabled: false, tenantId: '', clientId: '', clientSecret: '', organizerEmail: '' },
+      teams: { enabled: false, tenant: '', webhookUrl: '' },
+      lorawan: { enabled: false, provider: 'ttn', token: '' },
       sso: { enabled: false, provider: 'Microsoft Entra ID / SAML 2.0', entityId: '' },
       hrSync: { enabled: false, system: '' },
       hotline: { enabled: false, number: '' },

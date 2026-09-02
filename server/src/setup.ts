@@ -1,5 +1,6 @@
 import { db, getSetting, setSetting } from './db.js'
 import { hashPassword, newSalt } from './auth.js'
+import { INTEGRATION_VORGABEN } from './integrationen.js'
 import {
   SCENARIO_CONTENT_VERSION, SEED_CONTACTS, SEED_GROUPS, SEED_LOCATIONS, SEED_PLANS, SEED_SCENARIOS,
 } from './seed.js'
@@ -16,16 +17,8 @@ export const NOTFALLNUMMER = '+41 41 767 49 48'
 const ALTE_PLATZHALTER = ['', '+41 41 000 11 22']
 
 const LEER_INTEGRATIONEN: IntegrationSettings = {
-  smsGateway: { enabled: false, provider: '', senderId: 'SONNENBERG' },
-  voip: { enabled: false, sipServer: '' },
-  teams: { enabled: false, tenant: '' },
-  sso: { enabled: false, provider: 'Microsoft Entra ID / SAML 2.0', entityId: '' },
-  hrSync: { enabled: false, system: '' },
+  ...INTEGRATION_VORGABEN,
   hotline: { enabled: true, number: NOTFALLNUMMER },
-  multiLanguage: true,
-  geofencing: false,
-  webhooks: [],
-  accessCodes: [],
 }
 
 /**
@@ -61,7 +54,8 @@ export function seedDatabase(): void {
 
   if (!getSetting('integrations')) saveIntegrations(LEER_INTEGRATIONEN)
   else {
-    const bisher = { ...LEER_INTEGRATIONEN, ...integrations() }
+    // integrations() ergänzt fehlende Abschnitte neuer Versionen mit den Vorgaben
+    const bisher = integrations()
     // Bestehende Installationen kennen die echte Nummer noch nicht
     if (ALTE_PLATZHALTER.includes((bisher.hotline?.number ?? '').trim())) {
       bisher.hotline = { enabled: true, number: NOTFALLNUMMER }
