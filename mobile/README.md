@@ -88,11 +88,13 @@ Der Code ist plattformgemeinsam – dieselbe App läuft auf Android. Auf iOS-Spe
 die App legt ihn beim Start an, der Server adressiert ihn beim Versand). Stille Alarme nutzen
 den lautlosen Kanal «Stille Alarme und Entwarnung».
 
-**Bauen:**
+**Bauen** (im Verzeichnis `mobile/`; `npx --yes eas-cli@latest` funktioniert ohne globale
+Installation – wer die CLI global hat, kürzt auf `eas …` ab; Anmeldung über `EXPO_TOKEN`
+oder `npx --yes eas-cli@latest login`):
 
 ```bash
-eas build --platform android --profile preview     # .apk zur Direktinstallation / MDM-Verteilung
-eas build --platform android --profile production  # .aab für den Play Store
+npx --yes eas-cli@latest build --platform android --profile preview     # .apk zur Direktinstallation / MDM
+npx --yes eas-cli@latest build --platform android --profile production  # .aab für den Play Store
 ```
 
 Beim ersten Build erzeugt und verwahrt EAS den Signatur-Schlüssel (Keystore) – dafür den ersten
