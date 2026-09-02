@@ -39,6 +39,8 @@ export interface User {
   /** Erzwingt eine Passwortänderung bei der nächsten Anmeldung */
   mustChangePassword?: boolean
   lastLoginAt?: number
+  /** Letzte Anmeldung über Microsoft (SSO) – kennzeichnet SSO-Konten */
+  ssoLoginAt?: number
 }
 
 export interface Group {

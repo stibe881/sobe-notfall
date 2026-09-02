@@ -148,6 +148,7 @@ router.get('/auth/sso/callback', async (req, res) => {
       locationId: allLocations()[0]?.id ?? '',
       language: 'de',
       lastLoginAt: Date.now(),
+      ssoLoginAt: Date.now(),
     }
     upsertUser(user)
     addAudit('anmeldung', `Konto über Microsoft-Anmeldung angelegt: ${user.firstName} ${user.lastName} (${user.email})`, user.id)
@@ -159,7 +160,7 @@ router.get('/auth/sso/callback', async (req, res) => {
       addAudit('admin', `Rolle über Entra-Gruppen angepasst: ${user.firstName} ${user.lastName} → ${rolle}`, user.id)
       broadcast('state')
     }
-    user = { ...user, lastLoginAt: Date.now() }
+    user = { ...user, lastLoginAt: Date.now(), ssoLoginAt: Date.now() }
     upsertUser(user)
   }
 
@@ -308,6 +309,7 @@ router.post('/users', auth, adminOnly, (req, res) => {
     passwordSalt: bestehend?.passwordSalt,
     mustChangePassword: Boolean(eingabe.mustChangePassword),
     lastLoginAt: bestehend?.lastLoginAt,
+    ssoLoginAt: bestehend?.ssoLoginAt,
   }
   if (!user.firstName || !user.lastName) {
     res.status(400).json({ error: 'Bitte Vor- und Nachname angeben.' })

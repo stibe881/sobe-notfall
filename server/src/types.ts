@@ -29,6 +29,8 @@ export interface StoredUser {
   passwordSalt?: string
   mustChangePassword?: boolean
   lastLoginAt?: number
+  /** Letzte Anmeldung über Microsoft (SSO) – kennzeichnet SSO-Konten in der Benutzerverwaltung */
+  ssoLoginAt?: number
 }
 
 /** Benutzer, wie ihn die Clients erhalten – ohne Passwortdaten */

@@ -54,7 +54,7 @@ export default function UsersPage() {
           <h1 className="text-2xl font-bold text-slate-800">Benutzerverwaltung</h1>
           <p className="text-sm text-slate-500">
             Manuelle Erfassung, CSV-Upload oder automatische Synchronisation mit dem Personalsystem (siehe Integrationen) ·
-            Anmeldung mit E-Mail und Passwort, SSO vorbereitet
+            Anmeldung mit E-Mail und Passwort oder mit Microsoft (SSO, siehe Integrationen)
           </p>
         </div>
         <div className="flex gap-2">
@@ -114,13 +114,21 @@ export default function UsersPage() {
                       {!absent && !u.partTimeNote && <Badge color="green">erreichbar</Badge>}
                     </td>
                     <td className="py-2.5 pr-4">
-                      {!hasPassword(u) ? (
-                        <Badge color="amber">kein Passwort</Badge>
-                      ) : u.mustChangePassword ? (
-                        <Badge color="blue">Passwortwechsel nötig</Badge>
-                      ) : (
-                        <Badge color="green">aktiv</Badge>
-                      )}
+                      <span className="inline-flex items-center gap-1.5 flex-wrap">
+                        {!hasPassword(u) ? (
+                          // Wer sich über Microsoft anmeldet, braucht kein Passwort – das ist kein Mangel
+                          u.ssoLoginAt ? null : <Badge color="amber">kein Passwort</Badge>
+                        ) : u.mustChangePassword ? (
+                          <Badge color="blue">Passwortwechsel nötig</Badge>
+                        ) : (
+                          <Badge color="green">aktiv</Badge>
+                        )}
+                        {u.ssoLoginAt && (
+                          <span title={`Letzte Microsoft-Anmeldung: ${new Date(u.ssoLoginAt).toLocaleString('de-CH')}`}>
+                            <Badge color="violet">Microsoft</Badge>
+                          </span>
+                        )}
+                      </span>
                     </td>
                     <td className="py-2.5 text-right whitespace-nowrap">
                       <Button variant="ghost" onClick={() => setEditing(u)}><Pencil size={14} /></Button>
