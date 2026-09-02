@@ -1,6 +1,6 @@
 # Benutzerhandbücher
 
-Drei Handbücher, je eines pro Rolle – als PDF zum Ausdrucken und Verteilen und
+Vier Handbücher, je eines pro Rolle – als PDF zum Ausdrucken und Verteilen und
 als HTML zum Lesen im Browser.
 
 | Für wen | Handbuch |
@@ -8,6 +8,7 @@ als HTML zum Lesen im Browser.
 | Schulleitung, Systemverantwortliche | [handbuch-1-administration.html](handbuch-1-administration.html) |
 | Krisenstabsmitglieder | [handbuch-2-krisenstab.html](handbuch-2-krisenstab.html) |
 | alle Mitarbeitenden | [handbuch-3-mitarbeitende.html](handbuch-3-mitarbeitende.html) |
+| Systemverantwortliche, technischer Betrieb | [handbuch-4-installation.html](handbuch-4-installation.html) |
 
 Die PDF zum Ausdrucken und Verteilen entstehen mit einem Befehl (siehe unten)
 und liegen bewusst nicht in der Versionsverwaltung: Sie sind erzeugt, wiegen
@@ -39,7 +40,7 @@ Verteilen ist die PDF gedacht.
 
 ## Neu erzeugen
 
-Der Text steht in `quelle/handbuch1.py` bis `quelle/handbuch3.py`, die
+Der Text steht in `quelle/handbuch1.py` bis `quelle/handbuch4.py`, die
 gemeinsame Gestaltung in `quelle/schale.py`. Abbildungsnummern vergibt das
 Bauskript – eine Abbildung lässt sich also mitten im Dokument einfügen, ohne
 den Rest nachzuziehen.
@@ -75,7 +76,10 @@ sich mit `SOBE_URL`, der Pfad zum Browser mit `PLAYWRIGHT_CHROMIUM` vorgeben.
 `pdf-erzeugen.mjs` zusätzlich `pdfinfo`, `pdfseparate` und `pdfunite` aus
 Poppler.
 
-Die vier Live-Bilder (`web-21` bis `web-24`) zeigen Zustände, die es nur gegen
+Die Live-Bilder (`web-21` bis `web-28`) zeigen Zustände, die es nur gegen
 einen laufenden Alarmserver gibt: Erstinbetriebnahme, erzwungener
-Passwortwechsel, Live-Dashboard und der Dialog «Aktualisierung». Sie entstehen
-von Hand gegen einen frisch aufgesetzten Server und ändern sich selten.
+Passwortwechsel, Live-Dashboard, der Dialog «Aktualisierung», der
+Einrichtungsassistent, die Karten Organisation/Redundanz und App-Verbindung
+sowie der Standby-Server mit laufendem Abgleich (für `web-26`/`web-28` sind
+zwei gekoppelte Instanzen nötig). Sie entstehen von Hand gegen frisch
+aufgesetzte Server und ändern sich selten.

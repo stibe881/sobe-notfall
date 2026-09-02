@@ -73,6 +73,18 @@ Im Produktivbetrieb liefert der Alarmserver auch das Portal aus – eine Adresse
 für beides. Die Anleitung für das Hetzner-Hosting steht in
 [`DEPLOY-HETZNER.md`](DEPLOY-HETZNER.md).
 
+## Mehrere Kunden & Redundanz
+
+Die Plattform ist mandantenfähig nach dem Modell **eine App, ein Server pro
+Kunde**: Jeder Kunde erhält einen eigenen Alarmserver (eigene Domain, eigene
+Datenbank); die iOS-App bleibt für alle dieselbe und verbindet sich über einen
+QR-Code aus dem Portal mit dem richtigen Server. Ein neuer Server startet
+neutral mit einem Einrichtungsassistenten; Name und Auftritt der Organisation
+werden im Portal gepflegt und erscheinen automatisch in Portal und App. Pro
+Kunde kann jederzeit ein **zweiter Alarmserver (Standby)** angebunden werden –
+er spiegelt den Datenbestand laufend, die App weicht bei einem Ausfall
+selbständig dorthin aus. Anleitung: [`KUNDEN-SETUP.md`](KUNDEN-SETUP.md).
+
 ## Betriebsarten
 
 | | Demo | Live |

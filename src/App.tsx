@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { NavLink, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import {
   AlertTriangle, BellRing, BookOpen, Building2, ClipboardList, ExternalLink, FileClock, LayoutDashboard,
@@ -21,6 +21,8 @@ import AuditLog from './pages/AuditLog'
 import UserApp from './pages/UserApp'
 import LoginScreen, { ForcePasswordChange } from './components/LoginScreen'
 import UpdateDialog from './components/UpdateDialog'
+import { api } from './lib/api'
+import { Button, Field, Modal, inputClass } from './components/ui'
 
 const NAV = [
   { section: 'Gefahrenabwehr' },
@@ -112,7 +114,9 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           SOBE Notfall
           <ModeBadge mode={state.mode} />
         </div>
-        <div className="text-xs text-slate-500 mt-0.5">Kompetenzzentrum Baar · Menzingen · Kloten</div>
+        <div className="text-xs text-slate-500 mt-0.5">
+          {state.integrations.organization?.name || 'Notfall- & Krisenmanagement'}
+        </div>
       </div>
       <nav className="flex-1 overflow-y-auto py-3">
         {NAV.map((item, i) =>
@@ -244,6 +248,82 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   )
 }
 
+/**
+ * Einrichtungsassistent für einen neu aufgesetzten Alarmserver: fragt die
+ * Grunddaten des Kunden ab (Organisation, Notfallnummer, erster Standort).
+ * Erscheint einmalig für die Administration, bis er abgeschlossen wurde.
+ */
+function EinrichtungsAssistent() {
+  const { state, refresh } = useStore()
+  const [offen, setOffen] = useState(false)
+  const [name, setName] = useState('')
+  const [shortName, setShortName] = useState('')
+  const [hotline, setHotline] = useState('')
+  const [standortName, setStandortName] = useState('')
+  const [standortAdresse, setStandortAdresse] = useState('')
+  const [fehler, setFehler] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+
+  useEffect(() => {
+    if (state.mode !== 'live') return
+    api.setup().then((info) => setOffen(info.setupPending === true)).catch(() => {})
+  }, [state.mode])
+
+  if (!offen) return null
+
+  async function abschliessen() {
+    if (!name.trim()) return setFehler('Bitte den Namen der Organisation angeben.')
+    setBusy(true)
+    setFehler(null)
+    try {
+      await api.einrichtung({
+        name: name.trim(),
+        shortName: shortName.trim(),
+        hotline: hotline.trim(),
+        standortName: standortName.trim(),
+        standortAdresse: standortAdresse.trim(),
+      })
+      setOffen(false)
+      refresh()
+    } catch (f) {
+      setFehler((f as Error).message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Modal title="Willkommen – Einrichtung des Alarmservers" onClose={() => setOffen(false)}>
+      <p className="text-sm text-slate-500 mb-4">
+        Dieser Alarmserver ist neu. Ein paar Angaben zur Organisation genügen für den Start –
+        alles lässt sich später unter «Integrationen» und «Standorte» anpassen.
+      </p>
+      <Field label="Name der Organisation *">
+        <input className={inputClass} autoFocus placeholder="Muster AG" value={name} onChange={(e) => { setName(e.target.value); setFehler(null) }} />
+      </Field>
+      <Field label="Kurzname (max. 11 Zeichen – wird SMS-Absender)">
+        <input className={inputClass} maxLength={11} placeholder="MUSTER" value={shortName} onChange={(e) => setShortName(e.target.value)} />
+      </Field>
+      <Field label="Interne Notfallnummer (optional)">
+        <input className={inputClass} type="tel" placeholder="+41 44 000 00 00" value={hotline} onChange={(e) => setHotline(e.target.value)} />
+      </Field>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <Field label="Erster Standort (optional)">
+          <input className={inputClass} placeholder="Hauptsitz" value={standortName} onChange={(e) => setStandortName(e.target.value)} />
+        </Field>
+        <Field label="Adresse des Standorts">
+          <input className={inputClass} placeholder="Musterstrasse 1, 8000 Zürich" value={standortAdresse} onChange={(e) => setStandortAdresse(e.target.value)} />
+        </Field>
+      </div>
+      {fehler && <p className="text-sm text-alarm-600 mb-3">{fehler}</p>}
+      <div className="flex justify-end gap-2 mt-2">
+        <Button variant="secondary" onClick={() => setOffen(false)}>Später</Button>
+        <Button onClick={abschliessen} disabled={busy}>{busy ? 'Speichern …' : 'Einrichtung abschliessen'}</Button>
+      </div>
+    </Modal>
+  )
+}
+
 export default function App() {
   const { state } = useStore()
   const [navOpen, setNavOpen] = useState(false)
@@ -269,6 +349,9 @@ export default function App() {
 
   return (
     <div className="min-h-screen flex">
+      {/* Neu aufgesetzter Server: Grunddaten des Kunden abfragen */}
+      {sessionUser.role === 'admin' && <EinrichtungsAssistent />}
+
       {/* Desktop-Sidebar */}
       <aside className="hidden lg:block shrink-0">
         <div className="sticky top-0 h-screen">

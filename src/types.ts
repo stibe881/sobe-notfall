@@ -301,7 +301,16 @@ export interface SsoSettings {
   autoCreate: boolean
 }
 
+/** Name und Auftritt der Organisation – pro Kunde im Portal gepflegt */
+export interface OrganizationSettings {
+  /** Vollständiger Name, z. B. «Muster AG» – erscheint in Portal und App */
+  name: string
+  /** Kurzname für SMS-Absender und knappe Anzeigen (max. 11 Zeichen, A–Z/0–9) */
+  shortName: string
+}
+
 export interface IntegrationSettings {
+  organization: OrganizationSettings
   smsGateway: SmsGatewaySettings
   telephony: TelephonySettings
   teams: TeamsSettings
@@ -362,4 +371,13 @@ export interface AppState {
   integrations: IntegrationSettings
   contacts: EmergencyContact[]
   audit: AuditEntry[]
+  /** Rolle und Ausweichadresse des Alarmservers (nur im Live-Modus vorhanden) */
+  serverInfo?: ServerInfo
+}
+
+/** Auskunft des Servers zur Redundanz: Rolle dieser Instanz und Partneradresse */
+export interface ServerInfo {
+  rolle: 'primary' | 'standby' | null
+  fallbackUrl: string | null
+  failover: boolean
 }

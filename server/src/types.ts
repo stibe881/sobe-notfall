@@ -294,7 +294,19 @@ export interface SsoSettings {
   autoCreate: boolean
 }
 
+/**
+ * Name und Auftritt der Organisation. Pro Kunde im Portal gepflegt – die App
+ * und das Portal zeigen den Namen, sobald sie mit dem Server verbunden sind.
+ */
+export interface OrganizationSettings {
+  /** Vollständiger Name, z. B. «Muster AG» – erscheint in Portal und App */
+  name: string
+  /** Kurzname für SMS-Absender und knappe Anzeigen (max. 11 Zeichen, A–Z/0–9) */
+  shortName: string
+}
+
 export interface IntegrationSettings {
+  organization: OrganizationSettings
   smsGateway: SmsGatewaySettings
   telephony: TelephonySettings
   teams: TeamsSettings
@@ -323,6 +335,41 @@ export interface AuditEntry {
   userId?: string
 }
 
+/**
+ * Redundanz: Konfiguration dieser Instanz für den Betrieb mit einem zweiten
+ * Alarmserver. Gehört zur Instanz selbst und wird deshalb NIE repliziert –
+ * sonst würde der Standby seine eigene Rolle mit der des Hauptservers
+ * überschreiben.
+ */
+export interface RedundanzConfig {
+  enabled: boolean
+  /** primary: führt die Daten · standby: spiegelt sie und übernimmt bei Ausfall */
+  role: 'primary' | 'standby'
+  /** Adresse des Partnerservers, z. B. https://notfall2.firma.ch */
+  peerUrl: string
+  /** Gemeinsames Geheimnis beider Instanzen – schützt die Replikations-Endpunkte */
+  secret: string
+  /** Abstand der Abgleiche in Sekunden (nur Standby) */
+  intervalS: number
+}
+
+/** Laufender Zustand des Abgleichs – für die Anzeige im Portal */
+export interface RedundanzStatus {
+  lastSyncAt: number | null
+  lastSyncOk: boolean | null
+  lastSyncError: string | null
+  /** Der Standby hat übernommen, weil der Hauptserver nicht erreichbar ist */
+  failoverAktiv: boolean
+}
+
+/** Auskunft für die Clients: Rolle dieses Servers und Ausweichadresse der App */
+export interface ServerInfo {
+  rolle: 'primary' | 'standby' | null
+  /** Adresse des Partnerservers – die App weicht dorthin aus, wenn dieser Server ausfällt */
+  fallbackUrl: string | null
+  failover: boolean
+}
+
 /** Vollständiger Datenbestand, wie ihn die Clients erhalten */
 export interface ServerState {
   users: User[]
@@ -336,4 +383,6 @@ export interface ServerState {
   integrations: IntegrationSettings
   contacts: EmergencyContact[]
   audit: AuditEntry[]
+  /** Rolle und Ausweichadresse dieses Servers (nur im Live-Betrieb vorhanden) */
+  serverInfo?: ServerInfo
 }

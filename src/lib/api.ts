@@ -97,6 +97,8 @@ export interface VersionsInfo {
   commitDatum: string
   commitTitel: string
   hinterher: number
+  /** Gibt es diesen Branch auch auf dem Repository (origin)? */
+  remoteVorhanden?: boolean
   iosMoeglich: boolean
   iosHinweis?: string
   neustartMoeglich: boolean
@@ -149,6 +151,31 @@ export interface SetupInfo {
   userCount: number
   /** Single Sign-On eingerichtet – die Anmeldemaske zeigt dann den Microsoft-Knopf */
   sso?: boolean
+  /** Name der Organisation – erscheint vor der Anmeldung */
+  organization?: string | null
+  /** Der Einrichtungsassistent im Portal steht noch aus */
+  setupPending?: boolean
+  /** Redundanz: Rolle dieses Servers und Ausweichadresse */
+  serverRolle?: 'primary' | 'standby' | null
+  fallbackUrl?: string | null
+  failover?: boolean
+}
+
+// ---------- Redundanz (zweiter Alarmserver) ----------
+
+export interface RedundanzConfig {
+  enabled: boolean
+  role: 'primary' | 'standby'
+  peerUrl: string
+  secret: string
+  intervalS: number
+}
+
+export interface RedundanzStatus {
+  lastSyncAt: number | null
+  lastSyncOk: boolean | null
+  lastSyncError: string | null
+  failoverAktiv: boolean
 }
 
 /** Startadresse der Microsoft-Anmeldung – der Browser wird dorthin geführt */
@@ -191,6 +218,18 @@ export const api = {
 
   saveIntegrations: (integrations: AppState['integrations']) =>
     anfrage<{ ok: boolean }>('/integrations', { method: 'POST', body: JSON.stringify(integrations) }),
+
+  /** Einrichtungsassistent: Grunddaten eines neuen Kunden in einem Schritt */
+  einrichtung: (daten: { name: string; shortName?: string; hotline?: string; standortName?: string; standortAdresse?: string }) =>
+    anfrage<{ ok: boolean }>('/einrichtung', { method: 'POST', body: JSON.stringify(daten) }),
+
+  /** Redundanz: Konfiguration dieser Instanz samt Abgleich-Status – nur Administration */
+  redundanz: () =>
+    anfrage<{ config: RedundanzConfig; status: RedundanzStatus; peerErreichbar: boolean | null }>('/redundanz'),
+  saveRedundanz: (config: Partial<RedundanzConfig>) =>
+    anfrage<{ config: RedundanzConfig }>('/redundanz', { method: 'POST', body: JSON.stringify(config) }),
+  redundanzNeuerSchluessel: () =>
+    anfrage<{ secret: string }>('/redundanz/schluessel', { method: 'POST' }),
 
   /** Verbindungstests der Integrationen – nur Administration */
   smsTest: (to?: string) =>

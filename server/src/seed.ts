@@ -984,6 +984,7 @@ export const SEED_CONTACTS: EmergencyContact[] = [
 ]
 
 export const SEED_INTEGRATIONS: IntegrationSettings = {
+  organization: { name: 'SONNENBERG Kompetenzzentrum', shortName: 'SONNENBERG' },
   smsGateway: { enabled: true, provider: 'ecall', senderId: 'SONNENBERG', username: 'sonnenberg-demo', password: 'demo-geheim', httpUrl: '', sentCount: 128 },
   telephony: { enabled: true, tenantId: 'sonnenberg-baar.onmicrosoft.com', clientId: '00000000-demo-4000-a000-000000000000', clientSecret: 'demo-geheim', organizerEmail: 'krisenstab@sonnenberg-baar.ch' },
   teams: { enabled: true, tenant: 'sonnenberg-baar.onmicrosoft.com', webhookUrl: 'https://sonnenbergbaar.webhook.office.com/webhookb2/demo' },

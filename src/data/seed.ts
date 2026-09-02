@@ -987,6 +987,7 @@ export const SEED_CONTACTS: EmergencyContact[] = [
 ]
 
 export const SEED_INTEGRATIONS: IntegrationSettings = {
+  organization: { name: 'SONNENBERG Kompetenzzentrum', shortName: 'SONNENBERG' },
   smsGateway: { enabled: true, provider: 'ecall', senderId: 'SONNENBERG', username: 'sonnenberg-demo', password: 'demo-geheim', httpUrl: '', sentCount: 128 },
   telephony: { enabled: true, tenantId: 'sonnenberg-baar.onmicrosoft.com', clientId: '00000000-demo-4000-a000-000000000000', clientSecret: 'demo-geheim', organizerEmail: 'krisenstab@sonnenberg-baar.ch' },
   teams: { enabled: true, tenant: 'sonnenberg-baar.onmicrosoft.com', webhookUrl: 'https://sonnenbergbaar.webhook.office.com/webhookb2/demo' },
@@ -1009,7 +1010,8 @@ export const SEED_INTEGRATIONS: IntegrationSettings = {
 
 /** Vorgaben für die Integrationen – ergänzt Speicherstände aus früheren Versionen */
 export const INTEGRATION_VORGABEN: IntegrationSettings = {
-  smsGateway: { enabled: false, provider: 'ecall', senderId: 'SONNENBERG', username: '', password: '', httpUrl: '', sentCount: 0 },
+  organization: { name: '', shortName: '' },
+  smsGateway: { enabled: false, provider: 'ecall', senderId: 'ALARM', username: '', password: '', httpUrl: '', sentCount: 0 },
   telephony: { enabled: false, tenantId: '', clientId: '', clientSecret: '', organizerEmail: '' },
   teams: { enabled: false, tenant: '', webhookUrl: '' },
   lorawan: { enabled: false, provider: 'ttn', token: '' },
@@ -1031,6 +1033,7 @@ export function integrationenMitVorgaben(roh: Partial<IntegrationSettings> | und
   return {
     ...INTEGRATION_VORGABEN,
     ...r,
+    organization: { ...INTEGRATION_VORGABEN.organization, ...r.organization },
     smsGateway: { ...INTEGRATION_VORGABEN.smsGateway, ...r.smsGateway },
     telephony: { ...INTEGRATION_VORGABEN.telephony, ...r.telephony },
     teams: { ...INTEGRATION_VORGABEN.teams, ...r.teams },
@@ -1098,7 +1101,8 @@ export function createLiveInitialState(): AppState {
     buttons: [],
     loneWorkSessions: [],
     integrations: {
-      smsGateway: { enabled: false, provider: 'ecall', senderId: 'SONNENBERG', username: '', password: '', httpUrl: '', sentCount: 0 },
+      organization: { name: '', shortName: '' },
+      smsGateway: { enabled: false, provider: 'ecall', senderId: 'ALARM', username: '', password: '', httpUrl: '', sentCount: 0 },
       telephony: { enabled: false, tenantId: '', clientId: '', clientSecret: '', organizerEmail: '' },
       teams: { enabled: false, tenant: '', webhookUrl: '' },
       lorawan: { enabled: false, provider: 'ttn', token: '' },

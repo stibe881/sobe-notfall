@@ -176,6 +176,12 @@ export interface VersionsInfo {
   commitTitel: string
   /** Anzahl Commits, die auf dem Server noch fehlen */
   hinterher: number
+  /**
+   * Gibt es diesen Branch auch auf dem Repository (origin)? Ein nur lokal
+   * angelegter Branch hat dort nichts zu holen – die Aktualisierung baut dann
+   * den vorhandenen Stand neu, statt an einem Pull zu scheitern.
+   */
+  remoteVorhanden: boolean
   /** Ob der iOS-Build möglich ist (Zugangstoken hinterlegt) */
   iosMoeglich: boolean
   iosHinweis?: string
@@ -183,30 +189,50 @@ export interface VersionsInfo {
   neustartMoeglich: boolean
 }
 
+/**
+ * Aktueller Branch des Arbeitsverzeichnisses. Bei losgelöstem HEAD (checkout
+ * eines Commits statt eines Branches) liefert git «HEAD» – dann gibt es keinen
+ * Branch, von dem sich ziehen liesse.
+ */
+async function aktuellerBranch(root: string): Promise<string | null> {
+  const branch = await still('git', ['rev-parse', '--abbrev-ref', 'HEAD'], root)
+  return branch && branch !== 'HEAD' ? branch : null
+}
+
+/** Existiert der Branch nach dem Holen auch auf origin? */
+async function branchAufOrigin(root: string, branch: string): Promise<boolean> {
+  return Boolean(await still('git', ['rev-parse', '--verify', '--quiet', `origin/${branch}`], root))
+}
+
 export async function versionsInfo(pruefeRemote = true): Promise<VersionsInfo> {
   const root = repoRoot()
-  const branch = (await still('git', ['rev-parse', '--abbrev-ref', 'HEAD'], root)) || 'unbekannt'
+  const branch = await aktuellerBranch(root)
   const commit = (await still('git', ['rev-parse', 'HEAD'], root)) || ''
   const commitTitel = (await still('git', ['log', '-1', '--pretty=%s'], root)) || ''
   const commitDatum = (await still('git', ['log', '-1', '--pretty=%cI'], root)) || ''
 
   let hinterher = 0
-  if (pruefeRemote && branch !== 'unbekannt') {
-    await still('git', ['fetch', 'origin', branch], root)
-    const zaehler = await still('git', ['rev-list', '--count', `HEAD..origin/${branch}`], root)
-    hinterher = Number(zaehler) || 0
+  let remoteVorhanden = false
+  if (branch) {
+    if (pruefeRemote) await still('git', ['fetch', 'origin', branch], root)
+    remoteVorhanden = await branchAufOrigin(root, branch)
+    if (remoteVorhanden) {
+      const zaehler = await still('git', ['rev-list', '--count', `HEAD..origin/${branch}`], root)
+      hinterher = Number(zaehler) || 0
+    }
   }
 
   const expoToken = Boolean(process.env.EXPO_TOKEN)
   const mobileDa = existsSync(resolve(root, 'mobile', 'package.json'))
 
   return {
-    branch,
+    branch: branch ?? 'unbekannt',
     commit,
     commitKurz: commit.slice(0, 7),
     commitDatum,
     commitTitel,
     hinterher,
+    remoteVorhanden,
     iosMoeglich: expoToken && mobileDa,
     iosHinweis: !mobileDa
       ? 'Der Ordner mobile/ fehlt auf dem Server.'
@@ -230,18 +256,36 @@ interface SchrittDefinition {
   timeoutMs?: number
   /** Zusätzliche Umgebungsvariablen nur für diesen Schritt */
   umgebung?: Record<string, string>
+  /** Schritt entfällt in diesem Lauf – der Text erklärt, warum */
+  uebersprungen?: string
 }
 
-function schrittPlan(scope: UpdateScope): SchrittDefinition[] {
+function schrittPlan(scope: UpdateScope, branch: string | null, remoteVorhanden: boolean): SchrittDefinition[] {
+  // Der Pull nennt Branch und origin ausdrücklich, damit die Aktualisierung
+  // auf jedem Branch funktioniert – auch auf einem, der ohne Tracking
+  // ausgecheckt wurde. Für einen Branch, den es nur auf diesem Server gibt
+  // (oder bei losgelöstem HEAD), gibt es nichts zu holen: Der Schritt entfällt
+  // sichtbar, und der vorhandene Stand wird trotzdem neu gebaut.
+  const pull: SchrittDefinition =
+    branch && remoteVorhanden
+      ? {
+          id: 'pull', titel: 'Quellcode aktualisieren',
+          befehl: 'git', argumente: ['pull', '--ff-only', 'origin', branch], verzeichnis: (r) => r,
+        }
+      : {
+          id: 'pull', titel: 'Quellcode aktualisieren',
+          befehl: 'git', argumente: [], verzeichnis: (r) => r,
+          uebersprungen: branch
+            ? `Der Branch «${branch}» existiert nur auf diesem Server – es gibt nichts zu holen. Der vorhandene Stand wird neu gebaut.`
+            : 'Das Arbeitsverzeichnis steht auf keinem Branch (losgelöster Commit) – es gibt nichts zu holen. Der vorhandene Stand wird neu gebaut.',
+        }
+
   const schritte: SchrittDefinition[] = [
     {
       id: 'fetch', titel: 'Änderungen vom Repository holen',
       befehl: 'git', argumente: ['fetch', '--all', '--prune'], verzeichnis: (r) => r,
     },
-    {
-      id: 'pull', titel: 'Quellcode aktualisieren',
-      befehl: 'git', argumente: ['pull', '--ff-only'], verzeichnis: (r) => r,
-    },
+    pull,
     {
       id: 'deps-web', titel: 'Abhängigkeiten des Portals aktualisieren',
       // --foreground-scripts: Neuere npm-Versionen sperren Installationsskripte, wenn
@@ -347,8 +391,12 @@ export function updateLaeuft(): boolean {
   return laufenderJob?.status === 'laufend'
 }
 
-export function starteUpdate(scope: UpdateScope, gestartetVon: string): UpdateJob {
-  const plan = schrittPlan(scope)
+export async function starteUpdate(scope: UpdateScope, gestartetVon: string): Promise<UpdateJob> {
+  // Branch und Herkunft vor dem Lauf bestimmen – davon hängt der Pull-Schritt ab
+  const root = repoRoot()
+  const branch = await aktuellerBranch(root)
+  const remoteVorhanden = branch ? await branchAufOrigin(root, branch) : false
+  const plan = schrittPlan(scope, branch, remoteVorhanden)
   const job: UpdateJob = {
     id: `upd-${Date.now().toString(36)}`,
     scope,
@@ -369,6 +417,14 @@ async function abarbeiten(job: UpdateJob, plan: SchrittDefinition[]): Promise<vo
   for (let i = 0; i < plan.length; i++) {
     const definition = plan[i]
     const schritt = job.schritte[i]
+
+    if (definition.uebersprungen) {
+      schritt.status = 'übersprungen'
+      schritt.ausgabe = definition.uebersprungen
+      speichereJob(job)
+      continue
+    }
+
     schritt.status = 'laufend'
     schritt.startedAt = Date.now()
     speichereJob(job)
@@ -395,6 +451,19 @@ async function abarbeiten(job: UpdateJob, plan: SchrittDefinition[]): Promise<vo
     schritt.status = code === 0 ? 'erfolgreich' : 'fehlgeschlagen'
 
     let fehlgeschlagen = code !== 0
+
+    // Der einzige Grund, aus dem der ausdrückliche Pull scheitert: Auf dem
+    // Server liegen eigene Commits, die es auf origin nicht gibt. Das darf die
+    // Aktualisierung nicht stillschweigend überschreiben - aber der Hinweis
+    // soll den Weg nennen.
+    if (fehlgeschlagen && definition.id === 'pull' && /fast-forward|divergent|rebase/i.test(ausgabe)) {
+      schritt.ausgabe = (schritt.ausgabe +
+        '\n\n[Auf diesem Server liegen eigene Commits, die es auf dem Repository nicht gibt - der Stand lässt sich nicht ' +
+        'automatisch zusammenführen. Auf dem Server per SSH prüfen: «git status» und «git log origin/' +
+        `${(await aktuellerBranch(root)) ?? ''}..HEAD». Entweder die eigenen Commits pushen oder mit ` +
+        '«git reset --hard origin/<branch>» verwerfen - Letzteres löscht sie unwiderruflich.]'
+      ).slice(-MAX_AUSGABE)
+    }
     if (definition.id === 'ios-build') {
       job.buildUrl = findeBuildUrl(ausgabe)
 

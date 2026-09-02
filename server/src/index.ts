@@ -7,6 +7,7 @@ import { resolve } from 'node:path'
 import { purgeExpiredSessions } from './auth.js'
 import { startEngine } from './engine.js'
 import { startHeartbeat } from './events.js'
+import { starteReplikation } from './replikation.js'
 import { router } from './routes.js'
 import { INITIAL_ADMIN_EMAIL, seedDatabase } from './setup.js'
 
@@ -52,6 +53,7 @@ seedDatabase()
 purgeExpiredSessions()
 startEngine()
 startHeartbeat()
+starteReplikation()
 
 app.listen(PORT, HOST, () => {
   console.log(`SOBE-Notfall-Alarmserver läuft auf http://localhost:${PORT}`)

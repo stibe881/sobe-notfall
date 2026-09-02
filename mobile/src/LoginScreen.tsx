@@ -6,7 +6,7 @@ import Svg, { Rect } from 'react-native-svg'
 import { useStore } from './store'
 import { DEMO_PASSWORD, LIVE_INITIAL_PASSWORD } from './seed'
 import { MIN_PASSWORD_LENGTH, passwordProblem } from './auth'
-import { ApiError, api, serverUrl, setServerUrl, type SetupInfo } from './api'
+import { ApiError, api, merkeServerInfo, serverUrl, setServerUrl, type SetupInfo } from './api'
 import type { User } from './types'
 import { colors } from './ui'
 
@@ -67,7 +67,13 @@ export default function LoginScreen() {
     let abgebrochen = false
     api
       .setup()
-      .then((info) => { if (!abgebrochen) { setSetup(info); setServerErreichbar(true) } })
+      .then((info) => {
+        if (abgebrochen) return
+        setSetup(info)
+        setServerErreichbar(true)
+        // Redundanz: Ausweichadresse schon vor der Anmeldung merken
+        void merkeServerInfo({ rolle: info.serverRolle ?? null, fallbackUrl: info.fallbackUrl ?? null, failover: info.failover ?? false })
+      })
       .catch((f) => { if (!abgebrochen) setServerErreichbar(!(f instanceof ApiError && f.status === 0)) })
     return () => { abgebrochen = true }
   }, [state.mode, serverBearbeiten])
@@ -119,13 +125,18 @@ export default function LoginScreen() {
     }
   }
 
+  // Der Name der Organisation kommt vom Alarmserver – die App bleibt für alle Kunden dieselbe
+  const untertitel =
+    (state.mode === 'live' ? setup?.organization : state.integrations?.organization?.name) ||
+    'Notfall- & Krisenmanagement'
+
   return (
-    <Shell subtitle="Kompetenzzentrum Baar · Menzingen · Kloten" showModeSwitch>
+    <Shell subtitle={untertitel} showModeSwitch>
       <View style={s.card}>
         <Text style={s.label}>E-Mail-Adresse</Text>
         <TextInput
           style={s.input}
-          placeholder="vorname.name@sonnenberg-baar.ch"
+          placeholder="vorname.name@firma.ch"
           placeholderTextColor="#64748b"
           autoCapitalize="none"
           autoCorrect={false}

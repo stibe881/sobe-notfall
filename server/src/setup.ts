@@ -5,32 +5,74 @@ import {
   SCENARIO_CONTENT_VERSION, SEED_CONTACTS, SEED_GROUPS, SEED_LOCATIONS, SEED_PLANS, SEED_SCENARIOS,
 } from './seed.js'
 import { allStoredUsers, integrations, saveIntegrations, upsertDoc, upsertGroup, upsertLocation, upsertUser, addAudit } from './store.js'
-import type { IntegrationSettings, StoredUser } from './types.js'
+import type { AlarmPlan, IntegrationSettings, StoredUser } from './types.js'
 
 /** Erstpasswort des Administrators; muss bei der ersten Anmeldung geändert werden */
 export const INITIAL_ADMIN_PASSWORD = process.env.SOBE_ADMIN_PASSWORD ?? 'SOBE-Start2026!'
-export const INITIAL_ADMIN_EMAIL = process.env.SOBE_ADMIN_EMAIL ?? 'stefan.gross@sonnenberg-baar.ch'
+export const INITIAL_ADMIN_EMAIL = process.env.SOBE_ADMIN_EMAIL ?? 'admin@sobe-notfall.local'
 
-/** Interne Notfallnummer des Kompetenzzentrums – in den Integrationen änderbar */
+/**
+ * Erstbefüllungs-Profil dieser Installation.
+ *
+ * standard: neutraler Start für einen neuen Kunden – Szenarien, Gruppen,
+ * Alarmplan-Vorlagen und Notrufnummern, aber keine Standorte und keine
+ * kundenspezifischen Angaben; der Einrichtungsassistent im Portal fragt sie ab.
+ *
+ * sonnenberg: die historische Erstbefüllung des SONNENBERG Kompetenzzentrums.
+ * Bestehende Installationen behalten dieses Profil automatisch.
+ */
+export type SeedProfil = 'standard' | 'sonnenberg'
+
+export function seedProfil(): SeedProfil {
+  return getSetting('seedProfile') === 'sonnenberg' ? 'sonnenberg' : 'standard'
+}
+
+/** Interne Notfallnummer des Kompetenzzentrums – nur im Profil «sonnenberg» */
 export const NOTFALLNUMMER = '+41 41 767 49 48'
 /** Platzhalter aus früheren Versionen, der beim Start ersetzt wird */
 const ALTE_PLATZHALTER = ['', '+41 41 000 11 22']
 
-const LEER_INTEGRATIONEN: IntegrationSettings = {
-  ...INTEGRATION_VORGABEN,
-  hotline: { enabled: true, number: NOTFALLNUMMER },
+/**
+ * Alarmplan-Vorlagen ohne Standortbezug: Für neue Kunden gibt es die
+ * Sonnenberg-Standorte nicht, die Pläne bleiben als Vorlage trotzdem nützlich.
+ */
+function neutralePlaene(): AlarmPlan[] {
+  return SEED_PLANS.map((p) => ({
+    ...p,
+    name: p.name.replace(' Hauptsitz Baar', ''),
+    locationIds: [],
+  }))
+}
+
+/** Steht der Einrichtungsassistent im Portal noch aus? */
+export function einrichtungOffen(): boolean {
+  return getSetting('setupPending') === 'true'
+}
+
+export function einrichtungAbschliessen(): void {
+  setSetting('setupPending', 'false')
 }
 
 /**
  * Erstbefüllung und Inhalts-Aktualisierungen.
- * Stammdaten (Standorte, Gruppen, Alarmpläne, Notrufnummern) werden nur angelegt,
+ * Stammdaten (Gruppen, Alarmpläne, Notrufnummern) werden nur angelegt,
  * wenn sie fehlen – bestehende Anpassungen bleiben erhalten. Standard-Szenarien
  * werden bei einer neuen Inhaltsversion aktualisiert, selbst erstellte nicht.
  */
 export function seedDatabase(): void {
   const erstinstallation = getSetting('initialized') !== 'true'
 
-  if (db.prepare('SELECT COUNT(*) AS n FROM locations').get() as { n: number }) {
+  // Profil festlegen: Bestehende Installationen (vor Einführung der Profile)
+  // sind Sonnenberg-Installationen und bleiben es. Neue starten neutral,
+  // sofern SOBE_SEED_PROFILE nichts anderes sagt.
+  if (!getSetting('seedProfile')) {
+    const gewuenscht = process.env.SOBE_SEED_PROFILE === 'sonnenberg' ? 'sonnenberg' : 'standard'
+    setSetting('seedProfile', erstinstallation ? gewuenscht : 'sonnenberg')
+  }
+  const profil = seedProfil()
+
+  // Standorte gehören zum Kunden – nur das Sonnenberg-Profil bringt eigene mit
+  if (profil === 'sonnenberg') {
     for (const l of SEED_LOCATIONS) {
       if (!db.prepare('SELECT 1 FROM locations WHERE id = ?').get(l.id)) upsertLocation(l)
     }
@@ -38,7 +80,7 @@ export function seedDatabase(): void {
   for (const g of SEED_GROUPS) {
     if (!db.prepare('SELECT 1 FROM groups WHERE id = ?').get(g.id)) upsertGroup(g)
   }
-  for (const p of SEED_PLANS) {
+  for (const p of profil === 'sonnenberg' ? SEED_PLANS : neutralePlaene()) {
     if (!db.prepare('SELECT 1 FROM plans WHERE id = ?').get(p.id)) upsertDoc('plans', p.id, p)
   }
   for (const c of SEED_CONTACTS) {
@@ -52,13 +94,30 @@ export function seedDatabase(): void {
     setSetting('scenarioContentVersion', String(SCENARIO_CONTENT_VERSION))
   }
 
-  if (!getSetting('integrations')) saveIntegrations(LEER_INTEGRATIONEN)
-  else {
+  if (!getSetting('integrations')) {
+    const leer: IntegrationSettings = {
+      ...INTEGRATION_VORGABEN,
+      ...(profil === 'sonnenberg'
+        ? {
+            organization: { name: 'SONNENBERG Kompetenzzentrum', shortName: 'SONNENBERG' },
+            smsGateway: { ...INTEGRATION_VORGABEN.smsGateway, senderId: 'SONNENBERG' },
+            hotline: { enabled: true, number: NOTFALLNUMMER },
+          }
+        : {}),
+    }
+    saveIntegrations(leer)
+  } else {
     // integrations() ergänzt fehlende Abschnitte neuer Versionen mit den Vorgaben
     const bisher = integrations()
-    // Bestehende Installationen kennen die echte Nummer noch nicht
-    if (ALTE_PLATZHALTER.includes((bisher.hotline?.number ?? '').trim())) {
-      bisher.hotline = { enabled: true, number: NOTFALLNUMMER }
+    if (profil === 'sonnenberg') {
+      // Bestehende Sonnenberg-Installationen kennen die echte Nummer oder den
+      // Organisationsnamen noch nicht
+      if (ALTE_PLATZHALTER.includes((bisher.hotline?.number ?? '').trim())) {
+        bisher.hotline = { enabled: true, number: NOTFALLNUMMER }
+      }
+      if (!bisher.organization.name) {
+        bisher.organization = { name: 'SONNENBERG Kompetenzzentrum', shortName: 'SONNENBERG' }
+      }
     }
     saveIntegrations(bisher)
   }
@@ -67,7 +126,13 @@ export function seedDatabase(): void {
 
   if (erstinstallation) {
     setSetting('initialized', 'true')
-    addAudit('system', 'Alarmserver initialisiert – Grundkonfiguration für SONNENBERG Kompetenzzentrum eingerichtet.')
+    if (profil === 'standard') setSetting('setupPending', 'true')
+    addAudit(
+      'system',
+      profil === 'sonnenberg'
+        ? 'Alarmserver initialisiert – Grundkonfiguration für SONNENBERG Kompetenzzentrum eingerichtet.'
+        : 'Alarmserver initialisiert – neutrale Grundkonfiguration; Einrichtungsassistent im Portal offen.',
+    )
   }
 }
 
@@ -82,15 +147,16 @@ export function ensureAdmin(): void {
 
   const vorhandenerAdmin = users.find((u) => u.role === 'admin')
   const salt = newSalt()
+  const ersterStandort = (db.prepare('SELECT id FROM locations ORDER BY name LIMIT 1').get() as { id: string } | undefined)?.id ?? ''
   const admin: StoredUser = vorhandenerAdmin ?? {
     id: 'u-admin',
-    firstName: 'Stefan',
-    lastName: 'Gross',
+    firstName: 'System',
+    lastName: 'Administrator',
     email: INITIAL_ADMIN_EMAIL,
     phone: '',
     role: 'admin',
     groupIds: ['gr-krisenstab', 'gr-alle'],
-    locationId: 'loc-baar',
+    locationId: ersterStandort,
     language: 'de',
   }
   upsertUser({

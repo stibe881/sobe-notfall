@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import type { AppState, User } from './types'
+import type { AppState, ServerInfo, User } from './types'
 
 /**
  * Verbindung zum Alarmserver (Live-Modus).
@@ -9,6 +9,7 @@ import type { AppState, User } from './types'
  */
 
 const URL_KEY = 'sobe-server-url'
+const FALLBACK_KEY = 'sobe-server-fallback'
 const TOKEN_KEY = 'sobe-server-token'
 
 /**
@@ -19,13 +20,19 @@ const TOKEN_KEY = 'sobe-server-token'
 export const DEFAULT_SERVER_URL = 'https://temp-gross-ict.ch'
 
 let serverUrlCache = DEFAULT_SERVER_URL
+let fallbackUrlCache: string | null = null
 let tokenCache: string | null = null
 
 /** Beim Start einmalig aus dem Gerätespeicher laden */
 export async function loadApiSettings(): Promise<void> {
   try {
-    const [url, token] = await Promise.all([AsyncStorage.getItem(URL_KEY), AsyncStorage.getItem(TOKEN_KEY)])
+    const [url, fallback, token] = await Promise.all([
+      AsyncStorage.getItem(URL_KEY),
+      AsyncStorage.getItem(FALLBACK_KEY),
+      AsyncStorage.getItem(TOKEN_KEY),
+    ])
     if (url) serverUrlCache = url
+    fallbackUrlCache = fallback
     tokenCache = token
   } catch {
     // kein Speicher verfügbar – Standardwerte bleiben
@@ -33,6 +40,7 @@ export async function loadApiSettings(): Promise<void> {
 }
 
 export const serverUrl = () => serverUrlCache
+export const fallbackUrl = () => fallbackUrlCache
 
 export async function setServerUrl(url: string): Promise<void> {
   serverUrlCache = url.trim().replace(/\/+$/, '')
@@ -40,6 +48,56 @@ export async function setServerUrl(url: string): Promise<void> {
     await AsyncStorage.setItem(URL_KEY, serverUrlCache)
   } catch {
     // Adresse gilt dann nur für diese Sitzung
+  }
+}
+
+/**
+ * Ausweichserver (Redundanz): Fällt der eingestellte Alarmserver aus, versucht
+ * die App jede Anfrage automatisch dort – und bleibt bei Erfolg darauf, bis der
+ * Hauptserver zurück ist.
+ */
+export async function setFallbackUrl(url: string | null): Promise<void> {
+  const bereinigt = url?.trim().replace(/\/+$/, '') || null
+  if (bereinigt === fallbackUrlCache) return
+  fallbackUrlCache = bereinigt
+  try {
+    if (bereinigt) await AsyncStorage.setItem(FALLBACK_KEY, bereinigt)
+    else await AsyncStorage.removeItem(FALLBACK_KEY)
+  } catch {
+    // Adresse gilt dann nur für diese Sitzung
+  }
+}
+
+/** Aktiven Server und Ausweichserver tauschen – nach einem gelungenen Ausweichen */
+async function wechsleAufFallback(): Promise<void> {
+  if (!fallbackUrlCache) return
+  const bisher = serverUrlCache
+  await setServerUrl(fallbackUrlCache)
+  await setFallbackUrl(bisher)
+}
+
+/** Wie oft höchstens geprüft wird, ob der Hauptserver zurück ist */
+const RUECKKEHR_PRUEFUNG_MS = 5 * 60_000
+let letzteRueckkehrPruefung = 0
+
+/**
+ * Serverauskunft aus dem Datenbestand übernehmen: Ausweichadresse merken und –
+ * hängt die App gerade am Standby – regelmässig prüfen, ob der Hauptserver
+ * wieder erreichbar ist. Zurück auf den Hauptserver, sobald er antwortet,
+ * sonst gingen dort ausgelöste Änderungen beim nächsten Abgleich verloren.
+ */
+export async function merkeServerInfo(info: ServerInfo | undefined): Promise<void> {
+  if (!info) return
+  await setFallbackUrl(info.fallbackUrl)
+  if (info.rolle !== 'standby' || !info.fallbackUrl) return
+  const jetzt = Date.now()
+  if (jetzt - letzteRueckkehrPruefung < RUECKKEHR_PRUEFUNG_MS) return
+  letzteRueckkehrPruefung = jetzt
+  try {
+    const antwort = await fetch(`${info.fallbackUrl}/api/health`)
+    if (antwort.ok) await wechsleAufFallback()
+  } catch {
+    // Hauptserver weiterhin weg – beim Standby bleiben
   }
 }
 
@@ -63,19 +121,36 @@ export class ApiError extends Error {
   }
 }
 
+async function rohAnfrage(basis: string, pfad: string, optionen: RequestInit): Promise<Response> {
+  return fetch(basis + '/api' + pfad, {
+    ...optionen,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(tokenCache ? { Authorization: `Bearer ${tokenCache}` } : {}),
+      ...(optionen.headers ?? {}),
+    },
+  })
+}
+
 async function anfrage<T>(pfad: string, optionen: RequestInit = {}): Promise<T> {
   let antwort: Response
   try {
-    antwort = await fetch(serverUrl() + '/api' + pfad, {
-      ...optionen,
-      headers: {
-        'Content-Type': 'application/json',
-        ...(tokenCache ? { Authorization: `Bearer ${tokenCache}` } : {}),
-        ...(optionen.headers ?? {}),
-      },
-    })
+    antwort = await rohAnfrage(serverUrl(), pfad, optionen)
   } catch {
-    throw new ApiError(`Der Alarmserver unter ${serverUrl()} ist nicht erreichbar.`, 0)
+    // Redundanz: denselben Aufruf beim Ausweichserver versuchen. Klappt er,
+    // wechselt die App dorthin – die Sitzung gilt weiter, der Standby führt
+    // die replizierten Konten und Sitzungen des Hauptservers.
+    const ausweich = fallbackUrlCache
+    if (ausweich && ausweich !== serverUrl()) {
+      try {
+        antwort = await rohAnfrage(ausweich, pfad, optionen)
+        await wechsleAufFallback()
+      } catch {
+        throw new ApiError(`Der Alarmserver unter ${serverUrl()} ist nicht erreichbar (auch nicht der Ausweichserver).`, 0)
+      }
+    } else {
+      throw new ApiError(`Der Alarmserver unter ${serverUrl()} ist nicht erreichbar.`, 0)
+    }
   }
   const text = await antwort.text()
   const daten = text ? JSON.parse(text) : null
@@ -91,6 +166,12 @@ export interface SetupInfo {
   userCount: number
   /** Single Sign-On eingerichtet – die Anmeldemaske zeigt dann den Microsoft-Knopf */
   sso?: boolean
+  /** Name der Organisation – erscheint vor der Anmeldung */
+  organization?: string | null
+  /** Redundanz: Rolle dieses Servers und Ausweichadresse */
+  serverRolle?: 'primary' | 'standby' | null
+  fallbackUrl?: string | null
+  failover?: boolean
 }
 
 export const api = {

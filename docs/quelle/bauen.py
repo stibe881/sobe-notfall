@@ -10,13 +10,14 @@ import base64, io, itertools, os, re, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 EINGEBETTET = sys.argv[1] if len(sys.argv) > 1 else None
 
-import schale, handbuch1, handbuch2, handbuch3
+import schale, handbuch1, handbuch2, handbuch3, handbuch4
 
 WURZEL = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATEIEN = [
     ('handbuch-1-administration', handbuch1),
     ('handbuch-2-krisenstab', handbuch2),
     ('handbuch-3-mitarbeitende', handbuch3),
+    ('handbuch-4-installation', handbuch4),
 ]
 
 def einbetten(html):

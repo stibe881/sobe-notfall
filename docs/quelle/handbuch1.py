@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 TITEL = 'SOBE Handbuch Administration'
 TITELSEITE = dict(
-    rolle='SOBE Notfall &middot; Handbuch 1 von 3',
+    rolle='SOBE Notfall &middot; Handbuch 1 von 4',
     titel='Administration',
     untertitel='Für die Schulleitung und die Systemverantwortlichen',
     vorspann='Sie richten das Notfallsystem ein, halten es aktuell und verantworten, wer damit alarmieren darf. Dieses Handbuch führt durch das Webportal und durch die Teile der App, die nur Ihnen offenstehen.',
@@ -631,8 +631,9 @@ KOERPER = r"""
 
 <footer>
   <p>
-    <b>SOBE Notfall &middot; Handbuch 1 von 3 &middot; Administration.</b>
-    Für Krisenstabsmitglieder gilt Handbuch 2, für Mitarbeitende Handbuch 3.
+    <b>SOBE Notfall &middot; Handbuch 1 von 4 &middot; Administration.</b>
+    Für Krisenstabsmitglieder gilt Handbuch 2, für Mitarbeitende Handbuch 3,
+    für Installation und technischen Betrieb Handbuch 4.
   </p>
   <p>
     Die Bildschirmfotos stammen aus dem Demo-Modus. Angaben zu Rechtsgrundlagen in den

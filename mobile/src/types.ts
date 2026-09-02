@@ -243,6 +243,8 @@ export interface AccessCode {
 }
 
 export interface IntegrationSettings {
+  /** Name und Auftritt der Organisation – kommt pro Kunde vom Alarmserver */
+  organization?: { name: string; shortName: string }
   smsGateway: { enabled: boolean; provider: string; senderId: string; username: string; password: string; httpUrl: string; sentCount: number }
   telephony: { enabled: boolean; tenantId: string; clientId: string; clientSecret: string; organizerEmail: string }
   teams: { enabled: boolean; tenant: string; webhookUrl: string }
@@ -297,4 +299,13 @@ export interface AppState {
   integrations: IntegrationSettings
   contacts: EmergencyContact[]
   audit: AuditEntry[]
+  /** Rolle und Ausweichadresse des Alarmservers (nur im Live-Modus vorhanden) */
+  serverInfo?: ServerInfo
+}
+
+/** Auskunft des Servers zur Redundanz: Rolle dieser Instanz und Partneradresse */
+export interface ServerInfo {
+  rolle: 'primary' | 'standby' | null
+  fallbackUrl: string | null
+  failover: boolean
 }

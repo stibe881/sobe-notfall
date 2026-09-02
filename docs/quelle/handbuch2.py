@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 TITEL = 'SOBE Handbuch Krisenstab'
 TITELSEITE = dict(
-    rolle='SOBE Notfall &middot; Handbuch 2 von 3',
+    rolle='SOBE Notfall &middot; Handbuch 2 von 4',
     titel='Krisenstab',
     untertitel='Für die Mitglieder des Krisenstabs',
     vorspann='Sie werden aufgeboten, wenn ein Ereignis eine einzelne Lehrperson oder Gruppenleitung übersteigt. Dieses Handbuch zeigt, was Sie im Ernstfall auf dem Telefon und am Rechner tun &ndash; und was Sie zwischen den Ereignissen pflegen.',
@@ -413,7 +413,7 @@ KOERPER = r"""
 
 <footer>
   <p>
-    <b>SOBE Notfall &middot; Handbuch 2 von 3 &middot; Krisenstab.</b>
+    <b>SOBE Notfall &middot; Handbuch 2 von 4 &middot; Krisenstab.</b>
     Für die Systemverwaltung gilt Handbuch 1, für Mitarbeitende Handbuch 3.
   </p>
   <p>
