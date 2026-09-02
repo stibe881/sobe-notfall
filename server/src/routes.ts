@@ -109,8 +109,22 @@ router.get('/auth/sso/callback', async (req, res) => {
   const basis = basisAdresse(req)
   const zurueck = (target: 'web' | 'app', fehler?: string, token?: string) => {
     const teil = fehler ? `error=${encodeURIComponent(fehler)}` : `token=${encodeURIComponent(token ?? '')}`
-    if (target === 'app') res.redirect(`sobenotfall://auth?${teil}`)
-    else res.redirect(fehler ? `${basis}/#ssoFehler=${encodeURIComponent(fehler)}` : `${basis}/#sso=${encodeURIComponent(token ?? '')}`)
+    if (target === 'app') {
+      // Nicht per 302 aufs App-Schema: iOS' Anmelde-Fenster folgt einer
+      // Weiterleitung auf ein eigenes Schema nicht zuverlässig und verschluckt
+      // dabei mitunter das Token. Eine kleine Seite springt per JavaScript –
+      // das fängt ASWebAuthenticationSession verlässlich ab.
+      const ziel = `sobenotfall://auth?${teil}`
+      res.set('Content-Type', 'text/html; charset=utf-8').send(
+        `<!doctype html><meta charset="utf-8"><title>SOBE Notfall</title>` +
+          `<body style="font-family:-apple-system,sans-serif;background:#0f172a;color:#cbd5e1;text-align:center;padding:48px 24px">` +
+          `<p>Anmeldung abgeschlossen – zurück zur App …</p>` +
+          `<p><a href="${ziel}" style="color:#fff">Weiter zur SOBE-Notfall-App</a></p>` +
+          `<script>location.replace(${JSON.stringify(ziel)})</script>`,
+      )
+    } else {
+      res.redirect(fehler ? `${basis}/#ssoFehler=${encodeURIComponent(fehler)}` : `${basis}/#sso=${encodeURIComponent(token ?? '')}`)
+    }
   }
 
   const state = String(req.query.state ?? '')
