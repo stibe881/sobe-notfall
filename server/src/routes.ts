@@ -6,6 +6,11 @@ import {
 import { addClient } from './events.js'
 import { broadcast } from './events.js'
 import { UEBUNG, alarmPush, ausgehendeWebhooks, entwarnungPush, lagemeldungPush, testPush } from './engine.js'
+import {
+  erstelleKonferenz, graphToken, lorawanTokenAusRequest, lorawanTokenGueltig,
+  mergeIntegrationen, neuesLorawanToken, normierteSerie, parseLorawanUplink, sendeSms, sendeTeamsKarte,
+} from './integrationen.js'
+import { sendeAlarmKanaele, sendeInfoKanaele } from './kanaele.js'
 import { geraeteProPerson, letzterTestpush, pushDienstStatus, registerPushToken, removePushToken } from './push.js'
 import { readdirSync, statSync } from 'node:fs'
 import { homedir } from 'node:os'
@@ -13,8 +18,8 @@ import { join, resolve } from 'node:path'
 import { aktuellerJob, starteUpdate, updateLaeuft, versionsInfo, type UpdateScope } from './update.js'
 import { ensureAdmin } from './setup.js'
 import {
-  addAudit, allAlarms, allGroups, allLocations, allLoneWork, allStoredUsers, createAlarm, deleteDoc, deleteUser, findAlarm, findStoredUser,
-  findStoredUserByEmail, fullState, saveAlarm, saveIntegrations, uid, upsertDoc, upsertGroup,
+  addAudit, allAlarms, allButtons, allGroups, allLocations, allLoneWork, allStoredUsers, createAlarm, deleteDoc, deleteUser, findAlarm,
+  findStoredUser, findStoredUserByEmail, fullState, integrations, saveAlarm, saveIntegrations, uid, upsertDoc, upsertGroup,
   upsertLocation, upsertUser,
 } from './store.js'
 import type { AckStatus, Alarm, AlarmUpdate, Role, StoredUser } from './types.js'
@@ -333,10 +338,187 @@ router.delete('/locations/:id', auth, adminOnly, (req, res) => {
 })
 
 router.post('/integrations', auth, adminOnly, (req, res) => {
-  saveIntegrations(req.body)
+  // Maskierte Geheimnisse aus dem Client lassen den gespeicherten Wert unangetastet
+  saveIntegrations(mergeIntegrationen(req.body ?? {}, integrations()))
   addAudit('admin', 'Integrationen gespeichert')
   broadcast('state')
   res.json({ ok: true })
+})
+
+// ---------- Integrationen: Verbindungstests ----------
+
+/** Test-SMS an die eigene Telefonnummer – prüft Zugangsdaten und Absender */
+router.post('/integrations/sms/test', auth, adminOnly, async (req: AuthRequest, res) => {
+  const sms = integrations().smsGateway
+  if (!sms.enabled || !((sms.provider === 'http' && sms.httpUrl) || (sms.username && sms.password))) {
+    res.status(400).json({ error: 'Das SMS-Gateway ist nicht vollständig eingerichtet (Anbieter, Zugangsdaten).' })
+    return
+  }
+  const nummer = String(req.body?.to ?? req.user!.phone).trim()
+  if (!nummer) {
+    res.status(400).json({ error: 'Keine Telefonnummer: im eigenen Profil hinterlegen oder im Test angeben.' })
+    return
+  }
+  const ergebnis = await sendeSms(sms, [nummer], 'Testmeldung SOBE Notfall: Das SMS-Gateway ist eingerichtet. Diese Meldung ist kein Alarm.')
+  const r = [...ergebnis.values()][0]
+  if (!r?.ok) {
+    res.status(502).json({ error: `Versand fehlgeschlagen: ${r?.fehler ?? 'unbekannter Fehler'}` })
+    return
+  }
+  const aktuell = integrations()
+  aktuell.smsGateway.sentCount = (aktuell.smsGateway.sentCount ?? 0) + 1
+  saveIntegrations(aktuell)
+  addAudit('system', `Test-SMS an ${nummer} versendet (${sms.provider}).`, req.user!.id)
+  broadcast('state')
+  res.json({ ok: true })
+})
+
+/** Testkarte in den Teams-Kanal */
+router.post('/integrations/teams/test', auth, adminOnly, async (req: AuthRequest, res) => {
+  const teams = integrations().teams
+  if (!teams.enabled || !teams.webhookUrl) {
+    res.status(400).json({ error: 'Die Teams-Integration ist nicht eingerichtet (Kanal-Webhook-URL).' })
+    return
+  }
+  const r = await sendeTeamsKarte(teams, {
+    titel: 'Testmeldung SOBE Notfall',
+    text: 'Die Teams-Integration ist eingerichtet. Diese Meldung ist kein Alarm.',
+  })
+  if (!r.ok) {
+    res.status(502).json({ error: `Teams-Meldung fehlgeschlagen: ${r.fehler}` })
+    return
+  }
+  addAudit('system', 'Testmeldung in den Teams-Kanal versendet.', req.user!.id)
+  res.json({ ok: true })
+})
+
+/** Verbindung zu Microsoft Graph prüfen und eine Test-Konferenz anlegen */
+router.post('/integrations/telephony/test', auth, adminOnly, async (req: AuthRequest, res) => {
+  const tel = integrations().telephony
+  if (!tel.enabled || !tel.tenantId || !tel.clientId || !tel.clientSecret) {
+    res.status(400).json({ error: 'Sprachanrufe/Telefonkonferenz sind nicht eingerichtet (Mandant, Anwendungs-ID, Geheimnis).' })
+    return
+  }
+  try {
+    await graphToken(tel)
+  } catch (fehler) {
+    res.status(502).json({ error: (fehler as Error).message })
+    return
+  }
+  if (!tel.organizerEmail) {
+    res.json({ ok: true, hinweis: 'Anmeldung bei Microsoft erfolgreich. Für Telefonkonferenzen fehlt noch der Organisator.' })
+    return
+  }
+  try {
+    const konferenz = await erstelleKonferenz(tel, 'SOBE Notfall – Verbindungstest (kein Alarm)')
+    addAudit('system', 'Verbindungstest Sprachanrufe/Telefonkonferenz erfolgreich.', req.user!.id)
+    res.json({ ok: true, joinUrl: konferenz.joinUrl })
+  } catch (fehler) {
+    res.status(502).json({ error: `Anmeldung erfolgreich, aber die Test-Konferenz schlug fehl: ${(fehler as Error).message}` })
+  }
+})
+
+// ---------- LoRaWAN: Alarmknöpfe ----------
+
+/** Endpunkt-Adresse und Token für die Konfiguration im Netzserver – nur Administration */
+router.get('/integrations/lorawan', auth, adminOnly, (req, res) => {
+  const lorawan = integrations().lorawan
+  const basis = process.env.SOBE_PUBLIC_URL?.replace(/\/+$/, '') || `${req.protocol}://${req.get('host')}`
+  res.json({ url: `${basis}/api/hooks/lorawan`, token: lorawan.token || null, enabled: lorawan.enabled, provider: lorawan.provider })
+})
+
+/** Neues Token erzeugen – das alte gilt danach nicht mehr */
+router.post('/integrations/lorawan/token', auth, adminOnly, (req: AuthRequest, res) => {
+  const aktuell = integrations()
+  aktuell.lorawan.token = neuesLorawanToken()
+  saveIntegrations(aktuell)
+  addAudit('admin', 'Neues Zugangstoken für den LoRaWAN-Endpunkt erzeugt.', req.user!.id)
+  broadcast('state')
+  res.json({ token: aktuell.lorawan.token })
+})
+
+/** Zwei Knopfdrücke kurz nacheinander gelten als ein Ereignis */
+const KNOPF_DEBOUNCE_MS = 2 * 60_000
+
+/**
+ * Uplink-Endpunkt für das LoRaWAN-Netz (TTN, ChirpStack) oder GSM-Bridges.
+ * Statusmeldungen aktualisieren Batterie und «letztes Signal»; ein Knopfdruck
+ * löst den Alarm gemäss der Konfiguration des Knopfs aus.
+ */
+router.post('/hooks/lorawan', async (req, res) => {
+  const lorawan = integrations().lorawan
+  if (!lorawan.enabled) {
+    res.status(403).json({ error: 'Der LoRaWAN-Endpunkt ist unter Integrationen nicht aktiviert.' })
+    return
+  }
+  const token = lorawanTokenAusRequest(req.header('authorization'), typeof req.query.token === 'string' ? req.query.token : undefined)
+  if (!lorawanTokenGueltig(lorawan, token)) {
+    res.status(401).json({ error: 'Ungültiges Zugangstoken.' })
+    return
+  }
+  const ereignis = parseLorawanUplink(req.body)
+  if (!ereignis) {
+    res.status(400).json({ error: 'Uplink nicht verstanden – erwartet TTN v3, ChirpStack v4 oder { serial, event, battery, lat, lng }.' })
+    return
+  }
+  const knopf = allButtons().find((b) => normierteSerie(b.serial) === normierteSerie(ereignis.geraet))
+  if (!knopf) {
+    res.status(404).json({ error: `Kein Alarmknopf mit der Seriennummer ${ereignis.geraet} registriert.` })
+    return
+  }
+
+  const aktualisiert = {
+    ...knopf,
+    lastSeen: Date.now(),
+    batteryPct: ereignis.batteryPct ?? knopf.batteryPct,
+    gps: ereignis.gps ?? knopf.gps,
+  }
+  upsertDoc('buttons', knopf.id, aktualisiert)
+
+  if (!ereignis.alarm) {
+    broadcast('state')
+    res.json({ ok: true, alarm: null })
+    return
+  }
+
+  // Doppelte Drücke desselben Knopfs innert kurzer Zeit nicht erneut auslösen
+  const laufend = allAlarms().find(
+    (a) => a.status === 'active' && a.triggeredVia === 'button' && a.message.includes(knopf.serial) && Date.now() - a.triggeredAt < KNOPF_DEBOUNCE_MS,
+  )
+  if (laufend) {
+    broadcast('state')
+    res.json({ ok: true, alarm: laufend.id, merged: true })
+    return
+  }
+
+  const alarm = createAlarm({
+    scenarioId: knopf.scenarioId ?? 'sc-gewalt',
+    message: `${knopf.messageTemplate} (Knopf: ${knopf.name}, ${knopf.serial}${
+      aktualisiert.gps ? `, GPS ${aktualisiert.gps.lat.toFixed(4)}/${aktualisiert.gps.lng.toFixed(4)}` : ''
+    })`,
+    silent: true,
+    requireAck: true,
+    channels: ['push', 'sms'],
+    groupIds: knopf.targetGroupIds,
+    locationIds: knopf.locationId ? [knopf.locationId] : [],
+    triggeredByUserId: knopf.assignedUserId ?? 'system',
+    triggeredVia: 'button',
+    escalation: [
+      { afterMinutes: knopf.escalateToEmergencyServicesAfterMin, channels: ['voice', 'sms'], groupIds: ['gr-krisenstab'], notifyEmergencyServices: true },
+    ],
+  })
+  saveAlarm(alarm)
+  addAudit('alarm', `Alarmknopf ausgelöst: ${knopf.name} (${knopf.serial}) – stille Alarmierung`, knopf.assignedUserId)
+  broadcast('state')
+  res.json({ ok: true, alarm: alarm.id })
+  await alarmPush(alarm)
+  await sendeAlarmKanaele(alarm)
+  await ausgehendeWebhooks(alarm)
+})
+
+/** Rückrufe der Microsoft-Graph-Anrufschnittstelle – nur bestätigen */
+router.post('/graph/callback', (_req, res) => {
+  res.status(202).end()
 })
 
 // ---------- Alarme ----------
@@ -419,8 +601,12 @@ router.post('/alarms', auth, async (req: AuthRequest, res) => {
     addAudit('alarm', `${praefix}Weitere Meldung zum laufenden Alarm von ${ausloeser.firstName} ${ausloeser.lastName}: ${alarm.message}`, ausloeser.id)
     broadcast('state')
     res.json({ alarm: zusammengefuehrt, merged: true })
-    if (neueEmpfaenger.length) await alarmPush(zusammengefuehrt, neueEmpfaenger)
+    if (neueEmpfaenger.length) {
+      await alarmPush(zusammengefuehrt, neueEmpfaenger)
+      await sendeAlarmKanaele(zusammengefuehrt, neueEmpfaenger)
+    }
     await lagemeldungPush(zusammengefuehrt, update, [...bekannt])
+    await sendeInfoKanaele(zusammengefuehrt, 'meldung', update.message)
     return
   }
 
@@ -430,6 +616,7 @@ router.post('/alarms', auth, async (req: AuthRequest, res) => {
   // Versand nach der Antwort – ein langsamer Push darf die Auslösung nicht bremsen
   res.json({ alarm, merged: false })
   await alarmPush(alarm)
+  await sendeAlarmKanaele(alarm)
   if (!alarm.drill) await ausgehendeWebhooks(alarm)
 })
 
@@ -490,6 +677,7 @@ router.post('/alarms/:id/update', auth, async (req: AuthRequest, res) => {
     for (const u of allStoredUsers()) if (u.groupIds.some((g) => krisenGruppen.includes(g))) empfaenger.add(u.id)
   }
   await lagemeldungPush(aktualisiert, update, [...empfaenger])
+  await sendeInfoKanaele(aktualisiert, kind, update.message)
 })
 
 /** Bereitschaft: Geräte pro Standort, Sicherung, Push-Dienst, letzte Testmeldung */
@@ -612,7 +800,10 @@ router.post('/alarms/:id/end', auth, async (req: AuthRequest, res) => {
   broadcast('state')
   res.json({ alarm: beendet })
   // Ein bereits beendeter Alarm soll nicht bei jedem Klick erneut «entwarnen»
-  if (alarm.status === 'active') await entwarnungPush(beendet)
+  if (alarm.status === 'active') {
+    await entwarnungPush(beendet)
+    await sendeInfoKanaele(beendet, 'entwarnung', note || 'Der Alarm ist beendet.')
+  }
 })
 
 // ---------- Alleinarbeit ----------

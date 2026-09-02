@@ -1,4 +1,5 @@
 import { broadcast } from './events.js'
+import { sendeAlarmKanaele } from './kanaele.js'
 import {
   letzterTestpush, markiereOhneGeraet, merkeTestpush, pruefeEmpfangsbestaetigungen, pruefePushDienst, sendPush,
 } from './push.js'
@@ -148,6 +149,7 @@ export async function tick(): Promise<void> {
     saveAlarm(aktualisiert)
     addAudit('alarm', `Eskalation Stufe ${aktualisiert.escalationStage} für Alarm ${alarm.id}`)
     await alarmPush(aktualisiert, empfaenger.map((e) => e.id))
+    await sendeAlarmKanaele(aktualisiert, empfaenger.map((e) => e.id))
     veraendert = true
   }
 
@@ -173,6 +175,7 @@ export async function tick(): Promise<void> {
     saveAlarm(alarm)
     addAudit('alarm', `Automatischer Alleinarbeiter-Alarm: Timer abgelaufen (${person?.firstName} ${person?.lastName})`, sitzung.userId)
     await alarmPush(alarm)
+    await sendeAlarmKanaele(alarm)
     await ausgehendeWebhooks(alarm)
     veraendert = true
   }

@@ -5,7 +5,7 @@ import type { AppMode, AppState, Alarm, AlarmButton, AlarmPlan, Channel, Deliver
 /** Datenbestand, wie ihn der Alarmserver liefert – ohne lokale Anteile */
 export type ServerData = Omit<AppState, 'mode' | 'session' | 'currentUserId' | 'scenarioContentVersion' | 'authVersion'>
 import { CHANNEL_LABELS, LONE_WORK_DEFAULT_GROUPS } from './types'
-import { LIVE_INITIAL_PASSWORD, SCENARIO_CONTENT_VERSION, SEED_SCENARIOS, SEED_USERS, createInitialState, createLiveInitialState } from './data/seed'
+import { LIVE_INITIAL_PASSWORD, SCENARIO_CONTENT_VERSION, SEED_SCENARIOS, SEED_USERS, createInitialState, createLiveInitialState, integrationenMitVorgaben } from './data/seed'
 import { authenticate, hashPassword, passwordProblem, randomSalt, verifyPassword } from './lib/auth'
 import { ApiError, api, authToken, setAuthToken, subscribeToServer } from './lib/api'
 import { LEGACY_EMOJI_TO_ICON } from './components/ScenarioIcon'
@@ -552,7 +552,8 @@ function reducer(state: AppState, action: Action): AppState {
         alarms: d.alarms ?? [],
         buttons: d.buttons ?? state.buttons,
         loneWorkSessions: d.loneWorkSessions ?? [],
-        integrations: d.integrations ?? state.integrations,
+        // Ein älterer Server kennt neue Abschnitte (Telefonie, LoRaWAN) noch nicht
+        integrations: d.integrations ? integrationenMitVorgaben(d.integrations) : state.integrations,
         contacts: d.contacts ?? state.contacts,
         audit: d.audit ?? [],
         mode: 'live',
@@ -947,8 +948,10 @@ function loadStateFor(mode: AppMode): AppState {
           contactIds: s.contactIds ?? [],
           icon: LEGACY_EMOJI_TO_ICON[s.icon] ?? s.icon,
         }))
+        // Fehlende Integrations-Abschnitte neuer Versionen (Telefonie, LoRaWAN) ergänzen
+        parsed.integrations = integrationenMitVorgaben(parsed.integrations)
         // Platzhalternummer aus früheren Versionen durch die echte Notfallnummer ersetzen
-        if (parsed.integrations?.hotline && ['', '+41 41 000 11 22'].includes(parsed.integrations.hotline.number.trim())) {
+        if (parsed.integrations.hotline && ['', '+41 41 000 11 22'].includes(parsed.integrations.hotline.number.trim())) {
           parsed.integrations = { ...parsed.integrations, hotline: { enabled: true, number: '+41 41 767 49 48' } }
         }
         return migrateAuth(parsed)

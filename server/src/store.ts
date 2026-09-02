@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
-import { db, getSetting, setSetting } from './db.js'
+import { db } from './db.js'
+import { ladeIntegrationen, maskiereIntegrationen, speichereIntegrationen } from './integrationen.js'
 import { publicUser } from './auth.js'
 import type {
   Alarm, AlarmButton, AlarmPlan, AuditEntry, Channel, Delivery, EmergencyContact, EscalationLevel,
@@ -87,11 +88,11 @@ export function allAudit(): AuditEntry[] {
 }
 
 export function integrations(): IntegrationSettings {
-  return JSON.parse(getSetting('integrations') ?? '{}') as IntegrationSettings
+  return ladeIntegrationen()
 }
 
 export function saveIntegrations(value: IntegrationSettings): void {
-  setSetting('integrations', JSON.stringify(value))
+  speichereIntegrationen(value)
 }
 
 export function fullState(): ServerState {
@@ -104,7 +105,8 @@ export function fullState(): ServerState {
     alarms: allAlarms(),
     buttons: allButtons(),
     loneWorkSessions: allLoneWork(),
-    integrations: integrations(),
+    // Geheimnisse (Gateway-Passwörter, Tokens) gehen nur maskiert an die Clients
+    integrations: maskiereIntegrationen(integrations()),
     contacts: allContacts(),
     audit: allAudit(),
   }

@@ -200,6 +200,8 @@ export interface AlarmButton {
   messageTemplate: string
   targetGroupIds: string[]
   escalateToEmergencyServicesAfterMin: number
+  /** Szenario des ausgelösten Alarms; ohne Angabe Gewalt/Bedrohung */
+  scenarioId?: string
 }
 
 export interface LoneWorkSession {
@@ -239,9 +241,10 @@ export interface AccessCode {
 }
 
 export interface IntegrationSettings {
-  smsGateway: { enabled: boolean; provider: string; senderId: string }
-  voip: { enabled: boolean; sipServer: string }
-  teams: { enabled: boolean; tenant: string }
+  smsGateway: { enabled: boolean; provider: string; senderId: string; username: string; password: string; httpUrl: string; sentCount: number }
+  telephony: { enabled: boolean; tenantId: string; clientId: string; clientSecret: string; organizerEmail: string }
+  teams: { enabled: boolean; tenant: string; webhookUrl: string }
+  lorawan: { enabled: boolean; provider: string; token: string }
   sso: { enabled: boolean; provider: string; entityId: string }
   hrSync: { enabled: boolean; system: string; lastSync?: number }
   hotline: { enabled: boolean; number: string }

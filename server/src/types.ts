@@ -193,6 +193,8 @@ export interface AlarmButton {
   messageTemplate: string
   targetGroupIds: string[]
   escalateToEmergencyServicesAfterMin: number
+  /** Szenario des ausgelösten Alarms; ohne Angabe Gewalt/Bedrohung */
+  scenarioId?: string
 }
 
 export interface LoneWorkSession {
@@ -231,10 +233,55 @@ export interface AccessCode {
   used: number
 }
 
+/** SMS-Versand über ein Schweizer Gateway – nur noch konfigurieren, nicht mehr programmieren */
+export interface SmsGatewaySettings {
+  enabled: boolean
+  /** 'ecall' | 'aspsms' | 'http' (eigenes Gateway mit URL-Vorlage) */
+  provider: string
+  senderId: string
+  /** eCall: Benutzername · ASPSMS: Userkey */
+  username: string
+  /** Geheimnis – im Datenbestand für Clients maskiert */
+  password: string
+  /** Nur provider 'http': URL-Vorlage mit den Platzhaltern {to}, {text}, {from} */
+  httpUrl: string
+  /** Kostenzähler: bisher versendete SMS */
+  sentCount: number
+}
+
+/** Meldungen in einen Teams-Kanal des Krisenstabs */
+export interface TeamsSettings {
+  enabled: boolean
+  tenant: string
+  /** Incoming-Webhook- oder Workflows-URL des Kanals – maskiert */
+  webhookUrl: string
+}
+
+/** Sprachanruf und Telefonkonferenz über Microsoft Teams (Graph-Schnittstelle) */
+export interface TelephonySettings {
+  enabled: boolean
+  tenantId: string
+  clientId: string
+  /** Geheimnis der App-Registrierung – maskiert */
+  clientSecret: string
+  /** Organisator der Telefonkonferenzen (Teams-Konto, z. B. krisenstab@firma.ch) */
+  organizerEmail: string
+}
+
+/** Uplink-Endpunkt für LoRaWAN-/GSM-Alarmknöpfe (TTN, ChirpStack oder generisch) */
+export interface LorawanSettings {
+  enabled: boolean
+  /** 'ttn' | 'chirpstack' | 'generic' */
+  provider: string
+  /** Bearer-Token des Endpunkts – maskiert; Klartext über /integrations/lorawan */
+  token: string
+}
+
 export interface IntegrationSettings {
-  smsGateway: { enabled: boolean; provider: string; senderId: string }
-  voip: { enabled: boolean; sipServer: string }
-  teams: { enabled: boolean; tenant: string }
+  smsGateway: SmsGatewaySettings
+  telephony: TelephonySettings
+  teams: TeamsSettings
+  lorawan: LorawanSettings
   sso: { enabled: boolean; provider: string; entityId: string }
   hrSync: { enabled: boolean; system: string; lastSync?: number }
   hotline: { enabled: boolean; number: string }

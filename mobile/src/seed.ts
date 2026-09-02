@@ -987,9 +987,10 @@ export const SEED_CONTACTS: EmergencyContact[] = [
 ]
 
 export const SEED_INTEGRATIONS: IntegrationSettings = {
-  smsGateway: { enabled: true, provider: 'Swisscom Messaging', senderId: 'SONNENBERG' },
-  voip: { enabled: false, sipServer: '' },
-  teams: { enabled: true, tenant: 'sonnenberg-baar.onmicrosoft.com' },
+  smsGateway: { enabled: true, provider: 'ecall', senderId: 'SONNENBERG', username: 'sonnenberg-demo', password: 'demo-geheim', httpUrl: '', sentCount: 128 },
+  telephony: { enabled: true, tenantId: 'sonnenberg-baar.onmicrosoft.com', clientId: '00000000-demo-4000-a000-000000000000', clientSecret: 'demo-geheim', organizerEmail: 'krisenstab@sonnenberg-baar.ch' },
+  teams: { enabled: true, tenant: 'sonnenberg-baar.onmicrosoft.com', webhookUrl: 'https://sonnenbergbaar.webhook.office.com/webhookb2/demo' },
+  lorawan: { enabled: true, provider: 'ttn', token: 'lw_demo0000000000000000000000000000000000000000000000' },
   sso: { enabled: false, provider: 'Microsoft Entra ID / SAML 2.0', entityId: '' },
   hrSync: { enabled: false, system: 'Abacus HR' },
   hotline: { enabled: true, number: '+41 41 767 49 48' },
@@ -1061,9 +1062,10 @@ export function createLiveInitialState(): AppState {
     buttons: [],
     loneWorkSessions: [],
     integrations: {
-      smsGateway: { enabled: false, provider: '', senderId: 'SONNENBERG' },
-      voip: { enabled: false, sipServer: '' },
-      teams: { enabled: false, tenant: '' },
+      smsGateway: { enabled: false, provider: 'ecall', senderId: 'SONNENBERG', username: '', password: '', httpUrl: '', sentCount: 0 },
+      telephony: { enabled: false, tenantId: '', clientId: '', clientSecret: '', organizerEmail: '' },
+      teams: { enabled: false, tenant: '', webhookUrl: '' },
+      lorawan: { enabled: false, provider: 'ttn', token: '' },
       sso: { enabled: false, provider: 'Microsoft Entra ID / SAML 2.0', entityId: '' },
       hrSync: { enabled: false, system: '' },
       hotline: { enabled: false, number: '' },

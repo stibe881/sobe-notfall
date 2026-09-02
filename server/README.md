@@ -73,6 +73,7 @@ von bekannten Geheimnissen bereinigt.
 | `SOBE_ADMIN_PASSWORD` | Erstpasswort dieses Kontos | `SOBE-Start2026!` |
 | `SOBE_REPO_ROOT` | Arbeitsverzeichnis für die Aktualisierung | ein Verzeichnis über `server/` |
 | `SOBE_AUTO_RESTART` | Neustart nach der Aktualisierung (`false` schaltet ihn ab) | an |
+| `SOBE_PUBLIC_URL` | Öffentliche Adresse des Servers – für den LoRaWAN-Endpunkt und die Graph-Rückrufe | wird aus der Anfrage abgeleitet |
 | `EXPO_TOKEN` | Zugangstoken von expo.dev, nötig für den iOS-Build | – |
 
 Beim ersten Start werden Standorte, Gruppen, Szenarien, Alarmplan-Vorlagen und
@@ -231,6 +232,10 @@ Alle Endpunkte unter `/api`, Authentifizierung über `Authorization: Bearer <tok
 | POST/DELETE | `/groups`, `/locations` | Stammdaten (nur Administration) |
 | POST/DELETE | `/scenarios`, `/plans`, `/contacts`, `/buttons` | Konfiguration (Administration und Krisenstab) |
 | POST | `/integrations` | Gateways und Webhooks (nur Administration) |
+| POST | `/integrations/sms/test`, `/integrations/teams/test`, `/integrations/telephony/test` | Verbindungstests der Gateways (nur Administration) |
+| GET/POST | `/integrations/lorawan`, `/integrations/lorawan/token` | LoRaWAN-Endpunkt: Adresse und Zugangstoken (nur Administration) |
+| POST | `/hooks/lorawan` | Uplink der Alarmknöpfe (Token statt Anmeldung; TTN v3, ChirpStack v4 oder generisches JSON) |
+| POST | `/graph/callback` | Rückrufe der Microsoft-Graph-Anrufschnittstelle |
 | POST | `/alarms` | Alarm auslösen |
 | POST | `/alarms/:id/ack` | Quittieren oder ablehnen |
 | POST | `/alarms/:id/end` | Entwarnung (Administration und Krisenstab) |
@@ -241,6 +246,39 @@ Alle Endpunkte unter `/api`, Authentifizierung über `Authorization: Bearer <tok
 | GET | `/update/job` | Fortschritt der laufenden Aktualisierung |
 | POST | `/update` | Aktualisierung starten (`scope`: `server` oder `server+ios`) |
 
+## Integrationen
+
+Alle vier Integrationen sind umgesetzt und werden ausschliesslich im
+Administrationsportal unter **Integrationen** konfiguriert:
+
+- **SMS-Gateway** – eCall oder ASPSMS (Schweizer Anbieter) mit Zugangsdaten und
+  Absenderkennung, alternativ ein eigenes HTTP-Gateway über eine URL-Vorlage
+  mit `{to}`, `{text}`, `{from}`. Versand bei Alarm, Lagemeldung und Entwarnung
+  an alle Empfänger mit Kanal «SMS»; Zustellstatus je Person in der
+  Alarmzentrale, Kostenzähler im Portal, Test-SMS an die eigene Nummer.
+- **Microsoft Teams** – Karte in einen Kanal des Krisenstabs über eine
+  Workflows-/Incoming-Webhook-URL. Alarm (rot), Lagemeldung und Entwarnung
+  (grün) erscheinen als Adaptive Card mit Fakten und Testknopf im Portal.
+- **Sprachanruf & Telefonkonferenz über Teams** – App-Registrierung in
+  Microsoft Entra ID (Mandant, Anwendungs-ID, Geheimnis) mit den
+  Anwendungsberechtigungen `OnlineMeetings.ReadWrite.All` und
+  `Calls.Initiate.All`. Kanal «Sprachanruf» lässt die Empfänger in Teams
+  klingeln; Kanal «Telefonkonferenz» eröffnet eine Teams-Besprechung im Namen
+  des hinterlegten Organisators und verteilt den Beitrittslink per Push und in
+  den Teams-Kanal.
+- **LoRaWAN-Netz / Alarmknöpfe** – der Endpunkt `/api/hooks/lorawan` nimmt
+  Uplinks von The Things Network (v3), ChirpStack (v4) oder generischem JSON
+  entgegen, geschützt durch ein Zugangstoken aus dem Portal. Statusmeldungen
+  aktualisieren Batterie und «letztes Signal» der registrierten Knöpfe
+  (Zuordnung über Seriennummer/DevEUI); ein Knopfdruck löst den am Knopf
+  hinterlegten stillen Alarm mit Eskalation aus, doppelte Drücke werden
+  zusammengefasst.
+
+Geheimnisse (Gateway-Passwörter, Webhook-URL, Client Secret, Token) speichert
+der Server im Klartext nur in der Datenbank; an die Clients gehen sie
+ausschliesslich maskiert, und ein zurückgeschickter Platzhalter lässt den
+gespeicherten Wert unverändert.
+
 ## Tests
 
 ```bash
@@ -248,9 +286,10 @@ npm run dev                                    # in einem Fenster
 SOBE_TEST_URL=http://localhost:3001 npm test   # in einem zweiten
 ```
 
-46 Integrationstests über Anmeldung, Rechte, Benutzerverwaltung, Alarme,
-Alleinarbeit und Push-Registrierung. Die Aktualisierung ist zusätzlich gegen ein
-eigenes Testrepository geprüft (Ablauf, Fehlschlag, Rechte, iOS-Sperre).
+98 Integrationstests über Anmeldung, Rechte, Benutzerverwaltung, Alarme,
+Alleinarbeit, Push-Registrierung, Integrationen (Geheimnis-Maskierung,
+Verbindungstests) und den LoRaWAN-Endpunkt. Die Aktualisierung ist zusätzlich
+gegen ein eigenes Testrepository geprüft (Ablauf, Fehlschlag, Rechte, iOS-Sperre).
 
 ## Push-Nachrichten
 

@@ -18,10 +18,10 @@ export default function AlarmMonitor() {
         <p className="text-sm text-slate-500">Live-Monitoring aller Alarme: Zustellstatus, Quittierungen und Eskalationen in Echtzeit</p>
       </div>
 
-      {state.mode === 'live' && !state.integrations.smsGateway.enabled && !state.integrations.voip.enabled && (
+      {state.mode === 'live' && !state.integrations.smsGateway.enabled && !state.integrations.telephony.enabled && (
         <div className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
-          <strong>Live-Modus:</strong> Es ist noch kein Versand-Gateway angebunden – Alarme werden erfasst und protokolliert,
-          ausgehende Webhooks werden aufgerufen, aber SMS/Anrufe/Push werden nicht versendet. Gateways unter{' '}
+          <strong>Live-Modus:</strong> SMS und Sprachanrufe sind noch nicht angebunden – Alarme gehen per Push und an
+          ausgehende Webhooks, aber nicht per SMS/Anruf. Gateways unter{' '}
           <Link to="/integrationen" className="underline font-medium">Integrationen</Link> anbinden.
         </div>
       )}

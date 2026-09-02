@@ -301,6 +301,83 @@ async function main(): Promise<void> {
   pruefe('gültiges Push-Token angenommen',
     (await ruf('/push/register', { method: 'POST', token: peterToken, body: JSON.stringify({ token: 'ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]' }) })).status === 200)
 
+  // --- Integrationen: Geheimnisse, Verbindungstests ---
+  const integStand = (await ruf('/state', { token: adminToken })).body.integrations
+  pruefe('Integrationen kennen Telefonie und LoRaWAN', Boolean(integStand.telephony) && Boolean(integStand.lorawan))
+  pruefe('Integrationen speichern ist der Administration vorbehalten',
+    (await ruf('/integrations', { method: 'POST', token: peterToken, body: JSON.stringify(integStand) })).status === 403)
+
+  const mitGeheimnis = {
+    ...integStand,
+    smsGateway: { ...integStand.smsGateway, enabled: true, provider: 'ecall', username: 'sob', password: 'streng-geheim' },
+    lorawan: { ...integStand.lorawan, enabled: true },
+  }
+  pruefe('Integrationen gespeichert',
+    (await ruf('/integrations', { method: 'POST', token: adminToken, body: JSON.stringify(mitGeheimnis) })).status === 200)
+  const maskiert = (await ruf('/state', { token: adminToken })).body.integrations
+  pruefe('Geheimnis erscheint im Datenbestand nur maskiert', maskiert.smsGateway.password === '••••••••',
+    String(maskiert.smsGateway.password))
+  pruefe('Teams-Test ohne Webhook-URL sauber abgewiesen',
+    (await ruf('/integrations/teams/test', { method: 'POST', token: adminToken })).status === 400)
+  pruefe('Telefonie-Test ohne Konfiguration sauber abgewiesen',
+    (await ruf('/integrations/telephony/test', { method: 'POST', token: adminToken })).status === 400)
+
+  // --- LoRaWAN: Endpunkt, Token, Alarmknopf ---
+  const lwToken = await ruf('/integrations/lorawan/token', { method: 'POST', token: adminToken })
+  pruefe('LoRaWAN-Token erzeugt', lwToken.status === 200 && String(lwToken.body.token).startsWith('lw_'))
+  const lwInfo = await ruf('/integrations/lorawan', { token: adminToken })
+  pruefe('Endpunkt-Auskunft liefert Adresse und Token',
+    lwInfo.status === 200 && lwInfo.body.token === lwToken.body.token && String(lwInfo.body.url).endsWith('/api/hooks/lorawan'))
+  pruefe('Endpunkt-Auskunft ist der Administration vorbehalten',
+    (await ruf('/integrations/lorawan', { token: peterToken })).status === 403)
+
+  const maskiertesZurueck = (await ruf('/state', { token: adminToken })).body.integrations
+  pruefe('LoRaWAN-Token im Datenbestand maskiert', maskiertesZurueck.lorawan.token === '••••••••')
+  await ruf('/integrations', { method: 'POST', token: adminToken, body: JSON.stringify(maskiertesZurueck) })
+  pruefe('maskiertes Geheimnis überschreibt das gespeicherte nicht',
+    (await ruf('/integrations/lorawan', { token: adminToken })).body.token === lwToken.body.token)
+
+  const knopf = await ruf('/buttons', {
+    method: 'POST', token: adminToken,
+    body: JSON.stringify({
+      name: 'Testknopf Empfang', type: 'lorawan', serial: 'LW-TEST-99', batteryPct: 100, lastSeen: Date.now(),
+      messageTemplate: 'Alarmknopf Test ausgelöst', targetGroupIds: ['gr-ersthelfer'], escalateToEmergencyServicesAfterMin: 5,
+    }),
+  })
+  pruefe('Alarmknopf registriert', knopf.status === 200)
+  pruefe('Uplink ohne gültiges Token abgelehnt',
+    (await ruf('/hooks/lorawan', { method: 'POST', body: JSON.stringify({ serial: 'LW-TEST-99', event: 'alarm' }) })).status === 401)
+  pruefe('Uplink zu unbekanntem Gerät wird gemeldet',
+    (await ruf(`/hooks/lorawan?token=${lwToken.body.token}`, { method: 'POST', body: JSON.stringify({ serial: 'XX-0000', event: 'alarm' }) })).status === 404)
+
+  const statusUplink = await ruf(`/hooks/lorawan?token=${lwToken.body.token}`, {
+    method: 'POST', body: JSON.stringify({ serial: 'lw test 99', battery: 0.47 }),
+  })
+  pruefe('Statusmeldung angenommen, kein Alarm', statusUplink.status === 200 && statusUplink.body.alarm === null)
+  const knopfNachStatus = (await ruf('/state', { token: adminToken })).body.buttons.find((b: any) => b.serial === 'LW-TEST-99')
+  pruefe('Batteriestand und letztes Signal aktualisiert', knopfNachStatus?.batteryPct === 47)
+
+  // Knopfdruck im TTN-v3-Format, Token im Authorization-Kopf
+  const ttnUplink = {
+    end_device_ids: { dev_eui: 'LWTEST99' },
+    uplink_message: { decoded_payload: { alarm: true, battery: 88 } },
+  }
+  const gedrueckt = await ruf('/hooks/lorawan', { method: 'POST', token: lwToken.body.token, body: JSON.stringify(ttnUplink) })
+  pruefe('Knopfdruck löst Alarm aus', gedrueckt.status === 200 && typeof gedrueckt.body.alarm === 'string')
+  const knopfAlarm = (await ruf('/state', { token: adminToken })).body.alarms.find((a: any) => a.id === gedrueckt.body.alarm)
+  pruefe('Knopf-Alarm still, via Knopf, mit Eskalation',
+    knopfAlarm?.silent === true && knopfAlarm?.triggeredVia === 'button' && knopfAlarm?.escalation?.length === 1)
+  const doppel = await ruf('/hooks/lorawan', { method: 'POST', token: lwToken.body.token, body: JSON.stringify(ttnUplink) })
+  pruefe('Doppeldruck löst keinen zweiten Alarm aus', doppel.body.merged === true && doppel.body.alarm === gedrueckt.body.alarm)
+  pruefe('Knopf-Alarm beendet',
+    (await ruf(`/alarms/${gedrueckt.body.alarm}/end`, { method: 'POST', token: adminToken })).status === 200)
+
+  // Aufräumen: SMS-Gateway und LoRaWAN wieder deaktivieren
+  const aufraeumen = (await ruf('/state', { token: adminToken })).body.integrations
+  aufraeumen.smsGateway.enabled = false
+  aufraeumen.lorawan.enabled = false
+  await ruf('/integrations', { method: 'POST', token: adminToken, body: JSON.stringify(aufraeumen) })
+
   // --- Abmelden ---
   pruefe('Abmeldung möglich', (await ruf('/auth/logout', { method: 'POST', token: peterToken })).status === 200)
   pruefe('Token nach Abmeldung ungültig', (await ruf('/state', { token: peterToken })).status === 401)
