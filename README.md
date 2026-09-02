@@ -42,7 +42,10 @@ Alarmserver, Multikanal-Alarmierung, Notfallszenarien mit Handlungsanweisungen u
 
 ## Native Mobile-App (Expo)
 
-Im Ordner **`mobile/`** liegt eine native React-Native-Version der Mitarbeiter-App (Expo SDK 54).
+Im Ordner **`mobile/`** liegt eine native React-Native-Version der Mitarbeiter-App (Expo SDK 54) –
+**für iOS und Android aus demselben Code**. iOS wird über TestFlight/App Store verteilt, Android
+über den Play Store oder als direkt installierbares APK; die Android-Einrichtung (Signatur-Schlüssel,
+Firebase für Push) steht in [`mobile/README.md`](mobile/README.md), Abschnitt «Android».
 Testen mit **Expo Go**: `cd mobile && npm install && npx expo start`, dann den QR-Code scannen.
 Publishen für das Team via **EAS Update** (`eas update --branch preview`). Details: [`mobile/README.md`](mobile/README.md).
 

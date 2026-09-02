@@ -55,11 +55,22 @@ in der App – die App selbst muss dafür nicht angepasst werden.
 
 ## 3. App verbinden (QR-Code)
 
-Unter **Integrationen → App-Verbindung (iOS)** zeigt das Portal einen QR-Code
+Unter **Integrationen → App-Verbindung** zeigt das Portal einen QR-Code
 mit einem Verbindungs-Link (`sobenotfall://verbinden?server=…`). Mitarbeitende
-scannen ihn mit der iPhone-Kamera: Die App übernimmt die Serveradresse (und,
-falls eingerichtet, den Ausweichserver) automatisch. Der Link lässt sich auch
-per E-Mail oder MDM verteilen. Danach normal mit dem eigenen Konto anmelden.
+scannen ihn mit der Kamera ihres iPhones oder Android-Telefons: Die App
+übernimmt die Serveradresse (und, falls eingerichtet, den Ausweichserver)
+automatisch. Der Link lässt sich auch per E-Mail oder MDM verteilen. Danach
+normal mit dem eigenen Konto anmelden.
+
+**Android:** Dieselbe App läuft auch auf Android – verteilt über den Play
+Store oder als direkt installierbares APK (Preview-Profil, z. B. per MDM).
+Einmalig nötig: Signatur-Schlüssel bei Expo (erster Build interaktiv) und für
+Remote-Push ein Firebase-Projekt (FCM) – Anleitung in `mobile/README.md`,
+Abschnitt «Android». Danach `SOBE_EAS_PLATFORMS=all` in `server/.env` setzen,
+und der Update-Knopf baut iOS und Android zusammen. Laute Alarme laufen auf
+Android über den Benachrichtigungskanal «Alarme» (höchste Wichtigkeit,
+Umgehung von «Nicht stören») – die Apple-Sonderbewilligung für Critical
+Alerts ist ein reines iOS-Thema.
 
 ## 4. Redundanz: zweiter Alarmserver (optional, jederzeit nachrüstbar)
 

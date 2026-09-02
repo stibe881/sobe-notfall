@@ -243,6 +243,16 @@ export async function versionsInfo(pruefeRemote = true): Promise<VersionsInfo> {
   }
 }
 
+/**
+ * Für welche Plattformen der Update-Knopf App-Builds anstösst.
+ * Standard ist ios; nach der einmaligen Android-Einrichtung (Schlüssel bei
+ * Expo, FCM für Push) stellt der Betreiber SOBE_EAS_PLATFORMS=all.
+ */
+function easPlattformen(): 'ios' | 'android' | 'all' {
+  const wert = process.env.SOBE_EAS_PLATFORMS
+  return wert === 'android' || wert === 'all' ? wert : 'ios'
+}
+
 // ---------- Ablauf ----------
 
 interface SchrittDefinition {
@@ -314,11 +324,11 @@ function schrittPlan(scope: UpdateScope, branch: string | null, remoteVorhanden:
         befehl: 'npm', argumente: ['install', '--no-audit', '--no-fund', '--foreground-scripts'], verzeichnis: (r) => resolve(r, 'mobile'),
       },
       {
-        id: 'ios-build', titel: 'iOS-Build anstossen (läuft bei Expo weiter)',
+        id: 'ios-build', titel: `App-Build anstossen (${easPlattformen()}, läuft bei Expo weiter)`,
         befehl: 'npx',
         argumente: [
           '--yes', 'eas-cli', 'build',
-          '--platform', 'ios',
+          '--platform', easPlattformen(),
           '--profile', 'production',
           '--non-interactive',
           '--auto-submit',

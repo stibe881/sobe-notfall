@@ -116,10 +116,10 @@ export default function UpdateDialog({ onClose }: { onClose: () => void }) {
 
               <Auswahl
                 icon={Smartphone}
-                titel="Server und iOS-App"
+                titel="Server und App"
                 beschreibung={
                   version.iosMoeglich
-                    ? 'Zusätzlich einen iOS-Build anstossen. Der läuft danach bei Expo weiter und geht von dort automatisch an TestFlight – der Lauf hier wartet nicht darauf.'
+                    ? 'Zusätzlich einen App-Build anstossen (iOS; mit SOBE_EAS_PLATFORMS=all auch Android). Der läuft danach bei Expo weiter und geht von dort an TestFlight bzw. Play – der Lauf hier wartet nicht darauf.'
                     : (version.iosHinweis ?? 'Auf diesem Server nicht eingerichtet.')
                 }
                 gesperrt={!version.iosMoeglich}

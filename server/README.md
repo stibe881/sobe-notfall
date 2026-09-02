@@ -75,7 +75,8 @@ von bekannten Geheimnissen bereinigt.
 | `SOBE_REPO_ROOT` | Arbeitsverzeichnis für die Aktualisierung | ein Verzeichnis über `server/` |
 | `SOBE_AUTO_RESTART` | Neustart nach der Aktualisierung (`false` schaltet ihn ab) | an |
 | `SOBE_PUBLIC_URL` | Öffentliche Adresse des Servers – für den LoRaWAN-Endpunkt und die Graph-Rückrufe | wird aus der Anfrage abgeleitet |
-| `EXPO_TOKEN` | Zugangstoken von expo.dev, nötig für den iOS-Build | – |
+| `EXPO_TOKEN` | Zugangstoken von expo.dev, nötig für die App-Builds | – |
+| `SOBE_EAS_PLATFORMS` | Plattformen des App-Builds über den Update-Knopf: `ios`, `android` oder `all` | `ios` |
 
 Beim ersten Start werden Standorte, Gruppen, Szenarien, Alarmplan-Vorlagen und
 Notrufnummern angelegt sowie ein Administratorkonto mit erzwungenem

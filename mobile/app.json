@@ -7,14 +7,21 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "plugins": [
-      "expo-notifications",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/android-icon-monochrome.png",
+          "color": "#c81e1e"
+        }
+      ],
       "expo-live-activity",
       [
         "expo-location",
         {
           "locationWhenInUsePermission": "SOBE Notfall nutzt den Standort nur, um zu erkennen, ob Sie sich an einem Firmenstandort aufhalten – für die Alarmierung der richtigen Personen. Es wird nie eine GPS-Position übertragen, nur der Standort-Name.",
           "locationAlwaysAndWhenInUsePermission": "SOBE Notfall erkennt auch im Hintergrund, ob Sie einen Firmenstandort betreten oder verlassen, damit Alarme die Personen vor Ort erreichen. Übertragen wird nur der Standort-Name, nie eine GPS-Position.",
-          "isIosBackgroundLocationEnabled": true
+          "isIosBackgroundLocationEnabled": true,
+          "isAndroidBackgroundLocationEnabled": true
         }
       ]
     ],

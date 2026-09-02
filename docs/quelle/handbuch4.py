@@ -267,28 +267,43 @@ KOERPER = r"""
 <section id="a8">
   <h2 class="abschnitt"><span class="zahl">8</span> Die App verteilen und verbinden</h2>
   <p>
-    Die App kommt über TestFlight oder den App&nbsp;Store auf die iPhones &ndash; für alle
-    Kunden dieselbe. Damit sie mit dem richtigen Server spricht, zeigt das Portal
-    unter <span class="ui">Integrationen &rarr; App-Verbindung (iOS)</span> einen QR-Code.
+    Die App gibt es <b>für iOS und Android aus demselben Code</b> &ndash; für alle Kunden
+    dieselbe. Auf die iPhones kommt sie über TestFlight oder den App&nbsp;Store, auf
+    Android-Geräte über den Play&nbsp;Store oder als direkt installierbares APK (etwa per
+    Geräteverwaltung). Damit sie mit dem richtigen Server spricht, zeigt das Portal
+    unter <span class="ui">Integrationen &rarr; App-Verbindung</span> einen QR-Code.
   </p>
   <figure class="bild-breit">
     <img src="bilder/web-27-app-verbindung.webp" alt="Karte App-Verbindung mit QR-Code und Verbindungs-Link">
     <figcaption><b>Abb.</b> &nbsp; Der Verbindungs-QR-Code. Er enthält die Serveradresse und &ndash; wenn eingerichtet &ndash; die Adresse des Ausweichservers.</figcaption>
   </figure>
   <ol class="schritte">
-    <li>App installieren (TestFlight-Einladung oder App&nbsp;Store).</li>
-    <li>QR-Code mit der iPhone-Kamera scannen &ndash; die App öffnet sich und übernimmt die Adresse. Alternativ den Link aus dem Portal per E-Mail oder Geräteverwaltung (MDM) verteilen.</li>
+    <li>App installieren (TestFlight-Einladung, App&nbsp;Store, Play&nbsp;Store oder APK der Geräteverwaltung).</li>
+    <li>QR-Code mit der Kamera des Telefons scannen &ndash; die App öffnet sich und übernimmt die Adresse. Alternativ den Link aus dem Portal per E-Mail oder Geräteverwaltung (MDM) verteilen.</li>
     <li>Mit dem eigenen Konto anmelden. Die App fragt danach die Mitteilungs-Berechtigungen ab.</li>
   </ol>
   <div class="hinweis">
     <p class="marke-klein">Hörbare Alarme</p>
     <p>
-      Damit Alarme auch ein stummgeschaltetes iPhone durchdringen, braucht die App
-      die Berechtigungen für zeitkritische Mitteilungen und Critical Alerts. Die
-      Einrichtung ist in <code>mobile/CRITICAL-ALERTS.md</code> beschrieben; bis dahin
-      kommen Alarme als normale Mitteilung an.
+      <b>iOS:</b> Damit Alarme auch ein stummgeschaltetes iPhone durchdringen, braucht die
+      App die Berechtigungen für zeitkritische Mitteilungen und Critical Alerts &ndash;
+      Einrichtung siehe <code>mobile/CRITICAL-ALERTS.md</code>; bis dahin kommen Alarme als
+      normale Mitteilung an. <b>Android:</b> Laute Alarme laufen über den
+      Benachrichtigungskanal «Alarme» (höchste Wichtigkeit, Umgehung von «Nicht stören»),
+      den die App selbst anlegt &ndash; eine Sonderbewilligung braucht es nicht.
     </p>
   </div>
+  <h3>Android einmalig einrichten</h3>
+  <p>
+    Für Android braucht es einmalig: den <b>Signatur-Schlüssel</b> bei Expo (den ersten
+    Build interaktiv ausführen, EAS erzeugt und verwahrt ihn) und für Remote-Push ein
+    <b>Firebase-Projekt</b> (FCM) &ndash; Schritt für Schritt in <code>mobile/README.md</code>,
+    Abschnitt «Android». Danach in <code>server/.env</code> die Zeile
+    <code>SOBE_EAS_PLATFORMS=all</code> setzen: Der Update-Knopf baut dann iOS und Android
+    in einem Lauf. Für die Verteilung im Play&nbsp;Store ist ein
+    Google-Play-Console-Konto nötig (einmalig USD&nbsp;25); firmenintern genügt oft das
+    APK aus dem Preview-Profil.
+  </p>
 </section>
 
 <section id="a9">
@@ -400,7 +415,8 @@ KOERPER = r"""
     <span class="ui">Aktualisierung</span> unten in der Seitenleiste holt den neuesten
     Stand aus der Versionsverwaltung, baut Portal und Server und startet neu &ndash;
     Schritt für Schritt nachvollziehbar, mit Protokoll. Auf Wunsch stösst derselbe
-    Dialog auch den <b>iOS-Build</b> an (braucht <code>EXPO_TOKEN</code> auf dem Server).
+    Dialog auch den <b>App-Build</b> an (braucht <code>EXPO_TOKEN</code> auf dem Server;
+    Standard iOS, mit <code>SOBE_EAS_PLATFORMS=all</code> auch Android).
     Die Bedienung zeigt Handbuch 1, Abschnitt «Die Anwendung aktualisieren».
   </p>
   <figure class="bild-breit">

@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import { Platform } from 'react-native'
 import type { AppState, ServerInfo, User } from './types'
 
 /**
@@ -209,7 +210,7 @@ export const api = {
   registerPush: (token: string, criticalAlerts: boolean) =>
     anfrage<{ ok: boolean }>('/push/register', {
       method: 'POST',
-      body: JSON.stringify({ token, platform: 'ios', criticalAlerts }),
+      body: JSON.stringify({ token, platform: Platform.OS, criticalAlerts }),
     }),
   unregisterPush: (token: string) =>
     anfrage<{ ok: boolean }>('/push/unregister', { method: 'POST', body: JSON.stringify({ token }) }),

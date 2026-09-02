@@ -80,6 +80,39 @@ eas submit --platform ios                      # Einreichung (Apple-Developer-Ko
 Hinweis: Echte Critical-Alert-Pushes (übersteuern die Stummschaltung) erfordern den nativen
 Build plus eine Apple-Sonderberechtigung – in Expo Go sind keine Remote-Pushes möglich.
 
+## Android
+
+Der Code ist plattformgemeinsam – dieselbe App läuft auf Android. Auf iOS-Spezialitäten
+(Critical Alerts, Live-Aktivitäten) verzichtet Android automatisch; laute Alarme laufen dort
+über den Benachrichtigungskanal **«Alarme»** (höchste Wichtigkeit, Umgehung von «Nicht stören» –
+die App legt ihn beim Start an, der Server adressiert ihn beim Versand). Stille Alarme nutzen
+den lautlosen Kanal «Stille Alarme und Entwarnung».
+
+**Bauen:**
+
+```bash
+eas build --platform android --profile preview     # .apk zur Direktinstallation / MDM-Verteilung
+eas build --platform android --profile production  # .aab für den Play Store
+```
+
+Beim ersten Build erzeugt und verwahrt EAS den Signatur-Schlüssel (Keystore) – dafür den ersten
+Lauf **interaktiv** ausführen. Danach funktioniert auch der nicht-interaktive Build über den
+Update-Knopf des Portals (`SOBE_EAS_PLATFORMS=all` in `server/.env`).
+
+**Remote-Push auf Android (einmalig):** Expo versendet an Android über Firebase Cloud Messaging.
+
+1. Firebase-Projekt anlegen (console.firebase.google.com), Android-App mit dem Paketnamen
+   `ch.sonnenberg.notfall` registrieren.
+2. `google-services.json` herunterladen, nach `mobile/` legen und in `app.json` unter
+   `android.googleServicesFile` eintragen (`"./google-services.json"`).
+3. Den FCM-Service-Account-Schlüssel bei Expo hinterlegen: `eas credentials` → Android →
+   *Google Service Account Key (FCM V1)*.
+
+Ohne diese Einrichtung funktionieren lokale Benachrichtigungen (Timer, SOS), aber keine
+Remote-Alarme. **Play Store:** Google-Play-Console-Konto (einmalig USD 25); das `.aab` von Hand
+hochladen oder für `eas submit --platform android` einen Play-Service-Account bei EAS hinterlegen.
+Für die firmeninterne Verteilung genügt oft das APK aus dem Preview-Profil (per MDM oder Download).
+
 ## Struktur
 
 - `App.tsx` – Einstieg: Header, Tab-Navigation, Toasts

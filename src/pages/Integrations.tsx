@@ -14,7 +14,7 @@ import { Badge, Button, Card, Field, Modal, Toggle, VORBEREITET, Vorbereitet, fo
  */
 const BEREICHE = [
   { id: 'int-organisation', titel: 'Organisation', hinweis: 'Name, Auftritt und interne Notfallnummer – erscheint in Portal und App.' },
-  { id: 'int-app', titel: 'App der Mitarbeitenden', hinweis: 'Wie die iOS-App zu den Mitarbeitenden kommt und was sie auf dem Gerät darf.' },
+  { id: 'int-app', titel: 'App der Mitarbeitenden', hinweis: 'Wie die App (iOS und Android) zu den Mitarbeitenden kommt und was sie auf dem Gerät darf.' },
   { id: 'int-kanaele', titel: 'Alarmierungskanäle', hinweis: 'Push-Mitteilungen sind immer aktiv – hier kommen SMS, Teams und Telefonie dazu.' },
   { id: 'int-anmeldung', titel: 'Anmeldung & Benutzer', hinweis: 'Woher die Konten kommen und wie sich alle anmelden.' },
   { id: 'int-systeme', titel: 'Drittsysteme & Alarmknöpfe', hinweis: 'Physische Alarmknöpfe und Schnittstellen zu anderen Systemen.' },
@@ -70,7 +70,7 @@ export default function Integrations() {
       </Bereich>
 
       <Bereich id="int-app">
-        <Card title={<span className="flex items-center gap-2"><Smartphone size={16} /> App-Verbindung (iOS)</span>}>
+        <Card title={<span className="flex items-center gap-2"><Smartphone size={16} /> App-Verbindung</span>}>
           <AppVerbindung />
         </Card>
 
@@ -207,8 +207,8 @@ function OrganisationEinstellungen() {
         <Button onClick={speichern} disabled={!geaendert}>Speichern</Button>
       </div>
       <p className="text-xs text-slate-400">
-        Der Name erscheint auf der Anmeldemaske des Portals und in der iOS-App, sobald sie mit diesem
-        Alarmserver verbunden ist – die App selbst bleibt für alle Kunden dieselbe.
+        Der Name erscheint auf der Anmeldemaske des Portals und in der App (iOS und Android), sobald sie
+        mit diesem Alarmserver verbunden ist – die App selbst bleibt für alle Kunden dieselbe.
       </p>
 
       <div className="pt-3 border-t border-slate-100">
@@ -469,8 +469,9 @@ function AppVerbindung() {
   return (
     <div className="space-y-3">
       <p className="text-sm text-slate-500">
-        Mitarbeitende scannen diesen Code mit der iPhone-Kamera: Die SOBE-Notfall-App übernimmt die
-        Serveradresse{fallback ? ' samt Ausweichserver' : ''} automatisch – niemand muss eine Adresse eintippen.
+        Mitarbeitende scannen diesen Code mit der Kamera ihres iPhones oder Android-Telefons: Die
+        SOBE-Notfall-App übernimmt die Serveradresse{fallback ? ' samt Ausweichserver' : ''} automatisch –
+        niemand muss eine Adresse eintippen.
       </p>
       <div className="flex items-start gap-4 flex-wrap">
         <div
