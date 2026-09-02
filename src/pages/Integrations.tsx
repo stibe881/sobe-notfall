@@ -1,117 +1,136 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import qrcode from 'qrcode-generator'
-import { Building2, CheckCircle2, Copy, KeyRound, Link2, Loader2, MessageSquare, Phone, PhoneCall, Plus, QrCode, Radio, RefreshCw, ServerCog, Smartphone, Trash2, XCircle } from 'lucide-react'
+import { Building2, CheckCircle2, Copy, KeyRound, Link2, Loader2, MapPin, MessageSquare, Phone, PhoneCall, Plus, QrCode, Radio, RefreshCw, ServerCog, Smartphone, Trash2, Users, XCircle } from 'lucide-react'
 import { api, serverUrl, type RedundanzConfig, type RedundanzStatus } from '../lib/api'
 import { uid, useStore } from '../store'
 import type { IntegrationSettings, Webhook } from '../types'
 import { Badge, Button, Card, Field, Modal, Toggle, VORBEREITET, Vorbereitet, formatDateTime, inputClass } from '../components/ui'
+
+/**
+ * Die Themenbereiche der Seite – in der Reihenfolge, in der man einen neuen
+ * Kunden einrichtet: Wer sind wir? Wie kommt die App zu den Leuten? Über
+ * welche Kanäle wird alarmiert? Wer darf sich anmelden? Was ist angebunden?
+ * Und zuletzt der Betrieb.
+ */
+const BEREICHE = [
+  { id: 'int-organisation', titel: 'Organisation', hinweis: 'Name, Auftritt und interne Notfallnummer – erscheint in Portal und App.' },
+  { id: 'int-app', titel: 'App der Mitarbeitenden', hinweis: 'Wie die iOS-App zu den Mitarbeitenden kommt und was sie auf dem Gerät darf.' },
+  { id: 'int-kanaele', titel: 'Alarmierungskanäle', hinweis: 'Push-Mitteilungen sind immer aktiv – hier kommen SMS, Teams und Telefonie dazu.' },
+  { id: 'int-anmeldung', titel: 'Anmeldung & Benutzer', hinweis: 'Woher die Konten kommen und wie sich alle anmelden.' },
+  { id: 'int-systeme', titel: 'Drittsysteme & Alarmknöpfe', hinweis: 'Physische Alarmknöpfe und Schnittstellen zu anderen Systemen.' },
+  { id: 'int-betrieb', titel: 'Betrieb & Ausfallsicherheit', hinweis: 'Ein zweiter Alarmserver übernimmt, wenn dieser ausfällt.' },
+] as const
+
+/** Ein Themenbereich: Zwischentitel mit Kurzbeschreibung, darunter die Karten */
+function Bereich({ id, children }: { id: (typeof BEREICHE)[number]['id']; children: ReactNode }) {
+  const bereich = BEREICHE.find((b) => b.id === id)!
+  return (
+    <section id={id} className="scroll-mt-4">
+      <div className="mb-3">
+        <h2 className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">{bereich.titel}</h2>
+        <p className="text-xs text-slate-400 mt-0.5">{bereich.hinweis}</p>
+      </div>
+      <div className="grid lg:grid-cols-2 gap-6 items-start">{children}</div>
+    </section>
+  )
+}
 
 export default function Integrations() {
   const { state, dispatch } = useStore()
   const integ = state.integrations
   const [editingWebhook, setEditingWebhook] = useState<Webhook | null>(null)
 
-  function update(patch: Partial<IntegrationSettings>) {
-    dispatch({ type: 'UPDATE_INTEGRATIONS', integrations: { ...integ, ...patch } })
-  }
-
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-bold text-slate-800">Integrationen &amp; Optionen</h1>
-        <p className="text-sm text-slate-500">Anbindung von Drittanwendungen, Kommunikationskanälen und Deployment-Optionen</p>
-        <p className="text-xs text-slate-500 mt-2 flex items-center gap-2 flex-wrap">
-          Angebunden sind Push-Mitteilungen, die interne Notfallnummer, ausgehende Webhooks, das SMS-Gateway,
-          Microsoft Teams, Sprachanruf/Telefonkonferenz über Teams, Single Sign-On (Microsoft Entra ID),
-          Geofencing und der LoRaWAN-Endpunkt für Alarmknöpfe.
+        <p className="text-sm text-slate-500">
+          Von der Organisation über die App und die Alarmierungskanäle bis zur Ausfallsicherheit – geordnet nach
+          der Reihenfolge der Einrichtung.
           {state.mode === 'demo' && ' Im Demo-Modus wird der Versand simuliert – die Einstellungen lassen sich trotzdem erfassen.'}
         </p>
+        {/* Schnellnavigation: springt zum Bereich, ohne die Adresse (Hash-Routing) zu verändern */}
+        <div className="flex flex-wrap gap-1.5 mt-3">
+          {BEREICHE.map((b) => (
+            <button
+              key={b.id}
+              onClick={() => document.getElementById(b.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+              className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-600 hover:border-slate-400 hover:text-slate-900 transition"
+            >
+              {b.titel}
+            </button>
+          ))}
+        </div>
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-6">
+      <Bereich id="int-organisation">
         <Card title={<span className="flex items-center gap-2"><Building2 size={16} /> Organisation &amp; Auftritt</span>}>
           <OrganisationEinstellungen />
         </Card>
+      </Bereich>
 
-        <Card title={<span className="flex items-center gap-2"><ServerCog size={16} /> Redundanz – zweiter Alarmserver</span>}>
-          <RedundanzEinstellungen />
-        </Card>
-
+      <Bereich id="int-app">
         <Card title={<span className="flex items-center gap-2"><Smartphone size={16} /> App-Verbindung (iOS)</span>}>
           <AppVerbindung />
         </Card>
 
-        <Card title={<span className="flex items-center gap-2"><MessageSquare size={16} /> SMS-Gateway</span>}>
-          <SmsEinstellungen />
+        <Card title={<span className="flex items-center gap-2"><MapPin size={16} /> Geofencing</span>}>
+          <GeofencingEinstellungen />
         </Card>
 
-        <Card title={<span className="flex items-center gap-2"><PhoneCall size={16} /> Sprachanruf &amp; Telefonkonferenz (Microsoft Teams)</span>}>
-          <TelefonieEinstellungen />
+        <Card title={<span className="flex items-center gap-2"><KeyRound size={16} /> Deployment via Zugangscodes <Vorbereitet /></span>}>
+          <p className="text-sm text-slate-500 mb-3">
+            Gedacht für die Selbstinstallation ohne Geräteverwaltung. Die App kennt die Codes noch nicht – Mitarbeitende
+            verbinden sich heute über den QR-Code und melden sich mit E-Mail-Adresse und Passwort an.
+          </p>
+          <div className="space-y-2">
+            {integ.accessCodes.map((c) => (
+              <div key={c.code} className="flex items-center gap-3 rounded-lg border border-slate-100 p-3 text-sm">
+                <code className="font-mono font-semibold text-slate-800">{c.code}</code>
+                <span className="text-xs text-slate-400 flex-1">
+                  {state.locations.find((l) => l.id === c.locationId)?.name} · erstellt {formatDateTime(c.createdAt)}
+                </span>
+                <Badge>{c.used}× verwendet</Badge>
+              </div>
+            ))}
+          </div>
+          <div className="mt-3 flex gap-2 flex-wrap">
+            {state.locations.map((l) => (
+              <Button key={l.id} variant="secondary" onClick={() => dispatch({ type: 'ADD_ACCESS_CODE', locationId: l.id })}>
+                <Plus size={13} /> Code für {l.name}
+              </Button>
+            ))}
+          </div>
+        </Card>
+      </Bereich>
+
+      <Bereich id="int-kanaele">
+        <Card title={<span className="flex items-center gap-2"><MessageSquare size={16} /> SMS-Gateway</span>}>
+          <SmsEinstellungen />
         </Card>
 
         <Card title={<span className="flex items-center gap-2"><MessageSquare size={16} /> Microsoft Teams: Kanalmeldungen</span>}>
           <TeamsEinstellungen />
         </Card>
 
-        <Card title={<span className="flex items-center gap-2"><Radio size={16} /> LoRaWAN-Netz / Alarmknöpfe</span>}>
-          <LorawanEinstellungen />
+        <Card title={<span className="flex items-center gap-2"><PhoneCall size={16} /> Sprachanruf &amp; Telefonkonferenz (Microsoft Teams)</span>}>
+          <TelefonieEinstellungen />
         </Card>
+      </Bereich>
 
+      <Bereich id="int-anmeldung">
         <Card title={<span className="flex items-center gap-2"><KeyRound size={16} /> Single Sign-On (Microsoft Entra ID)</span>}>
           <SsoEinstellungen />
         </Card>
 
-        <Card title="Notfallnummer &amp; Identität">
-          <div className="space-y-4">
-            <div>
-              <Toggle checked={integ.hotline.enabled} onChange={(v) => update({ hotline: { ...integ.hotline, enabled: v } })} label="Interne Notfallnummer (Alarmauslösung per Anruf / Sprachnachricht)" />
-              {integ.hotline.enabled && (
-                <div className="mt-2 pl-11">
-                  <Field label="Nummer – erscheint auf der Startseite der App">
-                    <div className="flex items-center gap-2">
-                      <Phone size={14} className="text-slate-500 shrink-0" />
-                      <input
-                        className={inputClass}
-                        type="tel"
-                        value={integ.hotline.number}
-                        onChange={(e) => update({ hotline: { ...integ.hotline, number: e.target.value } })}
-                      />
-                    </div>
-                  </Field>
-                </div>
-              )}
-            </div>
-            <div className="pt-2 border-t border-slate-100">
-              <Toggle checked={integ.hrSync.enabled} onChange={(v) => update({ hrSync: { ...integ.hrSync, enabled: v, lastSync: v ? Date.now() : integ.hrSync.lastSync } })} label={`Automatische Synchronisation mit Personalsystem – ${VORBEREITET}`} />
-              {integ.hrSync.enabled && (
-                <div className="mt-2 pl-11 space-y-2">
-                  <Field label="System">
-                    <input className={inputClass} value={integ.hrSync.system} onChange={(e) => update({ hrSync: { ...integ.hrSync, system: e.target.value } })} />
-                  </Field>
-                  <div className="flex items-center gap-3 text-xs text-slate-500">
-                    {integ.hrSync.lastSync && <span>Letzte Synchronisation: {formatDateTime(integ.hrSync.lastSync)}</span>}
-                    <Button variant="secondary" onClick={() => update({ hrSync: { ...integ.hrSync, lastSync: Date.now() } })}>
-                      <RefreshCw size={13} /> Jetzt synchronisieren
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </div>
-            <div className="pt-2 border-t border-slate-100 space-y-3">
-              <Toggle checked={integ.multiLanguage} onChange={(v) => update({ multiLanguage: v })} label={`Mehrsprachige App-Inhalte (DE/EN/FR/IT) – ${VORBEREITET}`} />
-              <div>
-                <Toggle checked={integ.geofencing} onChange={(v) => update({ geofencing: v })} label="Geofencing (Alarmierung nach Aufenthaltsort)" />
-                {integ.geofencing && (
-                  <p className="text-xs text-slate-400 pl-11 mt-1">
-                    Die App meldet beim Betreten und Verlassen eines Standort-Geofences nur den Standort-Namen –
-                    nie GPS-Koordinaten. Wer sich gerade an einem alarmierten Standort aufhält, wird zusätzlich
-                    alarmiert; ohne aktuelle Ortsmeldung gilt der Profilstandort. Radius je Standort unter
-                    «Standorte»; die Mitarbeitenden müssen der Standortfreigabe in der App zustimmen.
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
+        <Card title={<span className="flex items-center gap-2"><Users size={16} /> Personalsystem</span>}>
+          <PersonalsystemEinstellungen />
+        </Card>
+      </Bereich>
+
+      <Bereich id="int-systeme">
+        <Card title={<span className="flex items-center gap-2"><Radio size={16} /> LoRaWAN-Netz / Alarmknöpfe</span>}>
+          <LorawanEinstellungen />
         </Card>
 
         <Card
@@ -140,32 +159,13 @@ export default function Integrations() {
             Brandmeldeanlagen sind {VORBEREITET}; Alarmknöpfe kommen bereits über den LoRaWAN-Endpunkt herein.
           </div>
         </Card>
+      </Bereich>
 
-        <Card title={<span className="flex items-center gap-2"><KeyRound size={16} /> Deployment via Zugangscodes <Vorbereitet /></span>}>
-          <p className="text-sm text-slate-500 mb-3">
-            Gedacht für die Selbstinstallation ohne Geräteverwaltung. Die App kennt die Codes noch nicht – Mitarbeitende melden sich
-            heute mit E-Mail-Adresse und Passwort an.
-          </p>
-          <div className="space-y-2">
-            {integ.accessCodes.map((c) => (
-              <div key={c.code} className="flex items-center gap-3 rounded-lg border border-slate-100 p-3 text-sm">
-                <code className="font-mono font-semibold text-slate-800">{c.code}</code>
-                <span className="text-xs text-slate-400 flex-1">
-                  {state.locations.find((l) => l.id === c.locationId)?.name} · erstellt {formatDateTime(c.createdAt)}
-                </span>
-                <Badge>{c.used}× verwendet</Badge>
-              </div>
-            ))}
-          </div>
-          <div className="mt-3 flex gap-2 flex-wrap">
-            {state.locations.map((l) => (
-              <Button key={l.id} variant="secondary" onClick={() => dispatch({ type: 'ADD_ACCESS_CODE', locationId: l.id })}>
-                <Plus size={13} /> Code für {l.name}
-              </Button>
-            ))}
-          </div>
+      <Bereich id="int-betrieb">
+        <Card title={<span className="flex items-center gap-2"><ServerCog size={16} /> Redundanz – zweiter Alarmserver</span>}>
+          <RedundanzEinstellungen />
         </Card>
-      </div>
+      </Bereich>
 
       {editingWebhook && <WebhookEditor webhook={editingWebhook} onClose={() => setEditingWebhook(null)} />}
     </div>
@@ -180,6 +180,10 @@ function OrganisationEinstellungen() {
   const integ = state.integrations
   const org = integ.organization ?? { name: '', shortName: '' }
   const [entwurf, patch, geaendert, gespeichert] = useEntwurf(org)
+
+  function update(patchInteg: Partial<IntegrationSettings>) {
+    dispatch({ type: 'UPDATE_INTEGRATIONS', integrations: { ...integ, ...patchInteg } })
+  }
 
   function speichern() {
     dispatch({
@@ -205,6 +209,95 @@ function OrganisationEinstellungen() {
       <p className="text-xs text-slate-400">
         Der Name erscheint auf der Anmeldemaske des Portals und in der iOS-App, sobald sie mit diesem
         Alarmserver verbunden ist – die App selbst bleibt für alle Kunden dieselbe.
+      </p>
+
+      <div className="pt-3 border-t border-slate-100">
+        <Toggle
+          checked={integ.hotline.enabled}
+          onChange={(v) => update({ hotline: { ...integ.hotline, enabled: v } })}
+          label="Interne Notfallnummer (Alarmauslösung per Anruf / Sprachnachricht)"
+        />
+        {integ.hotline.enabled && (
+          <div className="mt-2 pl-11">
+            <Field label="Nummer – erscheint auf der Startseite der App">
+              <div className="flex items-center gap-2">
+                <Phone size={14} className="text-slate-500 shrink-0" />
+                <input
+                  className={inputClass}
+                  type="tel"
+                  value={integ.hotline.number}
+                  onChange={(e) => update({ hotline: { ...integ.hotline, number: e.target.value } })}
+                />
+              </div>
+            </Field>
+          </div>
+        )}
+      </div>
+
+      <div className="pt-3 border-t border-slate-100">
+        <Toggle
+          checked={integ.multiLanguage}
+          onChange={(v) => update({ multiLanguage: v })}
+          label={`Mehrsprachige App-Inhalte (DE/EN/FR/IT) – ${VORBEREITET}`}
+        />
+      </div>
+    </div>
+  )
+}
+
+/** Geofencing: Alarmierung nach dem gemeldeten Aufenthaltsort */
+function GeofencingEinstellungen() {
+  const { state, dispatch } = useStore()
+  const integ = state.integrations
+
+  return (
+    <div className="space-y-3">
+      <Toggle
+        checked={integ.geofencing}
+        onChange={(v) => dispatch({ type: 'UPDATE_INTEGRATIONS', integrations: { ...integ, geofencing: v } })}
+        label="Alarmierung nach Aufenthaltsort"
+      />
+      <p className={`text-xs pl-11 ${integ.geofencing ? 'text-slate-500' : 'text-slate-400'}`}>
+        Die App meldet beim Betreten und Verlassen eines Standort-Geofences nur den Standort-Namen –
+        nie GPS-Koordinaten. Wer sich gerade an einem alarmierten Standort aufhält, wird zusätzlich
+        alarmiert; ohne aktuelle Ortsmeldung gilt der Profilstandort. Radius je Standort unter
+        «Standorte»; die Mitarbeitenden müssen der Standortfreigabe in der App zustimmen.
+      </p>
+    </div>
+  )
+}
+
+/** Benutzer aus dem Personalsystem übernehmen – vorbereitet */
+function PersonalsystemEinstellungen() {
+  const { state, dispatch } = useStore()
+  const integ = state.integrations
+
+  function update(patch: Partial<IntegrationSettings>) {
+    dispatch({ type: 'UPDATE_INTEGRATIONS', integrations: { ...integ, ...patch } })
+  }
+
+  return (
+    <div className="space-y-3">
+      <Toggle
+        checked={integ.hrSync.enabled}
+        onChange={(v) => update({ hrSync: { ...integ.hrSync, enabled: v, lastSync: v ? Date.now() : integ.hrSync.lastSync } })}
+        label={`Automatische Synchronisation mit dem Personalsystem – ${VORBEREITET}`}
+      />
+      {integ.hrSync.enabled && (
+        <div className="pl-11 space-y-2">
+          <Field label="System">
+            <input className={inputClass} value={integ.hrSync.system} onChange={(e) => update({ hrSync: { ...integ.hrSync, system: e.target.value } })} />
+          </Field>
+          <div className="flex items-center gap-3 text-xs text-slate-500 flex-wrap">
+            {integ.hrSync.lastSync && <span>Letzte Synchronisation: {formatDateTime(integ.hrSync.lastSync)}</span>}
+            <Button variant="secondary" onClick={() => update({ hrSync: { ...integ.hrSync, lastSync: Date.now() } })}>
+              <RefreshCw size={13} /> Jetzt synchronisieren
+            </Button>
+          </div>
+        </div>
+      )}
+      <p className="text-xs text-slate-400">
+        Bis dahin werden Benutzer von Hand oder per CSV-Import unter «Benutzer» gepflegt.
       </p>
     </div>
   )
