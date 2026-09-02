@@ -6,7 +6,8 @@ import {
 } from 'lucide-react-native'
 import { alleinarbeitEmpfaenger, createAlarm, resolveRecipients, uid, useStore } from './store'
 import { ScenarioIcon } from './ScenarioIcon'
-import { cancelScheduled, ensurePermissions, getPushToken, remotePushAvailability, scheduleAt } from './notifications'
+import Constants from 'expo-constants'
+import { cancelScheduled, ensurePermissions, scheduleAt } from './notifications'
 import { LONE_WORK_DEFAULT_GROUPS, type Alarm, type LoneWorkSession, type Scenario, type User } from './types'
 import { Badge, Card, HoldButton, colors, formatDuration, formatRelative } from './ui'
 import { MIN_PASSWORD_LENGTH, passwordProblem } from './auth'
@@ -1382,18 +1383,13 @@ function ModeCard() {
   )
 }
 
+/** Nur der Zustand zählt: Sind Push-Mitteilungen auf diesem Gerät aktiv? */
 function PushStatusCard() {
   const [granted, setGranted] = useState<boolean | null>(null)
-  const [token, setToken] = useState<string | null>(null)
-  const remote = remotePushAvailability()
 
   useEffect(() => {
     ensurePermissions().then(setGranted)
   }, [])
-
-  useEffect(() => {
-    if (granted && remote.ok) getPushToken().then(setToken)
-  }, [granted, remote.ok])
 
   return (
     <Card>
@@ -1401,26 +1397,15 @@ function PushStatusCard() {
         <BellRing size={16} color={colors.muted} />
         <Text style={[styles.cardTitle, { flex: 1 }]}>Push-Benachrichtigungen</Text>
         <Badge
-          label={granted === null ? 'prüfe…' : granted ? 'aktiv' : 'nicht erlaubt'}
+          label={granted === null ? 'prüfe…' : granted ? 'aktiv' : 'nicht aktiv'}
           color={granted ? 'green' : 'amber'}
         />
       </View>
-      <Text style={[styles.faint, { marginTop: 6 }]}>
-        Lokale Benachrichtigungen (Alleinarbeits-Timer, SOS-Bestätigung) {granted ? 'sind aktiv – sie erscheinen auch bei gesperrtem Bildschirm.' : 'benötigen die Mitteilungs-Berechtigung (Einstellungen → Mitteilungen → Expo Go).'}
-      </Text>
-      {remote.ok ? (
-        token ? (
-          <>
-            <Text style={[styles.faint, { marginTop: 8 }]}>Expo-Push-Token (für Test unter expo.dev/notifications):</Text>
-            <Text selectable style={[styles.body, { fontSize: 12 }]}>{token}</Text>
-          </>
-        ) : (
-          <Text style={[styles.faint, { marginTop: 8 }]}>
-            Remote-Push bereit – Projekt mit «eas init» verknüpfen, dann erscheint hier der Push-Token.
-          </Text>
-        )
-      ) : (
-        <Text style={[styles.faint, { marginTop: 8 }]}>Remote-Push: {remote.reason}</Text>
+      {granted === false && (
+        <Text style={[styles.faint, { marginTop: 6 }]}>
+          Mitteilungen sind für diese App abgeschaltet – in den iOS-Einstellungen unter
+          «Mitteilungen» erlauben, sonst kommen Alarme nur bei geöffneter App an.
+        </Text>
       )}
     </Card>
   )
@@ -1471,6 +1456,17 @@ export function ProfileScreen() {
             <Text style={styles.faint}>{u.role}</Text>
           </Pressable>
         ))}
+        <Pressable
+          style={[styles.outlineButton, { marginTop: 10 }]}
+          onPress={() =>
+            Alert.alert('Zurücksetzen', 'Demo-Daten zurücksetzen?', [
+              { text: 'Abbrechen', style: 'cancel' },
+              { text: 'Zurücksetzen', style: 'destructive', onPress: () => dispatch({ type: 'RESET' }) },
+            ])
+          }
+        >
+          <Text style={styles.outlineButtonText}>Demo zurücksetzen</Text>
+        </Pressable>
       </Card>
       )}
 
@@ -1506,22 +1502,9 @@ export function ProfileScreen() {
           <ShieldAlert size={16} color={colors.muted} />
           <Text style={[styles.cardTitle, { flex: 1 }]}>Über diese App</Text>
         </View>
-        <Text style={[styles.faint, { marginTop: 6 }]}>
-          SOBE Notfall – Demo der Mitarbeiter-App (Expo). Der Alarmserver wird lokal simuliert:
-          Zustellungen, Rückmeldungen der Einsatzkräfte und Eskalationen laufen auf dem Gerät.
-          Es werden keine echten Benachrichtigungen versendet.
+        <Text style={[styles.body, { marginTop: 6 }]}>
+          Version {Constants.expoConfig?.version ?? 'unbekannt'}
         </Text>
-        <Pressable
-          style={[styles.outlineButton, { marginTop: 12 }]}
-          onPress={() =>
-            Alert.alert('Zurücksetzen', 'Demo-Daten zurücksetzen?', [
-              { text: 'Abbrechen', style: 'cancel' },
-              { text: 'Zurücksetzen', style: 'destructive', onPress: () => dispatch({ type: 'RESET' }) },
-            ])
-          }
-        >
-          <Text style={styles.outlineButtonText}>Demo zurücksetzen</Text>
-        </Pressable>
       </Card>
 
       <Pressable style={styles.outlineButton} onPress={logout}>
