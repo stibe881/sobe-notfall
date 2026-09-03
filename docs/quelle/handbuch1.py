@@ -261,10 +261,29 @@ KOERPER = r"""
     <figcaption><b>Abb.</b> &nbsp; Genau diese Inhalte bekommen Mitarbeitende auf dem Telefon zu sehen &ndash; in derselben Reihenfolge.</figcaption>
   </figure>
 
+  <h3>Ein neues Szenario erstellen &ndash; der Assistent</h3>
+  <p>
+    <span class="ui">Neues Szenario</span> öffnet einen Assistenten, der in fünf
+    Schritten durch alles führt: <b>Grundlagen</b> (Titel, Kategorie, Priorität,
+    Symbol), <b>Alarmierung</b> (Kanäle, zuständige Gruppen, Notrufnummern, stiller
+    Alarm), <b>Anweisungen</b> (Alarmieren, Sofortmassnahmen, Empfängerschritte),
+    <b>Nachbearbeitung</b> (Entwarnung, weiterführende Massnahmen, Checkliste,
+    Rechtsgrundlagen) und die <b>Zusammenfassung</b> zum Prüfen. Die Schrittleiste
+    oben zeigt den Stand; bereits besuchte Schritte lassen sich direkt anspringen,
+    und «Weiter» bleibt gesperrt, bis die Pflichtangaben des Schritts stehen &ndash;
+    ein Titel, mindestens ein Kanal, mindestens eine Sofortmassnahme.
+  </p>
+  <figure class="bild-breit">
+    <img src="bilder/web-29-szenario-assistent.webp" alt="Assistent für ein neues Szenario mit Schrittleiste, Kanal-Auswahl und zuständigen Gruppen">
+    <figcaption><b>Abb.</b> &nbsp; Schritt 2 des Assistenten: Kanäle, Gruppen und Notrufnummern als antippbare Auswahl.</figcaption>
+  </figure>
+
   <h3>Ein Szenario bearbeiten</h3>
   <p>
-    Der Stift auf der Karte öffnet den Bearbeitungsdialog. Jedes Textfeld nimmt einen
-    Punkt pro Zeile auf; leere Zeilen werden beim Speichern verworfen.
+    Der Stift auf der Karte öffnet den Bearbeitungsdialog mit allen Feldern auf einen
+    Blick &ndash; er bleibt der schnellste Weg für gezielte Änderungen an bestehenden
+    Szenarien. Jedes Textfeld nimmt einen Punkt pro Zeile auf; leere Zeilen werden
+    beim Speichern verworfen.
   </p>
   <figure class="bild-breit">
     <img src="bilder/web-19-szenario-editor.webp" alt="Bearbeitungsdialog eines Szenarios mit den Feldern für Alarmieren, Sofortmassnahmen, weiterführende Massnahmen, Checkliste und Rechtsgrundlagen">
@@ -344,6 +363,22 @@ KOERPER = r"""
   <figure class="bild-breit">
     <img src="bilder/web-08-alarmplaene.webp" alt="Übersicht der Alarmpläne mit Zielgruppen, Kanälen und Eskalationsstufen">
     <figcaption><b>Abb.</b> &nbsp; Sechs vorbereitete Alarmpläne. Die Stufen darunter greifen automatisch, wenn niemand quittiert.</figcaption>
+  </figure>
+  <h3>Einen neuen Alarmplan erstellen &ndash; der Assistent</h3>
+  <p>
+    <span class="ui">Neuer Alarmplan</span> öffnet einen Assistenten mit fünf
+    Schritten: <b>Grundlagen</b> (Name und Szenario &ndash; als Kartenauswahl mit
+    Symbol), <b>Empfänger</b> (Zielgruppen und Standorte, leer bedeutet alle),
+    <b>Kanäle &amp; Optionen</b> (Erstaussand, Quittierfunktion, Betriebszeiten),
+    <b>Eskalation</b> (Stufen mit Minuten, zusätzlichen Gruppen und Kanälen) und die
+    <b>Zusammenfassung</b>. Wählen Sie ein Szenario, übernimmt der Assistent dessen
+    Standard-Kanäle und zuständige Gruppen als Vorbelegung &ndash; in den folgenden
+    Schritten bleibt beides anpassbar. Für Änderungen an bestehenden Plänen öffnet
+    der Stift weiterhin den gewohnten Bearbeitungsdialog.
+  </p>
+  <figure class="bild-breit">
+    <img src="bilder/web-30-alarmplan-assistent.webp" alt="Assistent für einen neuen Alarmplan mit Szenario-Auswahl als Karten und Hinweis auf übernommene Kanäle und Gruppen">
+    <figcaption><b>Abb.</b> &nbsp; Schritt 1 des Assistenten: Das gewählte Szenario «Brand / Feuer» belegt Kanäle und Zielgruppen vor.</figcaption>
   </figure>
   <div class="hinweis">
     <p class="marke-klein">Prüfen Sie das einmal</p>
