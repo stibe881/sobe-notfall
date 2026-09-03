@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react'
 import { Alert, Linking, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native'
 import {
-  BellRing, Check, CheckCircle2, ChevronLeft, Clock, KeyRound, LogOut, MapPin, Phone, Play, Search as SearchIcon,
-  Scale, ShieldAlert, ShieldCheck, Siren, Timer, X,
+  BellRing, BookOpen, Check, CheckCircle2, ChevronLeft, Clock, ExternalLink, KeyRound, LogOut, MapPin, Phone, Play,
+  Search as SearchIcon, Scale, ShieldAlert, ShieldCheck, Siren, Timer, X,
 } from 'lucide-react-native'
 import { alleinarbeitEmpfaenger, createAlarm, resolveRecipients, uid, useStore } from './store'
 import { ScenarioIcon } from './ScenarioIcon'
 import Constants from 'expo-constants'
 import { cancelScheduled, ensurePermissions, scheduleAt } from './notifications'
+import { serverUrl } from './api'
 import { LONE_WORK_DEFAULT_GROUPS, type Alarm, type LoneWorkSession, type Scenario, type User } from './types'
 import { Badge, Card, HoldButton, colors, formatDuration, formatRelative } from './ui'
 import { MIN_PASSWORD_LENGTH, passwordProblem } from './auth'
@@ -1383,6 +1384,43 @@ function ModeCard() {
   )
 }
 
+/**
+ * Handbücher zur eigenen Rolle – ausgeliefert vom Alarmserver unter
+ * /handbuecher, geöffnet im Browser. Mitarbeitende sehen nur ihr eigenes
+ * Handbuch; Administrations- und Installationsunterlagen bleiben der
+ * jeweiligen Rolle vorbehalten.
+ */
+const HANDBUECHER: { datei: string; titel: string; rollen: User['role'][] }[] = [
+  { datei: 'handbuch-1-administration.html', titel: 'Administration', rollen: ['admin'] },
+  { datei: 'handbuch-2-krisenstab.html', titel: 'Krisenstab', rollen: ['admin', 'krisenstab'] },
+  { datei: 'handbuch-3-mitarbeitende.html', titel: 'Mitarbeitende', rollen: ['admin', 'krisenstab', 'mitarbeiter'] },
+  { datei: 'handbuch-4-installation.html', titel: 'Installation & Konfiguration', rollen: ['admin'] },
+]
+
+function HandbuchCard({ rolle }: { rolle: User['role'] }) {
+  const passend = HANDBUECHER.filter((h) => h.rollen.includes(rolle))
+  if (passend.length === 0) return null
+  return (
+    <Card>
+      <View style={styles.row}>
+        <BookOpen size={16} color={colors.muted} />
+        <Text style={[styles.cardTitle, { flex: 1 }]}>Handbücher</Text>
+      </View>
+      {passend.map((h) => (
+        <Pressable
+          key={h.datei}
+          style={[styles.row, { paddingVertical: 9 }]}
+          onPress={() => Linking.openURL(`${serverUrl()}/handbuecher/${h.datei}`).catch(() => {})}
+        >
+          <Text style={[styles.body, { flex: 1 }]}>{h.titel}</Text>
+          <ExternalLink size={14} color={colors.faint} />
+        </Pressable>
+      ))}
+      <Text style={styles.faint}>Öffnet im Browser – von dort auch druck- und speicherbar.</Text>
+    </Card>
+  )
+}
+
 /** Nur der Zustand zählt: Sind Push-Mitteilungen auf diesem Gerät aktiv? */
 function PushStatusCard() {
   const [granted, setGranted] = useState<boolean | null>(null)
@@ -1487,15 +1525,14 @@ export function ProfileScreen() {
                   : 'Verbinde mit Alarmserver …'}
             </Text>
           </View>
-          <Text style={[styles.faint, { marginTop: 6 }]}>
-            Benutzer, Szenarien und Alarme kommen vom Server – dieselben Daten wie im Webportal.
-          </Text>
         </Card>
       )}
 
       {me.role === 'admin' && <ModeCard />}
 
       <PushStatusCard />
+
+      {state.mode === 'live' && <HandbuchCard rolle={me.role} />}
 
       <Card>
         <View style={styles.row}>

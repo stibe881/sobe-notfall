@@ -425,6 +425,13 @@ KOERPER = r"""
     Sie erreichen. Stimmt etwas nicht, melden Sie es der Schulleitung; ändern lässt es
     sich nur dort.
   </p>
+  <p>
+    Unter <span class="ui">Handbücher</span> finden Sie zudem die Handbücher zu Ihrer
+    Rolle &ndash; sie öffnen im Browser und lassen sich von dort drucken oder sichern.
+    Darunter zeigt <span class="ui">Push-Benachrichtigungen</span>, ob Mitteilungen auf
+    diesem Gerät aktiv sind, und <span class="ui">Über diese App</span> die installierte
+    Version.
+  </p>
   <figure class="geraet">
     <img src="bilder/app-12-profil.webp" alt="Profilseite mit Name, Standort, Gruppen, Installationshinweis, Passwort ändern und Abmelden">
     <figcaption><b>Abb.</b> &nbsp; Das Profil. <span class="ui">Passwort ändern</span> steht Ihnen jederzeit offen.</figcaption>
