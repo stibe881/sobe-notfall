@@ -4,7 +4,7 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
 import { StatusBar } from 'expo-status-bar'
 import { BellRing, BookOpen, CheckCircle2, MapPin, Phone, Siren, Timer, User } from 'lucide-react-native'
 import { StoreProvider, useStore } from './src/store'
-import { ensurePermissions, onNotificationTap, type PushDaten } from './src/notifications'
+import { ensurePermissions, onNotificationTap, setAppBadge, type PushDaten } from './src/notifications'
 import { alleinarbeitAbgleichen } from './src/liveActivity'
 import { alleinarbeitAndroidAbgleichen } from './src/androidTimer'
 import { logoUri } from './src/api'
@@ -95,6 +95,22 @@ function Root() {
     // Android: dauerhafte Countdown-Benachrichtigung statt Live-Aktivität
     void alleinarbeitAndroidAbgleichen(eigene)
   }, [hydrated, state.session, state.currentUserId, state.loneWorkSessions])
+
+  // Zahl auf dem App-Symbol: laufende Alarme, die mich betreffen. Die
+  // Push-Nachrichten tragen dieselbe Zahl – hier wird sie beim Öffnen und bei
+  // jeder Zustandsänderung nachgeführt, ohne Anmeldung auf null gestellt.
+  useEffect(() => {
+    if (!hydrated) return
+    if (!state.session) {
+      void setAppBadge(0)
+      return
+    }
+    const offene = state.alarms.filter(
+      (a) => a.status === 'active' &&
+        (a.triggeredByUserId === state.currentUserId || a.deliveries.some((d) => d.userId === state.currentUserId)),
+    )
+    void setAppBadge(offene.length)
+  }, [hydrated, state.session, state.currentUserId, state.alarms])
 
   // Antippen der Live-Aktivität öffnet die Alleinarbeit (sobenotfall://alleinarbeit);
   // ein Verbindungs-Link aus dem Portal (sobenotfall://verbinden?server=…) trägt

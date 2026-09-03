@@ -3,13 +3,14 @@ import * as Device from 'expo-device'
 import Constants from 'expo-constants'
 import { Platform } from 'react-native'
 
-// Benachrichtigungen auch anzeigen, wenn die App im Vordergrund ist
+// Benachrichtigungen auch anzeigen, wenn die App im Vordergrund ist.
+// shouldSetBadge übernimmt die vom Server mitgeschickte Zahl aufs App-Symbol.
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowBanner: true,
     shouldShowList: true,
     shouldPlaySound: true,
-    shouldSetBadge: false,
+    shouldSetBadge: true,
   }),
 })
 
@@ -84,7 +85,8 @@ export async function ensurePermissions(): Promise<boolean> {
       ios: {
         allowAlert: true,
         allowSound: true,
-        allowBadge: false,
+        // Zahl der laufenden Alarme auf dem App-Symbol
+        allowBadge: true,
         // Klingeln auch bei stummgeschaltetem Telefon und in Fokus-Modi.
         // Setzt die von Apple bewilligte Berechtigung voraus (siehe app.json).
         allowCriticalAlerts: true,
@@ -165,6 +167,21 @@ export async function scheduleAt(title: string, body: string, timestamp: number,
 export async function cancelScheduled(ids: (string | null)[]) {
   for (const id of ids) {
     if (id) await Notifications.cancelScheduledNotificationAsync(id).catch(() => {})
+  }
+}
+
+/**
+ * Zahl auf dem App-Symbol mit dem Zustand abgleichen (laufende Alarme, die mich
+ * betreffen). Die Push-Nachrichten des Servers tragen dieselbe Zahl – so stimmt
+ * das Symbol auch bei geschlossener App; hier wird sie beim Öffnen, Quittieren
+ * und nach der Entwarnung nachgeführt. Android zeigt je nach Launcher einen
+ * Punkt statt einer Zahl.
+ */
+export async function setAppBadge(anzahl: number): Promise<void> {
+  try {
+    await Notifications.setBadgeCountAsync(Math.max(0, anzahl))
+  } catch {
+    // Ohne Berechtigung oder Launcher-Unterstützung bleibt das Symbol ohne Zahl
   }
 }
 

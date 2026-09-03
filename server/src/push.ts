@@ -1,6 +1,6 @@
 import { db, getSetting, setSetting } from './db.js'
 import { broadcast } from './events.js'
-import { findAlarm, saveAlarm } from './store.js'
+import { allAlarms, findAlarm, saveAlarm } from './store.js'
 import type { DeliveryStatus } from './types.js'
 
 /**
@@ -106,6 +106,25 @@ export const KANAL_ALARM = 'alarme-v2'
 export const KANAL_STILL = 'alarme-still-v2'
 
 /**
+ * Zahl auf dem App-Symbol: wie viele laufende Alarme eine Person betreffen.
+ * Wird jeder Push-Nachricht mitgegeben, damit das Symbol auch dann stimmt,
+ * wenn die App geschlossen ist – die Entwarnung zählt sie wieder herunter.
+ */
+export function offeneAlarmeProPerson(userIds: string[]): Map<string, number> {
+  const zaehler = new Map<string, number>(userIds.map((id) => [id, 0]))
+  for (const alarm of allAlarms()) {
+    if (alarm.status !== 'active') continue
+    const betroffen = new Set(alarm.deliveries.map((d) => d.userId))
+    betroffen.add(alarm.triggeredByUserId)
+    for (const id of betroffen) {
+      const bisher = zaehler.get(id)
+      if (bisher !== undefined) zaehler.set(id, bisher + 1)
+    }
+  }
+  return zaehler
+}
+
+/**
  * Versand an alle Geräte der genannten Personen. Fehler werden protokolliert,
  * aber nie weitergereicht: Ein nicht erreichbarer Push-Dienst darf die
  * Alarmauslösung nicht verhindern.
@@ -114,6 +133,7 @@ export async function sendPush(userIds: string[], nachricht: PushNachricht): Pro
   const ziele = tokensForUsers(userIds)
   if (ziele.length === 0) return 0
 
+  const abzeichen = offeneAlarmeProPerson(userIds)
   const nachrichten = ziele.map((ziel) => ({
     to: ziel.token,
     title: nachricht.title,
@@ -123,6 +143,8 @@ export async function sendPush(userIds: string[], nachricht: PushNachricht): Pro
     sound: nachricht.silent ? null : 'default',
     priority: 'high',
     channelId: nachricht.silent ? KANAL_STILL : KANAL_ALARM,
+    // Zahl auf dem App-Symbol (iOS; Android zeigt je nach Launcher Punkt oder Zahl)
+    badge: abzeichen.get(ziel.userId) ?? 0,
     // Critical Alert nur an Geräte, die ihn tatsächlich dürfen – sonst lehnt
     // Apple die Nachricht ab. Ohne Bewilligung bleibt «time-sensitive».
     // Ein stiller Alarm bleibt «time-sensitive»: sichtbar trotz Fokus, aber lautlos.

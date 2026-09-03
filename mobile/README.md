@@ -113,8 +113,10 @@ unten); `SOBE_EAS_PLATFORMS=ios|android|all` in `server/.env` übersteuert diese
 
 1. Firebase-Projekt anlegen (console.firebase.google.com), Android-App mit dem Paketnamen
    `ch.sonnenberg.notfall` registrieren.
-2. `google-services.json` herunterladen, nach `mobile/` legen und in `app.json` unter
-   `android.googleServicesFile` eintragen (`"./google-services.json"`).
+2. `google-services.json` herunterladen und nach `mobile/` legen – mehr nicht:
+   `app.config.js` bindet die Datei automatisch ein, sobald sie da ist. Sie darf
+   **nicht** in `.gitignore` stehen (EAS packt das Arbeitsverzeichnis nach diesen
+   Regeln – eine ignorierte Datei käme nie beim Build an).
 3. Den FCM-Service-Account-Schlüssel bei Expo hinterlegen: `eas credentials` → Android →
    *Google Service Account Key (FCM V1)*.
 

@@ -145,7 +145,9 @@ KOERPER = r"""
     Meldung erscheint zuoberst auf der Startseite. Ist der Alarm nicht still, ist er
     auch bei stummgeschaltetem Telefon hörbar. <b>Tippen Sie die Mitteilung an</b>:
     Die App öffnet direkt die Handlungsanweisung zu diesem Alarm &ndash; Sie müssen
-    nichts suchen.
+    nichts suchen. Das App-Symbol auf dem Startbildschirm zeigt zudem die Zahl der
+    laufenden Alarme, die Sie betreffen; nach der Entwarnung verschwindet sie
+    wieder (Android zeigt je nach Gerät einen Punkt statt einer Zahl).
   </p>
   <div class="geraet-reihe">
     <figure class="geraet">
