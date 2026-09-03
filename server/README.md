@@ -76,6 +76,7 @@ von bekannten Geheimnissen bereinigt.
 | `SOBE_AUTO_RESTART` | Neustart nach der Aktualisierung (`false` schaltet ihn ab) | an |
 | `SOBE_PUBLIC_URL` | Öffentliche Adresse des Servers – für den LoRaWAN-Endpunkt und die Graph-Rückrufe | wird aus der Anfrage abgeleitet |
 | `EXPO_TOKEN` | Zugangstoken von expo.dev, nötig für die App-Builds | – |
+| `GITHUB_TOKEN` | Zugangstoken für das Repository (Fine-grained, nur Contents: Read). GitHub drosselt unauthentifizierte Abrufe je IP – auf Shared Hostings scheitert der Update-Knopf sonst gelegentlich mit «temporarily limiting …» | – |
 | `SOBE_EAS_PLATFORMS` | Plattformen des App-Builds über den Update-Knopf: `ios`, `android` oder `all` | `ios` |
 
 Beim ersten Start werden Standorte, Gruppen, Szenarien, Alarmplan-Vorlagen und

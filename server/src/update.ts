@@ -53,6 +53,22 @@ export function repoRoot(): string {
   return resolve(process.env.SOBE_REPO_ROOT ?? resolve(process.cwd(), '..'))
 }
 
+/**
+ * Git-Aufrufe mit Zugangstoken, falls eines hinterlegt ist (GITHUB_TOKEN oder
+ * GH_TOKEN in server/.env). GitHub drosselt unauthentifizierte Abrufe je
+ * IP-Adresse – auf einem Shared Hosting teilen sich viele Kunden dieselbe,
+ * darum scheitert das Holen dort gelegentlich mit «temporarily limiting …».
+ * Mit Token gilt das grosszügige authentifizierte Kontingent. Das Token wird
+ * als Kopfzeile übergeben, landet also weder in der Remote-Adresse noch in
+ * der Ausgabe; zusätzlich maskiert unkenntlich() jeden Klartext-Treffer.
+ */
+function gitMitToken(argumente: string[]): string[] {
+  const token = process.env.GITHUB_TOKEN ?? process.env.GH_TOKEN
+  if (!token) return argumente
+  const basic = Buffer.from(`x-access-token:${token}`).toString('base64')
+  return ['-c', `http.extraHeader=Authorization: Basic ${basic}`, ...argumente]
+}
+
 export function ladeLetztenJob(): UpdateJob | null {
   const roh = getSetting(JOB_KEY)
   if (!roh) return null
@@ -214,7 +230,7 @@ export async function versionsInfo(pruefeRemote = true): Promise<VersionsInfo> {
   let hinterher = 0
   let remoteVorhanden = false
   if (branch) {
-    if (pruefeRemote) await still('git', ['fetch', 'origin', branch], root)
+    if (pruefeRemote) await still('git', gitMitToken(['fetch', 'origin', branch]), root)
     remoteVorhanden = await branchAufOrigin(root, branch)
     if (remoteVorhanden) {
       const zaehler = await still('git', ['rev-list', '--count', `HEAD..origin/${branch}`], root)
@@ -280,7 +296,7 @@ function schrittPlan(scope: UpdateScope, branch: string | null, remoteVorhanden:
     branch && remoteVorhanden
       ? {
           id: 'pull', titel: 'Quellcode aktualisieren',
-          befehl: 'git', argumente: ['pull', '--ff-only', 'origin', branch], verzeichnis: (r) => r,
+          befehl: 'git', argumente: gitMitToken(['pull', '--ff-only', 'origin', branch]), verzeichnis: (r) => r,
         }
       : {
           id: 'pull', titel: 'Quellcode aktualisieren',
@@ -293,7 +309,7 @@ function schrittPlan(scope: UpdateScope, branch: string | null, remoteVorhanden:
   const schritte: SchrittDefinition[] = [
     {
       id: 'fetch', titel: 'Änderungen vom Repository holen',
-      befehl: 'git', argumente: ['fetch', '--all', '--prune'], verzeichnis: (r) => r,
+      befehl: 'git', argumente: gitMitToken(['fetch', '--all', '--prune']), verzeichnis: (r) => r,
     },
     pull,
     {

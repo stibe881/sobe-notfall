@@ -448,7 +448,8 @@ footer .adressfuss { margin-top: 22px; }
         <tr><td><code>SOBE_PUBLIC_URL</code></td><td>Öffentliche Adresse des Servers &ndash; für SSO-Rücksprünge und den LoRaWAN-Endpunkt</td><td>aus der Anfrage abgeleitet</td></tr>
         <tr><td><code>SOBE_SEED_PROFILE</code></td><td>Erstbefüllung: <code>standard</code> (neutral, mit Einrichtungsassistent) oder <code>sonnenberg</code></td><td><code>standard</code></td></tr>
         <tr><td><code>SOBE_BACKUP_DIR</code></td><td>Ordner der Sicherungen (Abschnitt 11)</td><td><code>~/sicherung</code></td></tr>
-        <tr><td><code>EXPO_TOKEN</code></td><td>Zugangstoken von expo.dev &ndash; nur für den iOS-Build nötig</td><td>&ndash;</td></tr>
+        <tr><td><code>EXPO_TOKEN</code></td><td>Zugangstoken von expo.dev &ndash; nur für den App-Build nötig</td><td>&ndash;</td></tr>
+        <tr><td><code>GITHUB_TOKEN</code></td><td>Zugangstoken fürs Repository &ndash; empfohlen auf Shared Hostings, sonst drosselt GitHub das Holen gelegentlich (Abschnitt 12)</td><td>&ndash;</td></tr>
       </tbody>
     </table>
   </div>
@@ -758,6 +759,18 @@ footer .adressfuss { margin-top: 22px; }
     Node-Version nicht (Abschnitt 2) &ndash; <code>node -v</code> muss 22 oder 24 zeigen.
     Meldet er <code>EADDRINUSE</code>, läuft auf dem Port bereits ein Prozess: andere
     Instanz oder alter Prozess; <code>PORT</code> prüfen.
+  </p>
+
+  <h4>Aktualisierung scheitert beim «Änderungen vom Repository holen»</h4>
+  <p>
+    Meldet der Schritt <em>«GitHub is temporarily limiting some unauthenticated
+    downloads»</em>, drosselt GitHub unauthentifizierte Abrufe von dieser IP-Adresse
+    &ndash; auf einem Shared Hosting teilen sich viele Kunden dieselbe. Kurzfristig hilft
+    ein erneuter Versuch nach ein paar Minuten. Dauerhaft: auf GitHub ein
+    Fine-grained-Token nur für dieses Repository mit der Berechtigung
+    <b>Contents: Read-only</b> erzeugen und als <code>GITHUB_TOKEN</code> in
+    <code>server/.env</code> eintragen &ndash; der Server holt dann authentifiziert, mit
+    grosszügigem Kontingent. Das Token erscheint nie im Update-Protokoll.
   </p>
 
   <h4>Portal erreichbar, aber «Alarmserver nicht erreichbar»</h4>
