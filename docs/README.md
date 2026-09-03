@@ -10,6 +10,12 @@ als HTML zum Lesen im Browser.
 | alle Mitarbeitenden | [handbuch-3-mitarbeitende.html](handbuch-3-mitarbeitende.html) |
 | Systemverantwortliche, technischer Betrieb | [handbuch-4-installation.html](handbuch-4-installation.html) |
 
+Der Alarmserver liefert diesen Ordner unter `/handbuecher` mit aus; das Portal
+verlinkt die Handbücher unter **Hilfe → Handbücher**. **Deshalb gilt: Nach jeder
+inhaltlichen Änderung an `quelle/handbuch*.py` müssen die gebauten HTML-Dateien
+neu erzeugt und mit committet werden** (`python3 docs/quelle/bauen.py`) – sonst
+zeigt das Portal einen alten Stand.
+
 Die PDF zum Ausdrucken und Verteilen entstehen mit einem Befehl (siehe unten)
 und liegen bewusst nicht in der Versionsverwaltung: Sie sind erzeugt, wiegen
 zusammen rund 19 MB, und jede Neuerzeugung bliebe für immer in der Historie.

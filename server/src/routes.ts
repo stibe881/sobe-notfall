@@ -15,7 +15,7 @@ import {
 import { sendeAlarmKanaele, sendeInfoKanaele } from './kanaele.js'
 import { rolleAusGruppen, ssoAbbruch, ssoCallback, ssoKonfiguriert, ssoStartUrl, ssoTest, ssoZiel } from './sso.js'
 import { geraeteProPerson, letzterTestpush, pushDienstStatus, registerPushToken, removePushToken } from './push.js'
-import { readdirSync, statSync } from 'node:fs'
+import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { aktuellerJob, starteUpdate, updateLaeuft, versionsInfo, type UpdateScope } from './update.js'
@@ -528,6 +528,29 @@ router.post('/integrations', auth, adminOnly, (req, res) => {
   addAudit('admin', 'Integrationen gespeichert')
   broadcast('state')
   res.json({ ok: true })
+})
+
+// ---------- Hilfe: Handbücher ----------
+
+/**
+ * Verfügbare Handbücher auflisten – gelesen aus docs/ im Arbeitsverzeichnis,
+ * damit auch künftige Handbücher ohne Portal-Anpassung erscheinen. Ausgeliefert
+ * werden sie statisch unter /handbuecher (siehe index.ts).
+ */
+router.get('/hilfe/handbuecher', auth, (_req, res) => {
+  const ordner = resolve(process.env.SOBE_REPO_ROOT ?? resolve(process.cwd(), '..'), 'docs')
+  const handbuecher: { datei: string; titel: string }[] = []
+  try {
+    for (const name of readdirSync(ordner).sort()) {
+      if (!/^handbuch-.*\.html$/.test(name)) continue
+      const kopf = readFileSync(join(ordner, name), 'utf8').slice(0, 8192)
+      const titel = kopf.match(/<title>([^<]+)<\/title>/)?.[1] ?? name
+      handbuecher.push({ datei: name, titel })
+    }
+  } catch {
+    // Ordner fehlt (z. B. Server ohne Arbeitsverzeichnis) – leere Liste
+  }
+  res.json({ handbuecher })
 })
 
 // ---------- Branding: Kundenlogo ----------

@@ -5,6 +5,7 @@ import express from 'express'
 import { existsSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { purgeExpiredSessions } from './auth.js'
+import { repoRoot } from './update.js'
 import { startEngine } from './engine.js'
 import { startHeartbeat } from './events.js'
 import { starteReplikation } from './replikation.js'
@@ -31,6 +32,14 @@ app.use(express.json({ limit: '2mb' }))
 
 app.get('/api/health', (_req, res) => res.json({ ok: true, time: Date.now() }))
 app.use('/api', router)
+
+// Die Handbücher aus docs/ liefert der Server direkt mit aus – sie liegen im
+// Arbeitsverzeichnis und sind damit nach jeder Aktualisierung automatisch auf
+// dem Stand der installierten Version. Das Portal verlinkt sie unter «Hilfe».
+const DOCS_ROOT = resolve(repoRoot(), 'docs')
+if (existsSync(resolve(DOCS_ROOT, 'handbuch-1-administration.html'))) {
+  app.use('/handbuecher', express.static(DOCS_ROOT, { maxAge: '1h', etag: true }))
+}
 
 if (webVorhanden) {
   // Gebaute Dateien mit Prüfsumme im Namen dürfen lange zwischengespeichert

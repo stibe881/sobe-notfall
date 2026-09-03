@@ -225,6 +225,9 @@ export const api = {
   saveIntegrations: (integrations: AppState['integrations']) =>
     anfrage<{ ok: boolean }>('/integrations', { method: 'POST', body: JSON.stringify(integrations) }),
 
+  /** Hilfe: verfügbare Handbücher (aus docs/ auf dem Alarmserver) */
+  handbuecher: () => anfrage<{ handbuecher: { datei: string; titel: string }[] }>('/hilfe/handbuecher'),
+
   /** Kundenlogo hochladen (data-URL, PNG/JPEG/SVG/WebP, max. ~300 KB) */
   uploadLogo: (dataUrl: string) =>
     anfrage<{ ok: boolean; logoVersion: string }>('/branding/logo', { method: 'POST', body: JSON.stringify({ dataUrl }) }),

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { NavLink, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import {
-  AlertTriangle, BellRing, BookOpen, Building2, ClipboardList, ExternalLink, FileClock, LayoutDashboard,
+  AlertTriangle, BellRing, BookMarked, BookOpen, Building2, ClipboardList, ExternalLink, FileClock, LayoutDashboard,
   Download, Lock, LogOut, Menu, Phone, Plug, Radio, Siren, Smartphone, Timer, Users, UsersRound, X,
 } from 'lucide-react'
 import { useStore } from './store'
@@ -18,6 +18,7 @@ import Buttons from './pages/Buttons'
 import Integrations from './pages/Integrations'
 import Contacts from './pages/Contacts'
 import AuditLog from './pages/AuditLog'
+import Help from './pages/Help'
 import UserApp from './pages/UserApp'
 import LoginScreen, { ForcePasswordChange } from './components/LoginScreen'
 import UpdateDialog from './components/UpdateDialog'
@@ -44,6 +45,8 @@ const NAV = [
   { section: 'System' },
   { to: '/integrationen', label: 'Integrationen', icon: Plug },
   { to: '/protokoll', label: 'Ereignisprotokoll', icon: FileClock },
+  { section: 'Hilfe' },
+  { to: '/hilfe', label: 'Handbücher', icon: BookMarked },
 ] as const
 
 function ModeBadge({ mode }: { mode: 'demo' | 'live' }) {
@@ -428,6 +431,7 @@ export default function App() {
             <Route path="/notfallkontakte" element={<Contacts />} />
             <Route path="/integrationen" element={<Integrations />} />
             <Route path="/protokoll" element={<AuditLog />} />
+            <Route path="/hilfe" element={<Help />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </main>
