@@ -8,6 +8,7 @@ import { alleinarbeitEmpfaenger, createAlarm, resolveRecipients, uid, useStore }
 import { ScenarioIcon } from './ScenarioIcon'
 import Constants from 'expo-constants'
 import { cancelScheduled, ensurePermissions, scheduleAt } from './notifications'
+import { androidCountdownVerfuegbar } from './androidTimer'
 import { serverUrl } from './api'
 import { LONE_WORK_DEFAULT_GROUPS, type Alarm, type LoneWorkSession, type Scenario, type User } from './types'
 import { Badge, Card, HoldButton, colors, formatDuration, formatRelative } from './ui'
@@ -1187,6 +1188,13 @@ export function LoneWorkScreen() {
           </Pressable>
         </Card>
         {running.silent && <Text style={[styles.faint, { textAlign: 'center' }]}>Stille Alarmauslösung aktiviert.</Text>}
+        {Platform.OS === 'android' && (
+          <Text style={[styles.faint, { textAlign: 'center' }]}>
+            {androidCountdownVerfuegbar()
+              ? 'Der Countdown läuft auch als Benachrichtigung – sichtbar auf dem Sperrbildschirm.'
+              : 'Dieser App-Build zeigt den Countdown noch nicht als Benachrichtigung an – bitte die App aktualisieren.'}
+          </Text>
+        )}
       </ScrollView>
     )
   }

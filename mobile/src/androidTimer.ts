@@ -28,6 +28,15 @@ function modul(): Modul | null {
 const KANAL_TIMER = 'alleinarbeit-timer'
 const MELDUNG_ID = 'alleinarbeit-countdown'
 
+/**
+ * Enthält dieser Build die Countdown-Benachrichtigung? In Expo Go und in
+ * Builds vor der Android-Erweiterung fehlt das native Modul – die
+ * Alleinarbeits-Ansicht zeigt dann einen Hinweis statt still nichts.
+ */
+export function androidCountdownVerfuegbar(): boolean {
+  return Platform.OS === 'android' && modul() !== null
+}
+
 /** Zuletzt angezeigter Stand – nicht bei jedem Datenabgleich neu zeichnen */
 let angezeigt: { sessionId: string; expiresAt: number } | null = null
 
@@ -81,7 +90,9 @@ export async function alleinarbeitAndroidAbgleichen(sitzungen: LoneWorkSession[]
       },
     })
     angezeigt = { sessionId: laufend.id, expiresAt: laufend.expiresAt }
-  } catch {
-    // Anzeige ist Komfort – der Timer selbst läuft in App und Server weiter
+  } catch (fehler) {
+    // Anzeige ist Komfort – der Timer selbst läuft in App und Server weiter.
+    // Der Grund landet im Geräteprotokoll (adb logcat), statt still verloren zu gehen.
+    console.warn('[alleinarbeit] Countdown-Benachrichtigung fehlgeschlagen:', (fehler as Error).message)
   }
 }
