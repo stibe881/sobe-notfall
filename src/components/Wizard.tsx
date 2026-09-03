@@ -39,9 +39,15 @@ export function Wizard({
   }
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-start justify-center bg-slate-900/60 p-2 sm:p-4 overflow-y-auto" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl mt-4 sm:mt-8 mb-6 overflow-hidden" onClick={(e) => e.stopPropagation()}>
-        <div className="bg-gradient-to-r from-brand-600 to-brand-700 px-6 py-4 text-white">
+    // Auf dem Telefon füllt der Assistent den Bildschirm (h-dvh berücksichtigt
+    // die Browserleisten); Kopf, Schrittleiste und Fusszeile bleiben stehen,
+    // nur der Inhalt scrollt. Ab sm wird daraus der zentrierte Dialog.
+    <div className="fixed inset-0 z-50 flex items-stretch sm:items-start justify-center bg-slate-900/60 p-0 sm:p-4" onClick={onClose}>
+      <div
+        className="bg-white sm:rounded-2xl shadow-2xl w-full max-w-3xl flex flex-col h-dvh sm:h-auto sm:max-h-[calc(100vh-4rem)] sm:mt-6 overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="shrink-0 bg-gradient-to-r from-brand-600 to-brand-700 px-4 sm:px-6 py-4 text-white">
           <div className="flex items-start justify-between gap-3">
             <div>
               <div className="flex items-center gap-2 font-semibold text-lg">
@@ -55,7 +61,7 @@ export function Wizard({
           </div>
         </div>
 
-        <div className="px-6 pt-5">
+        <div className="shrink-0 px-4 sm:px-6 pt-4 sm:pt-5">
           <ol className="flex items-start">
             {schritte.map((s, i) => {
               const erledigt = i < aktuell
@@ -82,7 +88,8 @@ export function Wizard({
                     >
                       {erledigt ? <Check size={16} /> : i + 1}
                     </span>
-                    <span className={`text-[11px] font-medium leading-tight text-center max-w-[5.5rem] ${aktiv ? 'text-brand-700' : erledigt ? 'text-slate-600' : 'text-slate-400'}`}>
+                    {/* Auf schmalen Bildschirmen trägt nur der aktive Schritt seinen Namen – so passen alle fünf ins Bild */}
+                    <span className={`text-[11px] font-medium leading-tight text-center max-w-[5.5rem] ${aktiv ? 'text-brand-700' : erledigt ? 'hidden sm:block text-slate-600' : 'hidden sm:block text-slate-400'}`}>
                       {s.titel}
                     </span>
                   </button>
@@ -92,7 +99,7 @@ export function Wizard({
           </ol>
         </div>
 
-        <div className="px-6 py-5">
+        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-5">
           <h4 className="font-semibold text-slate-800">
             Schritt {aktuell + 1} von {schritte.length}: {schritt.titel}
           </h4>
@@ -100,7 +107,7 @@ export function Wizard({
           <div className={schritt.hinweis ? '' : 'mt-3'}>{schritt.inhalt}</div>
         </div>
 
-        <div className="flex items-center justify-between gap-2 border-t border-slate-100 bg-slate-50 px-6 py-3.5">
+        <div className="shrink-0 flex items-center justify-between gap-2 border-t border-slate-100 bg-slate-50 px-4 sm:px-6 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           <Button variant="ghost" onClick={onClose}>Abbrechen</Button>
           <div className="flex items-center gap-2">
             {aktuell > 0 && (
