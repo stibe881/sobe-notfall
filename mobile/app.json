@@ -39,7 +39,8 @@
         "NSLocalNetworkUsageDescription": "SOBE Notfall verbindet sich mit dem Alarmserver im Schulnetz, um Benutzerkonten, Szenarien und Alarme zu laden."
       },
       "entitlements": {
-        "com.apple.developer.usernotifications.time-sensitive": true
+        "com.apple.developer.usernotifications.time-sensitive": true,
+        "com.apple.developer.usernotifications.critical-alerts": true
       }
     },
     "android": {

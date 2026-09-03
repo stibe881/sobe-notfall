@@ -236,7 +236,12 @@ Option wählen – echte Notfälle sind selten.
 
 ### Nach der Bewilligung
 
-Zweiten Eintrag ergänzen und wieder **einmal mit Rückfragen** bauen (wie oben):
+> **Stand: Apple hat die Bewilligung für `ch.sonnenberg.notfall` am 3.9.2026
+> erteilt.** Der zweite Eintrag steht seither in `app.json` – es fehlt nur noch
+> der eine Build mit Rückfragen (wie oben), damit die Berechtigung ins
+> Bereitstellungsprofil kommt.
+
+Zweiter Eintrag (bereits ergänzt) und wieder **einmal mit Rückfragen** bauen:
 
 ```json
 "entitlements": {
