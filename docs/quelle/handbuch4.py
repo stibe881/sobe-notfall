@@ -239,6 +239,16 @@ KOERPER = r"""
     <img src="bilder/web-26-organisation-redundanz.webp" alt="Seite Integrationen mit den Karten Organisation und Auftritt sowie Redundanz">
     <figcaption><b>Abb.</b> &nbsp; Oben links <span class="ui">Organisation &amp; Auftritt</span> (Name und Kurzname), rechts die Redundanz (Abschnitt 9). Darunter folgen App-Verbindung, SMS-Gateway, Teams, Telefonie, SSO und LoRaWAN.</figcaption>
   </figure>
+  <h3>Logo und Akzentfarbe</h3>
+  <p>
+    Unter <span class="ui">Organisation &amp; Auftritt</span> lassen sich pro Kunde ein
+    <b>Logo</b> hochladen (PNG, JPEG, SVG oder WebP, höchstens rund 300&nbsp;KB, am besten
+    mit transparentem Hintergrund) und eine <b>Akzentfarbe</b> wählen. Beides erscheint
+    auf der Anmeldemaske, in der Portal-Navigation und in der App &ndash; ohne dass die App
+    angepasst werden müsste. Das <b>Alarmrot bleibt bewusst bei allen Kunden gleich</b>:
+    Signalfarben für Alarme und SOS sind nicht umfärbbar. App-Icon und Name im
+    App&nbsp;Store bzw. Play&nbsp;Store gehören zum Build und sind für alle Kunden identisch.
+  </p>
   <div class="tabelle-huelle">
     <table>
       <caption>Was Sie pro Anbindung brauchen</caption>

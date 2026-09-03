@@ -169,11 +169,17 @@ export interface SetupInfo {
   sso?: boolean
   /** Name der Organisation – erscheint vor der Anmeldung */
   organization?: string | null
+  /** Akzentfarbe (#rrggbb) und Logo-Version – Branding schon vor der Anmeldung */
+  organizationColor?: string | null
+  logoVersion?: string | null
   /** Redundanz: Rolle dieses Servers und Ausweichadresse */
   serverRolle?: 'primary' | 'standby' | null
   fallbackUrl?: string | null
   failover?: boolean
 }
+
+/** Adresse des Kundenlogos – die Versionskennung macht sie dauerhaft cachebar */
+export const logoUri = (version: string): string => `${serverUrl()}/api/branding/logo?v=${encodeURIComponent(version)}`
 
 export const api = {
   health: () => anfrage<{ ok: boolean }>('/health'),

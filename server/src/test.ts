@@ -479,6 +479,39 @@ async function main(): Promise<void> {
     nachEinrichtung.body.locations.some((l: any) => l.name === 'Hauptsitz Test'))
   pruefe('Einrichtung gilt als abgeschlossen', (await ruf('/setup')).body.setupPending === false)
 
+  // --- Branding: Akzentfarbe und Logo ---
+  const mitFarbe = (await ruf('/state', { token: adminToken })).body.integrations
+  await ruf('/integrations', {
+    method: 'POST', token: adminToken,
+    body: JSON.stringify({ ...mitFarbe, organization: { ...mitFarbe.organization, color: '#123456' } }),
+  })
+  pruefe('Akzentfarbe gespeichert und vor der Anmeldung sichtbar',
+    (await ruf('/setup')).body.organizationColor === '#123456')
+  const farbeKaputt = (await ruf('/state', { token: adminToken })).body.integrations
+  await ruf('/integrations', {
+    method: 'POST', token: adminToken,
+    body: JSON.stringify({ ...farbeKaputt, organization: { ...farbeKaputt.organization, color: 'red; }} böse' } }),
+  })
+  pruefe('Ungültige Farbe wird nicht übernommen',
+    (await ruf('/setup')).body.organizationColor === '#123456')
+
+  pruefe('Logo hochladen nur für die Administration',
+    (await ruf('/branding/logo', { method: 'POST', token: peterToken, body: JSON.stringify({ dataUrl: 'data:image/png;base64,QUJD' }) })).status === 403)
+  pruefe('Nur Bildformate erlaubt',
+    (await ruf('/branding/logo', { method: 'POST', token: adminToken, body: JSON.stringify({ dataUrl: 'data:text/html;base64,QUJD' }) })).status === 400)
+  const logoRauf = await ruf('/branding/logo', {
+    method: 'POST', token: adminToken,
+    body: JSON.stringify({ dataUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAA' }),
+  })
+  pruefe('Logo hochladbar – Version wird vergeben', logoRauf.status === 200 && Boolean(logoRauf.body.logoVersion))
+  const logoAntwort = await fetch(BASIS + '/api/branding/logo')
+  pruefe('Logo öffentlich abrufbar (für die Anmeldemaske)',
+    logoAntwort.status === 200 && logoAntwort.headers.get('content-type') === 'image/png')
+  pruefe('Anmeldemaske kennt die Logo-Version',
+    (await ruf('/setup')).body.logoVersion === logoRauf.body.logoVersion)
+  await ruf('/branding/logo', { method: 'DELETE', token: adminToken })
+  pruefe('Logo entfernbar', (await ruf('/setup')).body.logoVersion === null)
+
   // --- Redundanz ---
   pruefe('Redundanz-Konfiguration nur für die Administration',
     (await ruf('/redundanz', { token: peterToken })).status === 403)

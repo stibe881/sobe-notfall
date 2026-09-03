@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import qrcode from 'qrcode-generator'
 import { Building2, CheckCircle2, Copy, KeyRound, Link2, Loader2, MapPin, MessageSquare, Phone, PhoneCall, Plus, QrCode, Radio, RefreshCw, ServerCog, Smartphone, Trash2, Users, XCircle } from 'lucide-react'
-import { api, serverUrl, type RedundanzConfig, type RedundanzStatus } from '../lib/api'
+import { api, logoUrl, serverUrl, type RedundanzConfig, type RedundanzStatus } from '../lib/api'
 import { uid, useStore } from '../store'
 import type { IntegrationSettings, Webhook } from '../types'
 import { Badge, Button, Card, Field, Modal, Toggle, VORBEREITET, Vorbereitet, formatDateTime, inputClass } from '../components/ui'
@@ -186,9 +186,18 @@ function OrganisationEinstellungen() {
   }
 
   function speichern() {
+    const farbe = (entwurf.color ?? '').trim()
     dispatch({
       type: 'UPDATE_INTEGRATIONS',
-      integrations: { ...integ, organization: { name: entwurf.name.trim(), shortName: entwurf.shortName.trim().slice(0, 11) } },
+      integrations: {
+        ...integ,
+        organization: {
+          ...org,
+          name: entwurf.name.trim(),
+          shortName: entwurf.shortName.trim().slice(0, 11),
+          color: /^#[0-9a-fA-F]{6}$/.test(farbe) ? farbe : undefined,
+        },
+      },
     })
     gespeichert()
   }
@@ -203,13 +212,36 @@ function OrganisationEinstellungen() {
           <input className={inputClass} maxLength={11} placeholder="MUSTER" value={entwurf.shortName} onChange={(e) => patch({ shortName: e.target.value })} />
         </Field>
       </div>
+      <Field label="Akzentfarbe – färbt Navigation, Knöpfe und Akzente in Portal und App">
+        <div className="flex items-center gap-2">
+          <input
+            type="color"
+            className="h-9 w-12 rounded border border-slate-300 bg-white p-0.5 cursor-pointer"
+            value={/^#[0-9a-fA-F]{6}$/.test(entwurf.color ?? '') ? entwurf.color! : '#1c504b'}
+            onChange={(e) => patch({ color: e.target.value })}
+            aria-label="Akzentfarbe wählen"
+          />
+          <input
+            className={`${inputClass} max-w-[130px] font-mono`}
+            placeholder="#1c504b"
+            value={entwurf.color ?? ''}
+            onChange={(e) => patch({ color: e.target.value })}
+          />
+          {entwurf.color && (
+            <Button variant="ghost" onClick={() => patch({ color: undefined })}>Standardfarbe</Button>
+          )}
+        </div>
+      </Field>
       <div className="flex items-center gap-2">
         <Button onClick={speichern} disabled={!geaendert}>Speichern</Button>
       </div>
       <p className="text-xs text-slate-400">
-        Der Name erscheint auf der Anmeldemaske des Portals und in der App (iOS und Android), sobald sie
-        mit diesem Alarmserver verbunden ist – die App selbst bleibt für alle Kunden dieselbe.
+        Name, Farbe und Logo erscheinen auf der Anmeldemaske des Portals und in der App (iOS und Android),
+        sobald sie mit diesem Alarmserver verbunden ist – die App selbst bleibt für alle Kunden dieselbe.
+        Das Alarmrot bleibt aus Sicherheitsgründen bei allen Kunden gleich.
       </p>
+
+      <LogoEinstellungen />
 
       <div className="pt-3 border-t border-slate-100">
         <Toggle
@@ -241,6 +273,84 @@ function OrganisationEinstellungen() {
           label={`Mehrsprachige App-Inhalte (DE/EN/FR/IT) – ${VORBEREITET}`}
         />
       </div>
+    </div>
+  )
+}
+
+/** Kundenlogo: hochladen, Vorschau, entfernen – liegt auf dem Alarmserver */
+function LogoEinstellungen() {
+  const { state, refresh } = useStore()
+  const logoVersion = state.integrations.organization?.logoVersion
+  const [fehler, setFehler] = useState<string | null>(null)
+  const [laedt, setLaedt] = useState(false)
+
+  if (state.mode !== 'live') {
+    return (
+      <p className="text-xs text-slate-400 pt-3 border-t border-slate-100">
+        Das Kundenlogo wird auf dem Alarmserver hinterlegt – im Live-Modus verfügbar.
+      </p>
+    )
+  }
+
+  function hochladen(datei: File) {
+    setFehler(null)
+    if (!/^image\/(png|jpe?g|svg\+xml|webp)$/.test(datei.type)) {
+      setFehler('Bitte ein Bild als PNG, JPEG, SVG oder WebP wählen.')
+      return
+    }
+    const leser = new FileReader()
+    leser.onload = async () => {
+      const dataUrl = String(leser.result ?? '')
+      if (dataUrl.length > 400_000) {
+        setFehler('Das Logo ist zu gross – bitte höchstens rund 300 KB (am besten als SVG oder verkleinertes PNG).')
+        return
+      }
+      setLaedt(true)
+      try {
+        await api.uploadLogo(dataUrl)
+        refresh()
+      } catch (f) {
+        setFehler((f as Error).message)
+      } finally {
+        setLaedt(false)
+      }
+    }
+    leser.readAsDataURL(datei)
+  }
+
+  return (
+    <div className="pt-3 border-t border-slate-100 space-y-2">
+      <div className="text-xs text-slate-500 font-medium">Kundenlogo</div>
+      <div className="flex items-center gap-3 flex-wrap">
+        {logoVersion ? (
+          <span className="inline-flex items-center rounded-lg border border-slate-200 bg-white p-2">
+            <img src={logoUrl(logoVersion)} alt="Kundenlogo" className="h-10 w-auto max-w-[180px] object-contain" />
+          </span>
+        ) : (
+          <span className="text-xs text-slate-400">Noch kein Logo hinterlegt.</span>
+        )}
+        <label className="inline-flex">
+          <input
+            type="file"
+            accept="image/png,image/jpeg,image/svg+xml,image/webp"
+            className="hidden"
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) hochladen(f); e.target.value = '' }}
+          />
+          <span className="cursor-pointer rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50 transition">
+            {laedt ? 'Lädt …' : logoVersion ? 'Logo ersetzen' : 'Logo hochladen'}
+          </span>
+        </label>
+        {logoVersion && (
+          <Button variant="ghost" onClick={() => { setFehler(null); api.deleteLogo().then(refresh).catch((f: Error) => setFehler(f.message)) }}>
+            <Trash2 size={13} /> Entfernen
+          </Button>
+        )}
+      </div>
+      {fehler && <p className="text-xs text-alarm-600">{fehler}</p>}
+      <p className="text-xs text-slate-400">
+        PNG, JPEG, SVG oder WebP, max. ~300 KB – am besten ein Logo mit transparentem Hintergrund.
+        Es erscheint hell hinterlegt auf der Anmeldemaske, in der Portal-Sidebar und in der App.
+      </p>
     </div>
   )
 }

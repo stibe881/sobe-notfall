@@ -303,6 +303,19 @@ export interface OrganizationSettings {
   name: string
   /** Kurzname für SMS-Absender und knappe Anzeigen (max. 11 Zeichen, A–Z/0–9) */
   shortName: string
+  /**
+   * Akzentfarbe des Kunden als Hex (#rrggbb) – färbt in Portal und App die
+   * Hausfarbe (Navigation, Knöpfe, Akzente). Das Alarmrot bleibt bewusst
+   * unverändert. Leer: Standard-Petrol.
+   */
+  color?: string
+  /**
+   * Versionskennung des hochgeladenen Logos – Teil der Logo-Adresse, damit
+   * Browser und App eine neue Datei sicher nachladen. Das Logo selbst liegt
+   * unter dem Einstellungs-Schlüssel «organizationLogo» und wird über
+   * GET /api/branding/logo ausgeliefert, nicht im Datenbestand mitgeschickt.
+   */
+  logoVersion?: string
 }
 
 export interface IntegrationSettings {

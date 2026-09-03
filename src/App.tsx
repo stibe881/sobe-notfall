@@ -21,7 +21,8 @@ import AuditLog from './pages/AuditLog'
 import UserApp from './pages/UserApp'
 import LoginScreen, { ForcePasswordChange } from './components/LoginScreen'
 import UpdateDialog from './components/UpdateDialog'
-import { api } from './lib/api'
+import { api, logoUrl } from './lib/api'
+import { wendeAkzentfarbeAn } from './lib/branding'
 import { Button, Field, Modal, inputClass } from './components/ui'
 
 const NAV = [
@@ -110,7 +111,13 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
     <div className="h-full w-72 lg:w-64 bg-slate-900 text-slate-300 flex flex-col">
       <div className="px-5 py-4 border-b border-slate-800">
         <div className="flex items-center gap-2 text-white font-bold text-lg">
-          <AlertTriangle className="text-brand-500" size={22} />
+          {state.integrations.organization?.logoVersion ? (
+            <span className="inline-flex items-center rounded bg-white px-1.5 py-1">
+              <img src={logoUrl(state.integrations.organization.logoVersion)} alt="" className="h-5 w-auto max-w-[110px] object-contain" />
+            </span>
+          ) : (
+            <AlertTriangle className="text-brand-500" size={22} />
+          )}
           SOBE Notfall
           <ModeBadge mode={state.mode} />
         </div>
@@ -330,6 +337,12 @@ export default function App() {
   const location = useLocation()
   const activeAlarms = state.alarms.filter((a) => a.status === 'active')
   const sessionUser = state.users.find((u) => u.id === state.session?.userId)
+
+  // Akzentfarbe des Kunden auf die Hausfarben-Palette anwenden (Alarmrot bleibt)
+  const akzent = state.integrations.organization?.color
+  useEffect(() => {
+    wendeAkzentfarbeAn(akzent ?? null)
+  }, [akzent])
 
   // Ohne gültige Anmeldung ist nichts erreichbar
   if (!sessionUser) return <LoginScreen />

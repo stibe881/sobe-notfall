@@ -1,4 +1,6 @@
+import { createHash } from 'node:crypto'
 import { Router, type NextFunction, type Request, type Response } from 'express'
+import { db, getSetting, setSetting } from './db.js'
 import {
   createSession, destroySession, destroyUserSessions, hashPassword, newSalt, normalizeEmail,
   passwordProblem, publicUser, sessionUserId, verifyPassword,
@@ -89,8 +91,11 @@ router.get('/setup', (_req, res) => {
     userCount: users.length,
     // Zeigt die Anmeldemaske den Knopf «Mit Microsoft anmelden»?
     sso: ssoKonfiguriert(integrations().sso),
-    // Name der Organisation – App und Portal zeigen ihn vor der Anmeldung
+    // Name, Akzentfarbe und Logo-Version der Organisation – App und Portal
+    // zeigen das Branding schon vor der Anmeldung
     organization: integrations().organization.name || null,
+    organizationColor: integrations().organization.color || null,
+    logoVersion: integrations().organization.logoVersion || null,
     // Der Einrichtungsassistent im Portal steht noch aus
     setupPending: einrichtungOffen(),
     // Redundanz: Rolle dieses Servers und Ausweichadresse für die App
@@ -521,6 +526,61 @@ router.post('/integrations', auth, adminOnly, (req, res) => {
   // Maskierte Geheimnisse aus dem Client lassen den gespeicherten Wert unangetastet
   saveIntegrations(mergeIntegrationen(req.body ?? {}, integrations()))
   addAudit('admin', 'Integrationen gespeichert')
+  broadcast('state')
+  res.json({ ok: true })
+})
+
+// ---------- Branding: Kundenlogo ----------
+
+/** Zulässige Bildformate und Obergrenze des Logos (als data-URL gespeichert) */
+const LOGO_MUSTER = /^data:image\/(png|jpe?g|svg\+xml|webp);base64,[A-Za-z0-9+/=]+$/
+const LOGO_MAX_ZEICHEN = 400_000 // ≈ 300 KB Bilddaten
+
+/**
+ * Kundenlogo ausliefern – öffentlich, denn es erscheint schon auf der
+ * Anmeldemaske. Die Versionskennung in der Adresse erlaubt aggressives
+ * Zwischenspeichern: Ein neues Logo bekommt eine neue Adresse.
+ */
+router.get('/branding/logo', (_req, res) => {
+  const daten = getSetting('organizationLogo')
+  if (!daten) {
+    res.status(404).json({ error: 'Kein Logo hinterlegt.' })
+    return
+  }
+  const treffer = daten.match(/^data:(image\/[a-z+.-]+);base64,(.+)$/)
+  if (!treffer) {
+    res.status(404).json({ error: 'Kein Logo hinterlegt.' })
+    return
+  }
+  res.set({ 'Content-Type': treffer[1], 'Cache-Control': 'public, max-age=31536000, immutable' })
+  res.send(Buffer.from(treffer[2], 'base64'))
+})
+
+router.post('/branding/logo', auth, adminOnly, (req: AuthRequest, res) => {
+  const dataUrl = String(req.body?.dataUrl ?? '')
+  if (!LOGO_MUSTER.test(dataUrl)) {
+    res.status(400).json({ error: 'Bitte ein Bild als PNG, JPEG, SVG oder WebP hochladen.' })
+    return
+  }
+  if (dataUrl.length > LOGO_MAX_ZEICHEN) {
+    res.status(400).json({ error: 'Das Logo ist zu gross – bitte höchstens rund 300 KB.' })
+    return
+  }
+  setSetting('organizationLogo', dataUrl)
+  const integ = integrations()
+  integ.organization.logoVersion = createHash('sha1').update(dataUrl).digest('hex').slice(0, 12)
+  saveIntegrations(integ)
+  addAudit('admin', 'Kundenlogo hochgeladen.', req.user!.id)
+  broadcast('state')
+  res.json({ ok: true, logoVersion: integ.organization.logoVersion })
+})
+
+router.delete('/branding/logo', auth, adminOnly, (req: AuthRequest, res) => {
+  db.prepare('DELETE FROM settings WHERE key = ?').run('organizationLogo')
+  const integ = integrations()
+  integ.organization.logoVersion = undefined
+  saveIntegrations(integ)
+  addAudit('admin', 'Kundenlogo entfernt.', req.user!.id)
   broadcast('state')
   res.json({ ok: true })
 })

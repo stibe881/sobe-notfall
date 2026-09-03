@@ -144,6 +144,9 @@ export interface Bereitschaft {
   ortsmeldungen?: number | null
 }
 
+/** Adresse des Kundenlogos – die Versionskennung macht sie dauerhaft cachebar */
+export const logoUrl = (version: string): string => `${serverUrl()}/api/branding/logo?v=${encodeURIComponent(version)}`
+
 export interface SetupInfo {
   /** Genau ein Administratorkonto mit unverändertem Erstpasswort */
   freshInstall: boolean
@@ -153,6 +156,9 @@ export interface SetupInfo {
   sso?: boolean
   /** Name der Organisation – erscheint vor der Anmeldung */
   organization?: string | null
+  /** Akzentfarbe (#rrggbb) und Logo-Version – Branding schon vor der Anmeldung */
+  organizationColor?: string | null
+  logoVersion?: string | null
   /** Der Einrichtungsassistent im Portal steht noch aus */
   setupPending?: boolean
   /** Redundanz: Rolle dieses Servers und Ausweichadresse */
@@ -218,6 +224,11 @@ export const api = {
 
   saveIntegrations: (integrations: AppState['integrations']) =>
     anfrage<{ ok: boolean }>('/integrations', { method: 'POST', body: JSON.stringify(integrations) }),
+
+  /** Kundenlogo hochladen (data-URL, PNG/JPEG/SVG/WebP, max. ~300 KB) */
+  uploadLogo: (dataUrl: string) =>
+    anfrage<{ ok: boolean; logoVersion: string }>('/branding/logo', { method: 'POST', body: JSON.stringify({ dataUrl }) }),
+  deleteLogo: () => anfrage<{ ok: boolean }>('/branding/logo', { method: 'DELETE' }),
 
   /** Einrichtungsassistent: Grunddaten eines neuen Kunden in einem Schritt */
   einrichtung: (daten: { name: string; shortName?: string; hotline?: string; standortName?: string; standortAdresse?: string }) =>

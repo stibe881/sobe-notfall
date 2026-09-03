@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Linking, Pressable, StyleSheet, Text, View } from 'react-native'
+import { Image, Linking, Pressable, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
 import { StatusBar } from 'expo-status-bar'
 import { BellRing, BookOpen, CheckCircle2, MapPin, Phone, Siren, Timer, User } from 'lucide-react-native'
@@ -7,6 +7,7 @@ import { StoreProvider, useStore } from './src/store'
 import { ensurePermissions, onNotificationTap, type PushDaten } from './src/notifications'
 import { alleinarbeitAbgleichen } from './src/liveActivity'
 import { alleinarbeitAndroidAbgleichen } from './src/androidTimer'
+import { logoUri } from './src/api'
 import type { Alarm, Scenario } from './src/types'
 import { colors } from './src/ui'
 import { AlarmAuswahlScreen, ContactsScreen, LoneWorkScreen, ProfileScreen, ScenarioDetailScreen, ScenariosScreen, StartScreen } from './src/screens'
@@ -139,7 +140,17 @@ function Root() {
     <SafeAreaView style={styles.root} edges={['top', 'left', 'right']}>
       <StatusBar style="light" />
       <View style={styles.header}>
-        <Siren size={20} color={colors.brandLight} />
+        {state.integrations?.organization?.logoVersion ? (
+          <View style={styles.headerLogo}>
+            <Image
+              source={{ uri: logoUri(state.integrations.organization.logoVersion) }}
+              style={{ width: 64, height: 22 }}
+              resizeMode="contain"
+            />
+          </View>
+        ) : (
+          <Siren size={20} color={colors.brandLight} />
+        )}
         <View style={{ flex: 1 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <Text style={styles.headerTitle}>SOBE Notfall</Text>
@@ -165,6 +176,11 @@ function Root() {
           <Text style={styles.headerAlarmText}>Alarm auslösen</Text>
         </Pressable>
       </View>
+
+      {/* Akzentlinie in der Kundenfarbe – das Branding des verbundenen Alarmservers */}
+      {state.integrations?.organization?.color ? (
+        <View style={{ height: 3, backgroundColor: state.integrations.organization.color }} />
+      ) : null}
 
       {myAlarms.length > 0 && tab !== 'start' && !openScenario && !alarmWahl && (
         <Pressable style={styles.alarmBanner} onPress={() => { setTab('start'); setOpenScenario(null) }}>
@@ -258,6 +274,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.dark,
   },
   headerTitle: { color: '#fff', fontWeight: '800', fontSize: 16 },
+  headerLogo: { backgroundColor: '#fff', borderRadius: 6, paddingHorizontal: 5, paddingVertical: 3 },
   headerSubRow: { flexDirection: 'row', alignItems: 'center' },
   headerSub: { color: '#94a3b8', fontSize: 11 },
   headerAlarmButton: {

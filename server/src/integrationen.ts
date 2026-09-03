@@ -83,6 +83,12 @@ export function mergeIntegrationen(neu: Partial<IntegrationSettings>, alt: Integ
   }
   // Der Kostenzähler wird nur vom Server geführt, nie vom Client gesetzt
   ergebnis.smsGateway.sentCount = alt.smsGateway.sentCount ?? 0
+  // Die Logo-Version verwaltet allein der Upload-Endpunkt
+  ergebnis.organization.logoVersion = alt.organization.logoVersion
+  // Die Akzentfarbe landet in Stylesheets – nur ein sauberes #rrggbb speichern
+  if (ergebnis.organization.color && !/^#[0-9a-fA-F]{6}$/.test(ergebnis.organization.color)) {
+    ergebnis.organization.color = alt.organization.color
+  }
   return ergebnis
 }
 

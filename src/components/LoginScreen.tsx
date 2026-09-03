@@ -3,21 +3,35 @@ import { AlertTriangle, Eye, EyeOff, Info, KeyRound, LogIn, Mail, Server as Serv
 import { useStore } from '../store'
 import { DEMO_PASSWORD, LIVE_INITIAL_PASSWORD } from '../data/seed'
 import { MIN_PASSWORD_LENGTH, passwordProblem } from '../lib/auth'
-import { ApiError, DEFAULT_SERVER_URL, api, serverUrl, setServerUrl, ssoStartAdresse, type SetupInfo } from '../lib/api'
+import { ApiError, DEFAULT_SERVER_URL, api, logoUrl, serverUrl, setServerUrl, ssoStartAdresse, type SetupInfo } from '../lib/api'
+import { wendeAkzentfarbeAn } from '../lib/branding'
 import type { User } from '../types'
 
 const fieldClass =
   'w-full rounded-xl border border-slate-700 bg-slate-800 text-white placeholder-slate-500 px-10 py-3 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/30 transition'
 
-function Shell({ children, subtitle, showModeSwitch = false }: { children: React.ReactNode; subtitle: string; showModeSwitch?: boolean }) {
+function Shell({ children, subtitle, showModeSwitch = false, logo = null }: {
+  children: React.ReactNode
+  subtitle: string
+  showModeSwitch?: boolean
+  /** Logo-Version des Kunden – zeigt das hochgeladene Logo statt des Warndreiecks */
+  logo?: string | null
+}) {
   const { state, dispatch } = useStore()
+  const logoVersion = logo ?? state.integrations.organization?.logoVersion ?? null
   return (
     <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4 sm:p-6">
       <div className="w-full max-w-sm">
         <div className="text-center mb-7">
-          <div className="w-16 h-16 rounded-2xl bg-slate-800 text-brand-500 flex items-center justify-center mx-auto mb-4">
-            <AlertTriangle size={30} />
-          </div>
+          {logoVersion ? (
+            <div className="inline-flex items-center justify-center rounded-2xl bg-white p-3 mx-auto mb-4 max-w-[220px]">
+              <img src={logoUrl(logoVersion)} alt="" className="h-12 w-auto max-w-full object-contain" />
+            </div>
+          ) : (
+            <div className="w-16 h-16 rounded-2xl bg-slate-800 text-brand-500 flex items-center justify-center mx-auto mb-4">
+              <AlertTriangle size={30} />
+            </div>
+          )}
           <h1 className="text-xl font-bold text-white">SOBE Notfall</h1>
           <p className="text-sm text-slate-500 mt-1">{subtitle}</p>
         </div>
@@ -67,7 +81,13 @@ export default function LoginScreen() {
     let abgebrochen = false
     api
       .setup()
-      .then((info) => { if (!abgebrochen) { setSetup(info); setServerErreichbar(true) } })
+      .then((info) => {
+        if (abgebrochen) return
+        setSetup(info)
+        setServerErreichbar(true)
+        // Branding schon auf der Anmeldemaske: Akzentfarbe des Kunden anwenden
+        wendeAkzentfarbeAn(info.organizationColor ?? null)
+      })
       .catch((f) => { if (!abgebrochen) setServerErreichbar(!(f instanceof ApiError && f.status === 0)) })
     return () => { abgebrochen = true }
   }, [state.mode])
@@ -100,7 +120,7 @@ export default function LoginScreen() {
     'Notfall- & Krisenmanagement'
 
   return (
-    <Shell subtitle={untertitel} showModeSwitch>
+    <Shell subtitle={untertitel} showModeSwitch logo={state.mode === 'live' ? (setup?.logoVersion ?? null) : null}>
       <form onSubmit={submit} className="rounded-2xl bg-slate-800/60 border border-slate-800 p-5 space-y-3.5">
         <label className="block">
           <span className="text-xs text-slate-400">E-Mail-Adresse</span>

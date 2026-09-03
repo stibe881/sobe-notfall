@@ -53,6 +53,13 @@ Standort. Danach:
 Der Organisationsname erscheint ab sofort auf der Anmeldemaske des Portals und
 in der App – die App selbst muss dafür nicht angepasst werden.
 
+**Branding:** Unter Integrationen → Organisation & Auftritt lassen sich pro
+Kunde zusätzlich ein **Logo** (PNG/JPEG/SVG/WebP, max. ~300 KB) hochladen und
+eine **Akzentfarbe** wählen. Beides erscheint auf der Anmeldemaske, in der
+Portal-Navigation und in der App (Login, Kopfzeile) – ohne App-Anpassung.
+Das Alarmrot bleibt aus Sicherheitsgründen bei allen Kunden gleich; App-Icon
+und Store-Name sind Teil des Builds und für alle identisch.
+
 ## 3. App verbinden (QR-Code)
 
 Unter **Integrationen → App-Verbindung** zeigt das Portal einen QR-Code

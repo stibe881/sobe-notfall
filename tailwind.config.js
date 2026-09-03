@@ -4,15 +4,17 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Hausfarbe aus dem Corporate Design (Petrol) – Navigation, Knöpfe, Akzente
+        // Hausfarbe – Navigation, Knöpfe, Akzente. Über CSS-Variablen gespeist,
+        // damit die Akzentfarbe des Kunden zur Laufzeit übernommen werden kann
+        // (Vorgaben: Petrol, siehe :root in src/index.css und src/lib/branding.ts).
         brand: {
-          50: '#eaf2f1',
-          100: '#cfe1de',
-          200: '#a9c8c3',
-          400: '#4f8a82',
-          500: '#2a6a63',
-          600: '#1c504b',
-          700: '#153e3a',
+          50: 'rgb(var(--brand-50) / <alpha-value>)',
+          100: 'rgb(var(--brand-100) / <alpha-value>)',
+          200: 'rgb(var(--brand-200) / <alpha-value>)',
+          400: 'rgb(var(--brand-400) / <alpha-value>)',
+          500: 'rgb(var(--brand-500) / <alpha-value>)',
+          600: 'rgb(var(--brand-600) / <alpha-value>)',
+          700: 'rgb(var(--brand-700) / <alpha-value>)',
         },
         // Alarmrot bleibt dem Alarmieren vorbehalten: SOS, Auslöseknöpfe, aktive Alarme, Notruf
         alarm: {

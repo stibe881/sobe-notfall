@@ -244,7 +244,7 @@ export interface AccessCode {
 
 export interface IntegrationSettings {
   /** Name und Auftritt der Organisation – kommt pro Kunde vom Alarmserver */
-  organization?: { name: string; shortName: string }
+  organization?: { name: string; shortName: string; color?: string; logoVersion?: string }
   smsGateway: { enabled: boolean; provider: string; senderId: string; username: string; password: string; httpUrl: string; sentCount: number }
   telephony: { enabled: boolean; tenantId: string; clientId: string; clientSecret: string; organizerEmail: string }
   teams: { enabled: boolean; tenant: string; webhookUrl: string }

@@ -2,6 +2,21 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Hausfarbe als RGB-Tripel (für Tailwinds Alpha-Schreibweise wie brand-500/30).
+ * Vorgabe ist Petrol; die Akzentfarbe des Kunden überschreibt die Werte zur
+ * Laufzeit (src/lib/branding.ts). Das Alarmrot bleibt bewusst fest.
+ */
+:root {
+  --brand-50: 234 242 241;
+  --brand-100: 207 225 222;
+  --brand-200: 169 200 195;
+  --brand-400: 79 138 130;
+  --brand-500: 42 106 99;
+  --brand-600: 28 80 75;
+  --brand-700: 21 62 58;
+}
+
 body {
   @apply bg-slate-100 text-slate-900 antialiased;
 }

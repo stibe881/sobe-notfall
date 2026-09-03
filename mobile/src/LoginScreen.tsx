@@ -1,23 +1,36 @@
 import React, { useEffect, useState } from 'react'
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
+import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 import * as WebBrowser from 'expo-web-browser'
 import { AlertTriangle, Eye, EyeOff, LogIn, ShieldCheck } from 'lucide-react-native'
 import Svg, { Rect } from 'react-native-svg'
 import { useStore } from './store'
 import { DEMO_PASSWORD, LIVE_INITIAL_PASSWORD } from './seed'
 import { MIN_PASSWORD_LENGTH, passwordProblem } from './auth'
-import { ApiError, api, merkeServerInfo, serverUrl, setServerUrl, type SetupInfo } from './api'
+import { ApiError, api, logoUri, merkeServerInfo, serverUrl, setServerUrl, type SetupInfo } from './api'
 import type { User } from './types'
 import { colors } from './ui'
 
-function Shell({ subtitle, children, showModeSwitch = false }: { subtitle: string; children: React.ReactNode; showModeSwitch?: boolean }) {
+function Shell({ subtitle, children, showModeSwitch = false, logoVersion = null }: {
+  subtitle: string
+  children: React.ReactNode
+  showModeSwitch?: boolean
+  /** Logo-Version des Kunden – zeigt das Logo des Alarmservers statt des Warndreiecks */
+  logoVersion?: string | null
+}) {
   const { state, switchMode } = useStore()
+  const version = logoVersion ?? state.integrations?.organization?.logoVersion ?? null
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: colors.dark }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={s.screen} keyboardShouldPersistTaps="handled">
-        <View style={s.logo}>
-          <AlertTriangle size={30} color={colors.brand} />
-        </View>
+        {version ? (
+          <View style={s.logoBild}>
+            <Image source={{ uri: logoUri(version) }} style={{ width: 160, height: 48 }} resizeMode="contain" />
+          </View>
+        ) : (
+          <View style={s.logo}>
+            <AlertTriangle size={30} color={colors.brand} />
+          </View>
+        )}
         <View style={s.titleRow}>
           <Text style={s.title}>SOBE Notfall</Text>
         </View>
@@ -125,13 +138,14 @@ export default function LoginScreen() {
     }
   }
 
-  // Der Name der Organisation kommt vom Alarmserver – die App bleibt für alle Kunden dieselbe
+  // Name, Logo und Akzentfarbe kommen vom Alarmserver – die App bleibt für alle Kunden dieselbe
   const untertitel =
     (state.mode === 'live' ? setup?.organization : state.integrations?.organization?.name) ||
     'Notfall- & Krisenmanagement'
+  const akzent = state.mode === 'live' ? setup?.organizationColor ?? null : state.integrations?.organization?.color ?? null
 
   return (
-    <Shell subtitle={untertitel} showModeSwitch>
+    <Shell subtitle={untertitel} showModeSwitch logoVersion={state.mode === 'live' ? setup?.logoVersion ?? null : null}>
       <View style={s.card}>
         <Text style={s.label}>E-Mail-Adresse</Text>
         <TextInput
@@ -172,7 +186,7 @@ export default function LoginScreen() {
           </View>
         )}
 
-        <Pressable style={[s.primary, busy && { opacity: 0.6 }]} onPress={submit} disabled={busy}>
+        <Pressable style={[s.primary, akzent ? { backgroundColor: akzent } : null, busy && { opacity: 0.6 }]} onPress={submit} disabled={busy}>
           <LogIn size={16} color="#fff" />
           <Text style={s.primaryText}>{busy ? 'Anmelden …' : 'Anmelden'}</Text>
         </Pressable>
@@ -349,6 +363,7 @@ export function ForcePasswordChange({ user }: { user: User }) {
 const s = StyleSheet.create({
   screen: { flexGrow: 1, justifyContent: 'center', padding: 22, paddingBottom: 40 },
   logo: { width: 64, height: 64, borderRadius: 18, backgroundColor: '#1e293b', alignItems: 'center', justifyContent: 'center', alignSelf: 'center', marginBottom: 16 },
+  logoBild: { borderRadius: 18, backgroundColor: '#ffffff', paddingHorizontal: 14, paddingVertical: 10, alignSelf: 'center', marginBottom: 16 },
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   title: { color: '#fff', fontSize: 20, fontWeight: '800' },
   modeSwitch: { flexDirection: 'row', backgroundColor: '#1e293b', borderRadius: 12, padding: 4, marginBottom: 16 },

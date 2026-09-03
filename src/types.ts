@@ -307,6 +307,10 @@ export interface OrganizationSettings {
   name: string
   /** Kurzname für SMS-Absender und knappe Anzeigen (max. 11 Zeichen, A–Z/0–9) */
   shortName: string
+  /** Akzentfarbe (#rrggbb) – färbt die Hausfarbe; das Alarmrot bleibt fest */
+  color?: string
+  /** Versionskennung des Kundenlogos – Teil der Logo-Adresse (/api/branding/logo) */
+  logoVersion?: string
 }
 
 export interface IntegrationSettings {
