@@ -9,6 +9,7 @@ expo-env.d.ts
 *.p12
 *.key
 *.mobileprovision
+play-service-account.json
 .DS_Store
 ios/
 android/

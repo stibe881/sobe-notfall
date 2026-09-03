@@ -261,12 +261,15 @@ export async function versionsInfo(pruefeRemote = true): Promise<VersionsInfo> {
 
 /**
  * Für welche Plattformen der Update-Knopf App-Builds anstösst.
- * Standard ist ios; nach der einmaligen Android-Einrichtung (Schlüssel bei
- * Expo, FCM für Push) stellt der Betreiber SOBE_EAS_PLATFORMS=all.
+ * Ohne Vorgabe wird Android automatisch mitgebaut, sobald der Play-Store-Schlüssel
+ * (mobile/play-service-account.json, siehe eas.json submit.production.android)
+ * auf dem Server liegt – vorher nur ios, damit der Build nicht an der fehlenden
+ * Übermittlung scheitert. SOBE_EAS_PLATFORMS=ios|android|all übersteuert das.
  */
 function easPlattformen(): 'ios' | 'android' | 'all' {
   const wert = process.env.SOBE_EAS_PLATFORMS
-  return wert === 'android' || wert === 'all' ? wert : 'ios'
+  if (wert === 'ios' || wert === 'android' || wert === 'all') return wert
+  return existsSync(resolve(repoRoot(), 'mobile', 'play-service-account.json')) ? 'all' : 'ios'
 }
 
 // ---------- Ablauf ----------

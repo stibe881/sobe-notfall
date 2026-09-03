@@ -71,10 +71,13 @@ normal mit dem eigenen Konto anmelden.
 
 **Android:** Dieselbe App läuft auch auf Android – verteilt über den Play
 Store oder als direkt installierbares APK (Preview-Profil, z. B. per MDM).
-Einmalig nötig: Signatur-Schlüssel bei Expo (erster Build interaktiv) und für
-Remote-Push ein Firebase-Projekt (FCM) – Anleitung in `mobile/README.md`,
-Abschnitt «Android». Danach `SOBE_EAS_PLATFORMS=all` in `server/.env` setzen,
-und der Update-Knopf baut iOS und Android zusammen. Laute Alarme laufen auf
+Einmalig nötig: Signatur-Schlüssel bei Expo (erster Build interaktiv), für
+Remote-Push ein Firebase-Projekt (FCM) und für die Play-Store-Übermittlung ein
+Google-Dienstkonto – Anleitung in `mobile/README.md`, Abschnitt «Android».
+Liegt dessen JSON-Schlüssel als `mobile/play-service-account.json` auf dem
+Server, baut und übermittelt der Update-Knopf iOS und Android zusammen
+(`SOBE_EAS_PLATFORMS` in `server/.env` übersteuert das bei Bedarf; das
+allererste `.aab` einmal von Hand in der Play Console hochladen). Laute Alarme laufen auf
 Android über den Benachrichtigungskanal «Alarme»: höchste Wichtigkeit,
 Umgehung von «Nicht stören», Ton über den Alarm-Audiokanal – er klingt wie
 ein Wecker auch bei Lautlos- und Vibrationsmodus. Die Apple-Sonderbewilligung

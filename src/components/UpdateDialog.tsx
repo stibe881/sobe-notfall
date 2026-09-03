@@ -119,7 +119,7 @@ export default function UpdateDialog({ onClose }: { onClose: () => void }) {
                 titel="Server und App"
                 beschreibung={
                   version.iosMoeglich
-                    ? 'Zusätzlich einen App-Build anstossen (iOS; mit SOBE_EAS_PLATFORMS=all auch Android). Der läuft danach bei Expo weiter und geht von dort an TestFlight bzw. Play – der Lauf hier wartet nicht darauf.'
+                    ? 'Zusätzlich einen App-Build anstossen. iOS immer; Android automatisch mit, sobald der Play-Store-Schlüssel (mobile/play-service-account.json) auf dem Server liegt. Der Build läuft danach bei Expo weiter und geht von dort an TestFlight bzw. Play – der Lauf hier wartet nicht darauf.'
                     : (version.iosHinweis ?? 'Auf diesem Server nicht eingerichtet.')
                 }
                 gesperrt={!version.iosMoeglich}

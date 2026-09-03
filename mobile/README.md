@@ -105,8 +105,9 @@ npx --yes eas-cli@latest build --platform android --profile production  # .aab f
 ```
 
 Beim ersten Build erzeugt und verwahrt EAS den Signatur-Schlüssel (Keystore) – dafür den ersten
-Lauf **interaktiv** ausführen. Danach funktioniert auch der nicht-interaktive Build über den
-Update-Knopf des Portals (`SOBE_EAS_PLATFORMS=all` in `server/.env`).
+Lauf **interaktiv** ausführen. Der Update-Knopf des Portals baut Android automatisch mit, sobald
+der Play-Store-Schlüssel als `mobile/play-service-account.json` auf dem Server liegt (siehe
+unten); `SOBE_EAS_PLATFORMS=ios|android|all` in `server/.env` übersteuert diese Automatik.
 
 **Remote-Push auf Android (einmalig):** Expo versendet an Android über Firebase Cloud Messaging.
 
@@ -118,9 +119,20 @@ Update-Knopf des Portals (`SOBE_EAS_PLATFORMS=all` in `server/.env`).
    *Google Service Account Key (FCM V1)*.
 
 Ohne diese Einrichtung funktionieren lokale Benachrichtigungen (Timer, SOS), aber keine
-Remote-Alarme. **Play Store:** Google-Play-Console-Konto (einmalig USD 25); das `.aab` von Hand
-hochladen oder für `eas submit --platform android` einen Play-Service-Account bei EAS hinterlegen.
-Für die firmeninterne Verteilung genügt oft das APK aus dem Preview-Profil (per MDM oder Download).
+Remote-Alarme.
+
+**Play Store (einmalig):** Google-Play-Console-Konto anlegen (einmalig USD 25), dann:
+
+1. In der Google Cloud Console ein **Dienstkonto** erstellen und in der Play Console unter
+   *Nutzer und Berechtigungen* mit Release-Rechten einladen.
+2. Den JSON-Schlüssel des Dienstkontos als `mobile/play-service-account.json` auf den Server
+   legen (die Datei ist in `.gitignore` und wird nie committet; `eas.json` verweist unter
+   `submit.production.android` darauf, Ziel-Track: `internal`).
+3. Das **erste** `.aab` einmal von Hand in der Play Console hochladen (interner Test) – vorher
+   lehnt Google automatische Übermittlungen mit «Package not found» ab.
+
+Ab dann baut und übermittelt der Update-Knopf des Portals Android automatisch mit. Für die
+firmeninterne Verteilung genügt oft das APK aus dem Preview-Profil (per MDM oder Download).
 
 ## Struktur
 

@@ -590,14 +590,27 @@ footer .adressfuss { margin-top: 22px; }
   <h3>Android einmalig einrichten</h3>
   <p>
     Für Android braucht es einmalig: den <b>Signatur-Schlüssel</b> bei Expo (den ersten
-    Build interaktiv ausführen, EAS erzeugt und verwahrt ihn) und für Remote-Push ein
-    <b>Firebase-Projekt</b> (FCM) &ndash; Schritt für Schritt in <code>mobile/README.md</code>,
-    Abschnitt «Android». Danach in <code>server/.env</code> die Zeile
-    <code>SOBE_EAS_PLATFORMS=all</code> setzen: Der Update-Knopf baut dann iOS und Android
-    in einem Lauf. Für die Verteilung im Play&nbsp;Store ist ein
-    Google-Play-Console-Konto nötig (einmalig USD&nbsp;25); firmenintern genügt oft das
-    APK aus dem Preview-Profil.
+    Build interaktiv ausführen, EAS erzeugt und verwahrt ihn), für Remote-Push ein
+    <b>Firebase-Projekt</b> (FCM) und für die automatische Übermittlung an den
+    Play&nbsp;Store ein <b>Google-Dienstkonto</b> &ndash; Schritt für Schritt in
+    <code>mobile/README.md</code>, Abschnitt «Android». Den JSON-Schlüssel des
+    Dienstkontos legen Sie auf dem Server als
+    <code>mobile/play-service-account.json</code> ab. Sobald diese Datei liegt, baut
+    und übermittelt der Update-Knopf Android automatisch mit &ndash; ohne weitere
+    Einstellung. <code>SOBE_EAS_PLATFORMS=ios|android|all</code> in
+    <code>server/.env</code> übersteuert die Automatik bei Bedarf.
   </p>
+  <div class="hinweis hinweis--warnung">
+    <p class="marke-klein">Der allererste Android-Build</p>
+    <p>
+      Die erste App-Datei (.aab) einer neuen App muss <b>einmal von Hand</b> in der
+      Play&nbsp;Console hochgeladen werden (interner Test), bevor Google automatische
+      Übermittlungen des Dienstkontos annimmt &ndash; sonst endet die Übermittlung mit
+      «Package not found». Ab dem zweiten Build läuft alles automatisch. Für die
+      Play&nbsp;Console ist ein Entwicklerkonto nötig (einmalig USD&nbsp;25);
+      firmenintern genügt oft das APK aus dem Preview-Profil.
+    </p>
+  </div>
 </section>
 
 <section id="a9">
@@ -710,7 +723,8 @@ footer .adressfuss { margin-top: 22px; }
     Stand aus der Versionsverwaltung, baut Portal und Server und startet neu &ndash;
     Schritt für Schritt nachvollziehbar, mit Protokoll. Auf Wunsch stösst derselbe
     Dialog auch den <b>App-Build</b> an (braucht <code>EXPO_TOKEN</code> auf dem Server;
-    Standard iOS, mit <code>SOBE_EAS_PLATFORMS=all</code> auch Android).
+    iOS immer, Android automatisch mit, sobald <code>mobile/play-service-account.json</code>
+    liegt &ndash; Abschnitt «Android einmalig einrichten»).
     Die Bedienung zeigt Handbuch 1, Abschnitt «Die Anwendung aktualisieren».
   </p>
   <figure class="bild-breit">
