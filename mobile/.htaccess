@@ -1,0 +1,5 @@
+# Schutz auf Shared Hostings, deren Webserver (Apache) dieses Verzeichnis direkt
+# ausliefern könnte: Die App wird ausschliesslich vom Node-Server bedient, kein
+# Inhalt dieses Ordners gehört ins Web – insbesondere nicht der
+# Play-Store-Schlüssel (play-service-account.json).
+Require all denied

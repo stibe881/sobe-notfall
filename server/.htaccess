@@ -1,0 +1,4 @@
+# Schutz auf Shared Hostings, deren Webserver (Apache) dieses Verzeichnis direkt
+# ausliefern könnte: Hier liegen .env (Zugangsdaten) und die Datenbank. Alles
+# wird ausschliesslich vom Node-Server bedient, nichts davon gehört ins Web.
+Require all denied

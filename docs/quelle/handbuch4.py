@@ -316,7 +316,13 @@ KOERPER = r"""
     Dienstkontos legen Sie auf dem Server als
     <code>mobile/play-service-account.json</code> ab. Sobald diese Datei liegt, baut
     und übermittelt der Update-Knopf Android automatisch mit &ndash; ohne weitere
-    Einstellung. <code>SOBE_EAS_PLATFORMS=ios|android|all</code> in
+    Einstellung. Liegt die Installation in einem Web-Verzeichnis (etwa
+    <code>public_html</code> auf einem Shared Hosting), schützen die mitgelieferten
+    <code>.htaccess</code>-Dateien in <code>mobile/</code> und <code>server/</code>
+    Schlüssel, <code>.env</code> und Datenbank vor direktem Abruf; prüfen Sie das
+    einmal im Browser &ndash; der Aufruf von
+    <code>https://ihre-domain/mobile/play-service-account.json</code> muss mit
+    «403 Forbidden» oder «404» enden. <code>SOBE_EAS_PLATFORMS=ios|android|all</code> in
     <code>server/.env</code> übersteuert die Automatik bei Bedarf.
   </p>
   <div class="hinweis hinweis--warnung">
