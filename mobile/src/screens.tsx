@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { Alert, Linking, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native'
 import {
   BellRing, BookOpen, Check, CheckCircle2, ChevronLeft, Clock, ExternalLink, KeyRound, LogOut, MapPin, Phone, Play,
-  Search as SearchIcon, Scale, ShieldAlert, ShieldCheck, Siren, Timer, X,
+  Search as SearchIcon, Scale, ShieldAlert, ShieldCheck, Siren, Timer, Users, X,
 } from 'lucide-react-native'
 import { alleinarbeitEmpfaenger, createAlarm, resolveRecipients, uid, useStore } from './store'
 import { ScenarioIcon } from './ScenarioIcon'
@@ -1088,6 +1088,16 @@ async function scheduleLoneWorkNotifications(sessionId: string, activity: string
   loneWorkNotifIds.set(sessionId, ids)
 }
 
+/** Abschnitts-Überschrift im Formular: Versal-Titel links, aktueller Wert rechts */
+function FormAbschnitt({ text, rechts }: { text: string; rechts?: string }) {
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginTop: 16, marginBottom: 8 }}>
+      <Text style={{ fontSize: 12, fontWeight: '800', color: colors.muted, letterSpacing: 0.8, textTransform: 'uppercase' }}>{text}</Text>
+      {rechts ? <Text style={{ fontSize: 13, fontWeight: '700', color: colors.brand }}>{rechts}</Text> : null}
+    </View>
+  )
+}
+
 export function LoneWorkScreen() {
   const { state, dispatch } = useStore()
   const me = state.users.find((u) => u.id === state.currentUserId) ?? state.users[0]
@@ -1227,37 +1237,58 @@ export function LoneWorkScreen() {
         </Card>
       )}
       <Card>
-        <View style={[styles.row, { marginBottom: 10 }]}>
+        <View style={[styles.row, { marginBottom: 4 }]}>
           <Timer size={18} color={colors.text} />
           <Text style={styles.cardTitle}>Alleinarbeit starten</Text>
         </View>
+
+        <FormAbschnitt text="Tätigkeit" />
         <TextInput
           style={styles.input}
-          placeholder="Tätigkeit (z. B. Abendrundgang, Wartung)"
+          placeholder="z. B. Abendrundgang, Wartung"
           placeholderTextColor={colors.faint}
           value={activity}
           onChangeText={setActivity}
         />
-        <Text style={[styles.body, { marginTop: 12, fontWeight: '600' }]}>Timer: {durationMin} Minuten</Text>
-        <View style={[styles.row, { marginTop: 8, flexWrap: 'wrap', gap: 8 }]}>
-          {[5, 15, 30, 45, 60, 90].map((m) => (
-            <Pressable
-              key={m}
-              onPress={() => setDurationMin(m)}
-              style={[styles.chip, durationMin === m && { backgroundColor: colors.dark }]}
-            >
-              <Text style={[styles.chipText, durationMin === m && { color: '#fff' }]}>{m} Min.</Text>
-            </Pressable>
-          ))}
+
+        <FormAbschnitt text="Dauer" rechts={`${durationMin} Minuten`} />
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+          {[5, 15, 30, 45, 60, 90].map((m) => {
+            const an = durationMin === m
+            return (
+              <Pressable
+                key={m}
+                onPress={() => setDurationMin(m)}
+                style={{
+                  flexGrow: 1, flexBasis: '30%', alignItems: 'center', paddingVertical: 10, borderRadius: 12,
+                  borderWidth: 1, borderColor: an ? colors.brand : '#cbd5e1', backgroundColor: an ? colors.brand : colors.card,
+                }}
+              >
+                <Text style={{ fontSize: 14, fontWeight: '700', color: an ? '#fff' : colors.text }}>{m} Min.</Text>
+              </Pressable>
+            )
+          })}
         </View>
-        <Text style={[styles.body, { marginTop: 14, fontWeight: '600' }]}>Bei Ablauf alarmieren</Text>
-        <Text style={styles.faint}>Gruppen an Ihrem Standort – antippen zum An- und Abwählen:</Text>
-        <View style={[styles.row, { marginTop: 8, flexWrap: 'wrap', gap: 8 }]}>
+
+        <FormAbschnitt text="Bei Ablauf alarmieren" />
+        <Text style={[styles.faint, { marginTop: -6, marginBottom: 8 }]}>Gruppen an Ihrem Standort – antippen zum An- und Abwählen:</Text>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
           {waehlbareGruppen.map((g) => {
             const an = alertGroupIds.includes(g.id)
             return (
-              <Pressable key={g.id} onPress={() => setAlertGroupIds(toggle(alertGroupIds, g.id))} style={[styles.chip, an && { backgroundColor: colors.dark }]}>
-                <Text style={[styles.chipText, an && { color: '#fff' }]}>{g.name}</Text>
+              <Pressable
+                key={g.id}
+                onPress={() => setAlertGroupIds(toggle(alertGroupIds, g.id))}
+                style={{
+                  flexGrow: 1, flexBasis: '47%', flexDirection: 'row', alignItems: 'center', gap: 7,
+                  paddingVertical: 9, paddingHorizontal: 10, borderRadius: 12,
+                  borderWidth: 1, borderColor: an ? colors.brand : '#cbd5e1', backgroundColor: an ? colors.brandBg : colors.card,
+                }}
+              >
+                <View style={{ width: 18, height: 18, borderRadius: 5, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: an ? colors.brand : '#cbd5e1', backgroundColor: an ? colors.brand : colors.card }}>
+                  {an && <Check size={12} color="#fff" />}
+                </View>
+                <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: '600', color: colors.text, flexShrink: 1 }}>{g.name}</Text>
               </Pressable>
             )
           })}
@@ -1289,12 +1320,29 @@ export function LoneWorkScreen() {
         {alertUserIds.length > 0 && (
           <Text style={[styles.faint, { marginTop: 6 }]}>Zusätzlich: {alertUserIds.map(nameVon).filter(Boolean).join(', ')}</Text>
         )}
-        <Text style={[styles.faint, { marginTop: 8 }]}>
-          <Text style={{ fontWeight: '700', color: anzahlEmpfaenger === 0 ? colors.alarm : colors.text }}>{anzahlEmpfaenger} Person{anzahlEmpfaenger === 1 ? '' : 'en'}</Text> würden bei Ablauf alarmiert{anzahlEmpfaenger === 0 ? ' – bitte mindestens eine Gruppe oder Person wählen' : ''}.
-        </Text>
-        <View style={[styles.row, { marginTop: 14 }]}>
+        <View
+          style={{
+            marginTop: 12, borderRadius: 12, paddingVertical: 9, paddingHorizontal: 11,
+            flexDirection: 'row', alignItems: 'center', gap: 8,
+            backgroundColor: anzahlEmpfaenger === 0 ? colors.alarmBg : colors.brandBg,
+          }}
+        >
+          <Users size={15} color={anzahlEmpfaenger === 0 ? colors.alarm : colors.brand} />
+          <Text style={{ fontSize: 13, color: anzahlEmpfaenger === 0 ? colors.alarm : colors.text, flex: 1 }}>
+            {anzahlEmpfaenger === 0
+              ? 'Niemand würde alarmiert – bitte mindestens eine Gruppe oder Person wählen.'
+              : anzahlEmpfaenger === 1
+                ? 'Bei Ablauf wird 1 Person alarmiert.'
+                : `Bei Ablauf werden ${anzahlEmpfaenger} Personen alarmiert.`}
+          </Text>
+        </View>
+
+        <View style={{ borderTopWidth: 1, borderTopColor: colors.border, marginTop: 14, paddingTop: 12, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
           <Switch value={silent} onValueChange={setSilent} />
-          <Text style={styles.body}>Stille Alarmauslösung</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.body, { marginTop: 0 }]}>Stille Alarmauslösung</Text>
+            <Text style={styles.faint}>Der Alarm bei Ablauf kommt ohne Ton an – niemand wird aufmerksam.</Text>
+          </View>
         </View>
         <Pressable
           style={[styles.bigButton, { backgroundColor: anzahlEmpfaenger === 0 ? colors.faint : colors.dark, marginTop: 14 }]}
@@ -1314,7 +1362,8 @@ export function LoneWorkScreen() {
           <Text style={[styles.cardTitle, { marginBottom: 8 }]}>Verlauf</Text>
           {mySessions.slice(0, 6).map((s) => (
             <View key={s.id} style={[styles.row, { paddingVertical: 5 }]}>
-              <Text style={[styles.body, { flex: 1 }]} numberOfLines={1}>{s.activity}</Text>
+              <Text style={[styles.body, { flex: 1, marginTop: 0 }]} numberOfLines={1}>{s.activity}</Text>
+              <Text style={styles.faint}>{formatRelative(s.startedAt)}</Text>
               {s.status === 'completed' && <Badge label="beendet" color="green" />}
               {s.status === 'alarm' && <Badge label="Alarm ausgelöst" color="red" />}
               {s.status === 'running' && <Badge label="läuft" color="amber" />}
