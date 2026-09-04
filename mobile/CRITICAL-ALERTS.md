@@ -253,6 +253,13 @@ Zweiter Eintrag (bereits ergänzt) und wieder **einmal mit Rückfragen** bauen:
 Beim ersten Start fragt iOS zusätzlich nach der Zustimmung für kritische
 Hinweise – diese muss bestätigt werden.
 
+> **Falls der Dialog nicht erscheint**, obwohl der installierte Build die
+> Berechtigung enthält (etwa nach mehreren TestFlight-Updates über ältere
+> Stände hinweg): die App auf dem Gerät **löschen und aus TestFlight bzw. dem
+> App Store neu installieren**. Bei einer frischen Installation stellt iOS
+> alle Berechtigungsfragen garantiert neu. Es geht nichts verloren – alle
+> Daten liegen auf dem Alarmserver, nur die Anmeldung ist neu nötig.
+
 ---
 
 ## Wie die App damit umgeht
