@@ -1598,6 +1598,7 @@ export function ProfileScreen() {
         </View>
         <Text style={[styles.body, { marginTop: 6 }]}>
           Version {Constants.expoConfig?.version ?? 'unbekannt'}
+          {Constants.nativeBuildVersion ? ` (Build ${Constants.nativeBuildVersion})` : ''}
         </Text>
       </Card>
 
