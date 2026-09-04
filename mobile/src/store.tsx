@@ -897,9 +897,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setServerStatus('verbindet')
     void refresh()
     if (!state.session) return
+    // Token-Registrierung bei jedem Start auffrischen: Die Critical-Alert-
+    // Zustimmung kommt oft erst nach dem Login (Dialog beim nächsten Start) –
+    // erst diese Meldung sagt dem Server, dass das Gerät die Stufe darf.
+    void registerPush()
     const interval = setInterval(() => void refresh(), 5000)
     return () => clearInterval(interval)
-  }, [hydrated, state.mode, state.session?.userId, refresh])
+  }, [hydrated, state.mode, state.session?.userId, refresh, registerPush])
 
   // Simulation nur im Demo-Modus; im Live-Betrieb rechnet der Server
   useEffect(() => {

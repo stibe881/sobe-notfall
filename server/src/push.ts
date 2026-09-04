@@ -139,8 +139,15 @@ export async function sendPush(userIds: string[], nachricht: PushNachricht): Pro
     title: nachricht.title,
     body: nachricht.body,
     data: nachricht.data ?? {},
-    // Stiller Alarm: kein Ton – auf iOS entfällt damit auch die Vibration
-    sound: nachricht.silent ? null : 'default',
+    // Stiller Alarm: kein Ton – auf iOS entfällt damit auch die Vibration.
+    // Echter Critical Alert braucht bei Apple das Sound-Objekt mit critical:
+    // interruptionLevel allein durchbricht nur Fokus-Modi, nicht die
+    // Stummschaltung. Nur an Geräte, deren Berechtigung gemeldet ist.
+    sound: nachricht.silent
+      ? null
+      : nachricht.critical && ziel.criticalAlerts
+        ? { name: 'default', critical: true, volume: 1 }
+        : 'default',
     priority: 'high',
     channelId: nachricht.silent ? KANAL_STILL : KANAL_ALARM,
     // Zahl auf dem App-Symbol (iOS; Android zeigt je nach Launcher Punkt oder Zahl)
