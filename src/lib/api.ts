@@ -97,6 +97,8 @@ export interface VersionsInfo {
   commitDatum: string
   commitTitel: string
   hinterher: number
+  /** Die fehlenden Commits (neueste zuerst) – was das Update bringen würde */
+  neueAenderungen?: { kurz: string; titel: string; datum: string }[]
   /** Gibt es diesen Branch auch auf dem Repository (origin)? */
   remoteVorhanden?: boolean
   iosMoeglich: boolean

@@ -192,6 +192,8 @@ export interface VersionsInfo {
   commitTitel: string
   /** Anzahl Commits, die auf dem Server noch fehlen */
   hinterher: number
+  /** Die fehlenden Commits (neueste zuerst, höchstens 20) – was das Update bringen würde */
+  neueAenderungen: { kurz: string; titel: string; datum: string }[]
   /**
    * Gibt es diesen Branch auch auf dem Repository (origin)? Ein nur lokal
    * angelegter Branch hat dort nichts zu holen – die Aktualisierung baut dann
@@ -229,12 +231,21 @@ export async function versionsInfo(pruefeRemote = true): Promise<VersionsInfo> {
 
   let hinterher = 0
   let remoteVorhanden = false
+  const neueAenderungen: VersionsInfo['neueAenderungen'] = []
   if (branch) {
     if (pruefeRemote) await still('git', gitMitToken(['fetch', 'origin', branch]), root)
     remoteVorhanden = await branchAufOrigin(root, branch)
     if (remoteVorhanden) {
       const zaehler = await still('git', ['rev-list', '--count', `HEAD..origin/${branch}`], root)
       hinterher = Number(zaehler) || 0
+      if (hinterher > 0) {
+        // Was das Update bringen würde – als aufklappbare Liste im Dialog
+        const log = await still('git', ['log', '--pretty=%h\x1f%s\x1f%cI', '-n', '20', `HEAD..origin/${branch}`], root)
+        for (const zeile of log.split('\n')) {
+          const [kurz, titel, datum] = zeile.split('\x1f')
+          if (kurz && titel) neueAenderungen.push({ kurz, titel, datum: datum ?? '' })
+        }
+      }
     }
   }
 
@@ -248,6 +259,7 @@ export async function versionsInfo(pruefeRemote = true): Promise<VersionsInfo> {
     commitDatum,
     commitTitel,
     hinterher,
+    neueAenderungen,
     remoteVorhanden,
     iosMoeglich: expoToken && mobileDa,
     iosHinweis: !mobileDa

@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import {
-  AlertTriangle, ArrowRight, Check, CircleDashed, Download, ExternalLink, Loader2, RefreshCw,
+  AlertTriangle, ArrowRight, Check, ChevronDown, CircleDashed, Download, ExternalLink, Loader2, RefreshCw,
   Server as ServerIcon, Smartphone, X,
 } from 'lucide-react'
 import { ApiError, api, type UpdateJob, type UpdateScope, type VersionsInfo } from '../lib/api'
@@ -150,6 +150,8 @@ export default function UpdateDialog({ onClose }: { onClose: () => void }) {
 }
 
 function VersionsKarte({ version, onPruefen }: { version: VersionsInfo; onPruefen: () => void }) {
+  const [aenderungenOffen, setAenderungenOffen] = useState(false)
+  const aenderungen = version.neueAenderungen ?? []
   return (
     <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
       <div className="flex items-start justify-between gap-3">
@@ -179,10 +181,34 @@ function VersionsKarte({ version, onPruefen }: { version: VersionsInfo; onPruefe
 
       <div className="mt-3 text-sm">
         {version.hinterher > 0 ? (
-          <span className="inline-flex items-center gap-1.5 rounded-lg bg-brand-50 text-brand-700 border border-brand-200 px-2.5 py-1 text-xs font-medium">
-            <ArrowRight size={13} />
-            {version.hinterher} neue {version.hinterher === 1 ? 'Änderung' : 'Änderungen'} verfügbar
-          </span>
+          <>
+            <button
+              type="button"
+              onClick={() => setAenderungenOffen(!aenderungenOffen)}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-brand-50 text-brand-700 border border-brand-200 px-2.5 py-1 text-xs font-medium hover:bg-brand-100 transition"
+              title="Antippen zeigt, welche Änderungen das Update bringt"
+            >
+              <ArrowRight size={13} />
+              {version.hinterher} neue {version.hinterher === 1 ? 'Änderung' : 'Änderungen'} verfügbar
+              {aenderungen.length > 0 && <ChevronDown size={13} className={`transition-transform ${aenderungenOffen ? 'rotate-180' : ''}`} />}
+            </button>
+            {aenderungenOffen && aenderungen.length > 0 && (
+              <ul className="mt-2 rounded-lg border border-slate-200 bg-white divide-y divide-slate-100">
+                {aenderungen.map((a) => (
+                  <li key={a.kurz} className="px-3 py-2 text-xs flex items-baseline gap-2">
+                    <code className="shrink-0 text-slate-400">{a.kurz}</code>
+                    <span className="text-slate-700 min-w-0">{a.titel}</span>
+                    {a.datum && (
+                      <span className="ml-auto shrink-0 text-slate-400">{formatRelative(new Date(a.datum).getTime())}</span>
+                    )}
+                  </li>
+                ))}
+                {version.hinterher > aenderungen.length && (
+                  <li className="px-3 py-2 text-xs text-slate-400">… und {version.hinterher - aenderungen.length} weitere</li>
+                )}
+              </ul>
+            )}
+          </>
         ) : version.remoteVorhanden === false ? (
           <span className="inline-flex items-center gap-1.5 rounded-lg bg-amber-50 text-amber-800 border border-amber-200 px-2.5 py-1 text-xs font-medium">
             <AlertTriangle size={13} /> Diesen Branch gibt es nur auf diesem Server – es gibt nichts zu holen
