@@ -3,10 +3,8 @@ import { Platform } from 'react-native'
 import type { AppState, ServerInfo, User } from './types'
 
 /**
- * Verbindung zum Alarmserver (Live-Modus).
- *
- * Der Demo-Modus arbeitet weiterhin ohne Netz auf dem Gerät. Im Live-Modus
- * kommen alle Daten vom Server, damit App und Webportal denselben Bestand sehen.
+ * Verbindung zum Alarmserver. Alle Daten kommen vom Server, damit App und
+ * Webportal denselben Bestand sehen.
  */
 
 const URL_KEY = 'sobe-server-url'

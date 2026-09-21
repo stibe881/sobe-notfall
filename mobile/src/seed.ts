@@ -1,4 +1,4 @@
-import type { AppState, Scenario, User, Group, Location, AlarmPlan, AlarmButton, EmergencyContact, IntegrationSettings } from './types'
+import type { Scenario, User, Group, Location, AlarmPlan, AlarmButton, EmergencyContact, IntegrationSettings } from './types'
 
 // Vorkonfigurierte Notfallszenarien für das heilpädagogische Kompetenzzentrum SONNENBERG
 /** Inhaltsversion der Standard-Szenarien – bei Erhöhung werden sie beim Laden aktualisiert */
@@ -1008,77 +1008,5 @@ export const SEED_INTEGRATIONS: IntegrationSettings = {
   ],
 }
 
-/** Passwort aller Demo-Benutzer – wird auf der Anmeldemaske im Demo-Modus angezeigt */
-export const DEMO_PASSWORD = 'sobe2026'
-
-/** Erstpasswort des Live-Administrators; muss bei der ersten Anmeldung geändert werden */
+/** Erstpasswort des Administrators; muss bei der ersten Anmeldung geändert werden */
 export const LIVE_INITIAL_PASSWORD = 'SOBE-Start2026!'
-
-export function createInitialState(): AppState {
-  return {
-    mode: 'demo',
-    session: null,
-    scenarioContentVersion: SCENARIO_CONTENT_VERSION,
-    currentUserId: 'u-admin',
-    users: SEED_USERS,
-    groups: SEED_GROUPS,
-    locations: SEED_LOCATIONS,
-    scenarios: SEED_SCENARIOS,
-    plans: SEED_PLANS,
-    alarms: [],
-    buttons: SEED_BUTTONS,
-    loneWorkSessions: [],
-    integrations: SEED_INTEGRATIONS,
-    contacts: SEED_CONTACTS,
-    audit: [
-      { id: 'a-1', ts: Date.now() - 3600_000, type: 'system', message: 'System initialisiert – Alarmserver für SONNENBERG Kompetenzzentrum betriebsbereit (Cloud-Hosting Schweiz).' },
-    ],
-  }
-}
-
-/**
- * Live-Modus: echter Datenbestand ohne Mock-Daten.
- * Behalten wird nur reale Grundkonfiguration (Szenarien, Standorte, Gruppenstruktur,
- * Notrufnummern, Alarmplan-Vorlagen) plus ein Admin-Konto. Keine Beispiel-Benutzer,
- * -Alarme, -Alarmknöpfe, -Webhooks oder -Zugangscodes; alle Integrationen deaktiviert.
- */
-export function createLiveInitialState(): AppState {
-  return {
-    mode: 'live',
-    session: null,
-    scenarioContentVersion: SCENARIO_CONTENT_VERSION,
-    currentUserId: 'u-admin',
-    users: [
-      {
-        id: 'u-admin', firstName: 'Stefan', lastName: 'Gross', email: 'stefan.gross@sonnenberg-baar.ch',
-        phone: '', role: 'admin', groupIds: ['gr-krisenstab', 'gr-alle'], locationId: 'loc-baar', language: 'de',
-        passwordSalt: 'bd631b09890e1d5d', passwordHash: '04b1c430ab36995b316131aef36a319b105b37a521680291dc490c387ff135c4', mustChangePassword: true,
-      },
-    ],
-    groups: SEED_GROUPS,
-    locations: SEED_LOCATIONS,
-    scenarios: SEED_SCENARIOS,
-    plans: SEED_PLANS,
-    alarms: [],
-    buttons: [],
-    loneWorkSessions: [],
-    integrations: {
-      organization: { name: '', shortName: '' },
-      smsGateway: { enabled: false, provider: 'ecall', senderId: 'ALARM', username: '', password: '', httpUrl: '', sentCount: 0 },
-      telephony: { enabled: false, tenantId: '', clientId: '', clientSecret: '', organizerEmail: '' },
-      teams: { enabled: false, tenant: '', webhookUrl: '' },
-      lorawan: { enabled: false, provider: 'ttn', token: '', stilleWarnungStunden: 36, batterieWarnungProzent: 20 },
-      sso: { enabled: false, tenantId: '', clientId: '', clientSecret: '', adminGroupId: '', krisenstabGroupId: '', autoCreate: true },
-      hrSync: { enabled: false, system: '' },
-      hotline: { enabled: false, number: '' },
-      multiLanguage: true,
-      geofencing: false,
-      webhooks: [],
-      accessCodes: [],
-    },
-    contacts: SEED_CONTACTS,
-    audit: [
-      { id: 'a-live-1', ts: Date.now(), type: 'system', message: 'Live-Modus initialisiert – Datenbestand ohne Demo-Daten. Versand-Gateways unter Integrationen anbinden.' },
-    ],
-  }
-}

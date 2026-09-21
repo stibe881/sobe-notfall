@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { AlertTriangle, Eye, EyeOff, Info, KeyRound, LogIn, Mail, Server as ServerIcon, ShieldCheck } from 'lucide-react'
 import { useStore } from '../store'
-import { DEMO_PASSWORD, LIVE_INITIAL_PASSWORD } from '../data/seed'
+import { LIVE_INITIAL_PASSWORD } from '../data/seed'
 import { MIN_PASSWORD_LENGTH, passwordProblem } from '../lib/auth'
 import { ApiError, DEFAULT_SERVER_URL, api, logoUrl, serverUrl, setServerUrl, ssoStartAdresse, type SetupInfo } from '../lib/api'
 import { wendeAkzentfarbeAn } from '../lib/branding'
@@ -36,26 +36,6 @@ function Shell({ children, subtitle, showModeSwitch = false, logo = null }: {
           <p className="text-sm text-slate-500 mt-1">{subtitle}</p>
         </div>
 
-        {/* Modus vor der Anmeldung wählbar – Demo und Live haben getrennte Konten */}
-        {showModeSwitch && (
-          <div className="flex rounded-xl bg-slate-800 p-1 mb-4">
-            {(['demo', 'live'] as const).map((m) => (
-              <button
-                key={m}
-                onClick={() => dispatch({ type: 'SET_MODE', mode: m })}
-                className={`flex-1 rounded-lg py-2 text-xs font-bold uppercase tracking-wide transition ${
-                  state.mode === m
-                    ? m === 'live'
-                      ? 'bg-emerald-600 text-white'
-                      : 'bg-amber-500 text-slate-900'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                {m === 'demo' ? 'Demo' : 'Live'}
-              </button>
-            ))}
-          </div>
-        )}
         {children}
       </div>
     </div>
@@ -75,9 +55,8 @@ export default function LoginScreen() {
   const [setup, setSetup] = useState<SetupInfo | null>(null)
   const [serverErreichbar, setServerErreichbar] = useState<boolean | null>(null)
 
-  // Im Live-Modus beim Server nachfragen, ob er erreichbar und frisch eingerichtet ist
+  // Beim Server nachfragen, ob er erreichbar und frisch eingerichtet ist
   useEffect(() => {
-    if (state.mode !== 'live') return
     let abgebrochen = false
     api
       .setup()
@@ -90,7 +69,7 @@ export default function LoginScreen() {
       })
       .catch((f) => { if (!abgebrochen) setServerErreichbar(!(f instanceof ApiError && f.status === 0)) })
     return () => { abgebrochen = true }
-  }, [state.mode])
+  }, [])
 
   // Rücksprung einer gescheiterten Microsoft-Anmeldung: Der Server hängt den
   // Grund an die Adresse an (#ssoFehler=…)
@@ -103,7 +82,7 @@ export default function LoginScreen() {
 
   // Erstinbetriebnahme: Der Server meldet, solange nur das ausgelieferte
   // Administratorkonto mit unverändertem Erstpasswort besteht
-  const liveFirstRun = state.mode === 'live' && setup?.freshInstall === true
+  const liveFirstRun = setup?.freshInstall === true
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -115,12 +94,10 @@ export default function LoginScreen() {
   }
 
   // Der Name der Organisation kommt vom Server – die App bleibt für alle Kunden dieselbe
-  const untertitel =
-    (state.mode === 'live' ? setup?.organization : state.integrations.organization?.name) ||
-    'Notfall- & Krisenmanagement'
+  const untertitel = setup?.organization || 'Notfall- & Krisenmanagement'
 
   return (
-    <Shell subtitle={untertitel} showModeSwitch logo={state.mode === 'live' ? (setup?.logoVersion ?? null) : null}>
+    <Shell subtitle={untertitel} logo={setup?.logoVersion ?? null}>
       <form onSubmit={submit} className="rounded-2xl bg-slate-800/60 border border-slate-800 p-5 space-y-3.5">
         <label className="block">
           <span className="text-xs text-slate-400">E-Mail-Adresse</span>
@@ -176,7 +153,7 @@ export default function LoginScreen() {
           <LogIn size={16} /> {busy ? 'Anmelden …' : 'Anmelden'}
         </button>
 
-        {state.mode === 'live' && setup?.sso && (
+        {setup?.sso && (
           <>
             <div className="flex items-center gap-3 text-[11px] text-slate-500">
               <span className="flex-1 h-px bg-slate-700" /> oder <span className="flex-1 h-px bg-slate-700" />
@@ -198,30 +175,6 @@ export default function LoginScreen() {
         )}
       </form>
 
-      {state.mode === 'demo' && (
-        <div className="mt-4 rounded-2xl bg-slate-800/40 border border-slate-800 p-4 text-xs text-slate-400">
-          <div className="flex items-center gap-2 text-slate-300 font-semibold mb-2">
-            <Info size={14} /> Demo-Zugänge
-          </div>
-          <p className="mb-2">
-            Passwort für alle Demo-Konten: <code className="text-slate-200 font-semibold">{DEMO_PASSWORD}</code>
-          </p>
-          <ul className="space-y-1">
-            {state.users.slice(0, 4).map((u) => (
-              <li key={u.id}>
-                <button
-                  type="button"
-                  onClick={() => { setEmail(u.email); setPassword(DEMO_PASSWORD); setError(null) }}
-                  className="text-left hover:text-slate-200 transition"
-                >
-                  <span className="text-slate-300">{u.email}</span> · {u.role}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
       {liveFirstRun && (
         <div className="mt-4 rounded-2xl bg-slate-800/40 border border-emerald-800/60 p-4 text-xs text-slate-400">
           <div className="flex items-center gap-2 text-emerald-400 font-semibold mb-2">
@@ -242,20 +195,18 @@ export default function LoginScreen() {
         </div>
       )}
 
-      {state.mode === 'live' && serverErreichbar === false && (
+      {serverErreichbar === false && (
         <div className="mt-4 rounded-2xl bg-brand-600/10 border border-brand-600/40 p-4 text-xs text-brand-200">
           <div className="flex items-center gap-2 font-semibold mb-2">
             <AlertTriangle size={14} /> Alarmserver nicht erreichbar
           </div>
           <p className="leading-relaxed">
-            Im Live-Modus kommen alle Konten vom Alarmserver. Starten Sie ihn mit{' '}
-            <code className="text-brand-100">cd server &amp;&amp; npm run dev</code> und prüfen Sie die Adresse unten.
-            Zum Arbeiten ohne Server oben auf <span className="font-semibold">Demo</span> wechseln.
+            Alle Konten kommen vom Alarmserver. Prüfen Sie, ob er läuft, und kontrollieren Sie die Adresse unten.
           </p>
         </div>
       )}
 
-      {state.mode === 'live' && (
+      {(
         <div className="mt-4 text-center">
           {serverBearbeiten ? (
             <div className="rounded-2xl bg-slate-800/40 border border-slate-800 p-4 text-left">

@@ -45,6 +45,6 @@ FÜR IHRE ORGANISATION
 • Handbücher direkt in der App – passend zur eigenen Rolle.
 
 WICHTIG
-Diese App setzt einen Alarmserver Ihrer Organisation und ein persönliches Benutzerkonto voraus. Zum Kennenlernen enthält die App einen Demo-Modus mit Beispieldaten – ganz ohne Server.
+Diese App setzt einen Alarmserver Ihrer Organisation und ein persönliches Benutzerkonto voraus. Ohne beides ist keine Anmeldung möglich.
 
 *(ca. 2400 Zeichen)*

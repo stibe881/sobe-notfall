@@ -66,7 +66,7 @@ async function main(): Promise<void> {
   pruefe('3 Standorte vorhanden', stand.body.locations.length === 3)
   pruefe('7 Gruppen vorhanden', stand.body.groups.length === 7)
   pruefe('Notrufnummern vorhanden', stand.body.contacts.length === 8)
-  pruefe('keine Demo-Benutzer im Live-Bestand', stand.body.users.length === 1)
+  pruefe('frischer Bestand enthält nur das Administratorkonto', stand.body.users.length === 1)
   pruefe('Benutzerliste ohne Passwortdaten', stand.body.users.every((u: any) => !('passwordHash' in u)))
 
   // --- Ablauf der Szenarien: Alarmieren steht in callGuidance, nicht in den Sofortmassnahmen ---

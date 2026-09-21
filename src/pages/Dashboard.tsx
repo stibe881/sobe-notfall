@@ -70,7 +70,7 @@ export default function Dashboard() {
       <div className="grid lg:grid-cols-2 gap-6">
         <Card title={<span className="flex items-center gap-2"><Server size={16} /> Alarmserver-Status</span>}>
           <ul className="space-y-2.5 text-sm">
-            <StatusRow label="Alarmserver" ok detail={state.mode === 'live' ? 'Hetzner-Hosting' : 'Demo – lokal im Browser'} />
+            <StatusRow label="Alarmserver" ok detail="Alarmserver" />
             <StatusRow label="Push-Dienst (Critical Alerts)" ok detail="iOS über Expo – Stand unter Bereitschaft" />
             <StatusRow label="Interne Notfallnummer" ok={state.integrations.hotline.enabled} detail={state.integrations.hotline.number} />
             <StatusRow label="SMS-Gateway" ok={state.integrations.smsGateway.enabled} detail={state.integrations.smsGateway.enabled ? state.integrations.smsGateway.provider : undefined} />
@@ -132,12 +132,10 @@ function BereitschaftKarte() {
   const [fehler, setFehler] = useState('')
   const [sende, setSende] = useState(false)
   const [rueckmeldung, setRueckmeldung] = useState('')
-  const live = state.mode === 'live'
 
   const laden = useCallback(() => {
-    if (!live) return
     api.bereitschaft().then(setDaten).catch((f: Error) => setFehler(f.message))
-  }, [live])
+  }, [])
   useEffect(() => {
     laden()
     const t = setInterval(laden, 60_000)
@@ -163,17 +161,6 @@ function BereitschaftKarte() {
   const titel = (
     <span className="flex items-center gap-2"><ShieldCheck size={16} /> Bereitschaft</span>
   )
-
-  if (!live) {
-    return (
-      <Card title={titel}>
-        <p className="text-sm text-slate-500">
-          Im Demo-Modus gibt es keine registrierten Geräte. Im Live-Betrieb zeigt diese Kachel pro Standort, wie viele Personen ein
-          Gerät mit der App haben, wer Critical Alerts erlaubt hat, wann die letzte Sicherung lief und ob der Push-Dienst erreichbar ist.
-        </p>
-      </Card>
-    )
-  }
 
   return (
     <Card title={titel} actions={<Button variant="secondary" onClick={testpush} disabled={sende}><Smartphone size={14} /> Testmeldung an mein Telefon</Button>}>

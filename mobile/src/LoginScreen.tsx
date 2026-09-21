@@ -4,20 +4,19 @@ import * as WebBrowser from 'expo-web-browser'
 import { AlertTriangle, Eye, EyeOff, LogIn, ShieldCheck } from 'lucide-react-native'
 import Svg, { Rect } from 'react-native-svg'
 import { useStore } from './store'
-import { DEMO_PASSWORD, LIVE_INITIAL_PASSWORD } from './seed'
+import { LIVE_INITIAL_PASSWORD } from './seed'
 import { MIN_PASSWORD_LENGTH, passwordProblem } from './auth'
 import { ApiError, api, logoUri, merkeServerInfo, serverUrl, setServerUrl, type SetupInfo } from './api'
 import type { User } from './types'
 import { colors } from './ui'
 
-function Shell({ subtitle, children, showModeSwitch = false, logoVersion = null }: {
+function Shell({ subtitle, children, logoVersion = null }: {
   subtitle: string
   children: React.ReactNode
-  showModeSwitch?: boolean
   /** Logo-Version des Kunden – zeigt das Logo des Alarmservers statt des Warndreiecks */
   logoVersion?: string | null
 }) {
-  const { state, switchMode } = useStore()
+  const { state } = useStore()
   const version = logoVersion ?? state.integrations?.organization?.logoVersion ?? null
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: colors.dark }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -36,25 +35,6 @@ function Shell({ subtitle, children, showModeSwitch = false, logoVersion = null 
         </View>
         <Text style={s.subtitle}>{subtitle}</Text>
 
-        {/* Modus vor der Anmeldung wählbar – Demo und Live haben getrennte Konten */}
-        {showModeSwitch && (
-          <View style={s.modeSwitch}>
-            {(['demo', 'live'] as const).map((m) => {
-              const aktiv = state.mode === m
-              return (
-                <Pressable
-                  key={m}
-                  style={[s.modeOption, aktiv && { backgroundColor: m === 'live' ? colors.green : '#f59e0b' }]}
-                  onPress={() => switchMode(m)}
-                >
-                  <Text style={[s.modeOptionText, aktiv && { color: m === 'live' ? '#fff' : '#0f172a' }]}>
-                    {m === 'demo' ? 'DEMO' : 'LIVE'}
-                  </Text>
-                </Pressable>
-              )
-            })}
-          </View>
-        )}
         {children}
       </ScrollView>
     </KeyboardAvoidingView>
@@ -74,9 +54,8 @@ export default function LoginScreen() {
   const [setup, setSetup] = useState<SetupInfo | null>(null)
   const [serverErreichbar, setServerErreichbar] = useState<boolean | null>(null)
 
-  // Im Live-Modus beim Server nachfragen, ob er erreichbar und frisch eingerichtet ist
+  // Beim Server nachfragen, ob er erreichbar und frisch eingerichtet ist
   useEffect(() => {
-    if (state.mode !== 'live') return
     let abgebrochen = false
     api
       .setup()
@@ -89,11 +68,11 @@ export default function LoginScreen() {
       })
       .catch((f) => { if (!abgebrochen) setServerErreichbar(!(f instanceof ApiError && f.status === 0)) })
     return () => { abgebrochen = true }
-  }, [state.mode, serverBearbeiten])
+  }, [serverBearbeiten])
 
   // Erstinbetriebnahme: Der Server meldet, solange nur das ausgelieferte
   // Administratorkonto mit unverändertem Erstpasswort besteht
-  const liveFirstRun = state.mode === 'live' && setup?.freshInstall === true
+  const liveFirstRun = setup?.freshInstall === true
 
   async function submit() {
     setBusy(true)
@@ -140,12 +119,11 @@ export default function LoginScreen() {
 
   // Name, Logo und Akzentfarbe kommen vom Alarmserver – die App bleibt für alle Kunden dieselbe
   const untertitel =
-    (state.mode === 'live' ? setup?.organization : state.integrations?.organization?.name) ||
-    'Notfall- & Krisenmanagement'
-  const akzent = state.mode === 'live' ? setup?.organizationColor ?? null : state.integrations?.organization?.color ?? null
+    setup?.organization || state.integrations?.organization?.name || 'Notfall- & Krisenmanagement'
+  const akzent = setup?.organizationColor ?? state.integrations?.organization?.color ?? null
 
   return (
-    <Shell subtitle={untertitel} showModeSwitch logoVersion={state.mode === 'live' ? setup?.logoVersion ?? null : null}>
+    <Shell subtitle={untertitel} logoVersion={setup?.logoVersion ?? null}>
       <View style={s.card}>
         <Text style={s.label}>E-Mail-Adresse</Text>
         <TextInput
@@ -191,7 +169,7 @@ export default function LoginScreen() {
           <Text style={s.primaryText}>{busy ? 'Anmelden …' : 'Anmelden'}</Text>
         </Pressable>
 
-        {state.mode === 'live' && setup?.sso && (
+        {setup?.sso && (
           <Pressable style={[s.microsoft, busy && { opacity: 0.6 }]} onPress={microsoftAnmeldung} disabled={busy}>
             <Svg width={15} height={15} viewBox="0 0 16 16">
               <Rect x={0} y={0} width={7.5} height={7.5} fill="#f25022" />
@@ -203,18 +181,6 @@ export default function LoginScreen() {
           </Pressable>
         )}
       </View>
-
-      {state.mode === 'demo' && (
-        <View style={s.hint}>
-          <Text style={s.hintTitle}>Demo-Zugänge</Text>
-          <Text style={s.hintText}>Passwort für alle Demo-Konten: {DEMO_PASSWORD}</Text>
-          {state.users.slice(0, 4).map((u) => (
-            <Pressable key={u.id} onPress={() => { setEmail(u.email); setPassword(DEMO_PASSWORD); setError(null) }}>
-              <Text style={s.hintLink}>{u.email} · {u.role}</Text>
-            </Pressable>
-          ))}
-        </View>
-      )}
 
       {liveFirstRun && (
         <View style={[s.hint, { borderColor: '#065f46' }]}>
@@ -234,22 +200,20 @@ export default function LoginScreen() {
         </View>
       )}
 
-      {state.mode === 'live' && serverErreichbar === false && (
+      {serverErreichbar === false && (
         <View style={[s.hint, { borderColor: '#991b1b' }]}>
           <View style={s.hintRow}>
             <AlertTriangle size={14} color="#fecaca" />
             <Text style={[s.hintTitle, { color: '#fecaca' }]}>Alarmserver nicht erreichbar</Text>
           </View>
           <Text style={[s.hintText, { marginBottom: 0 }]}>
-            Im Live-Modus kommen alle Konten vom Alarmserver. Prüfen Sie die Adresse unten und ob der Server
-            läuft. Zum Arbeiten ohne Server oben auf DEMO wechseln.
+            Alle Konten kommen vom Alarmserver. Prüfen Sie die Adresse unten und ob der Server läuft.
           </Text>
         </View>
       )}
 
-      {state.mode === 'live' && (
-        <View style={s.hint}>
-          {serverBearbeiten ? (
+      <View style={s.hint}>
+        {serverBearbeiten ? (
             <>
               <Text style={s.hintTitle}>Adresse des Alarmservers</Text>
               <TextInput
@@ -287,9 +251,8 @@ export default function LoginScreen() {
               </Text>
               <Text style={[s.hintText, { marginBottom: 0 }]}>Zum Ändern tippen.</Text>
             </Pressable>
-          )}
-        </View>
-      )}
+        )}
+      </View>
 
     </Shell>
   )

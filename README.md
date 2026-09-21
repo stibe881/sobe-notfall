@@ -36,9 +36,9 @@ Alarmserver, Multikanal-Alarmierung, Notfallszenarien mit Handlungsanweisungen u
 ## Technik
 
 - React 18 + TypeScript + Vite + Tailwind CSS (Single-Page-App)
-- Zustand wird im `localStorage` persistiert (auch als Demo der Offline-Verfügbarkeit)
-- Ein Simulations-Ticker bildet den Alarmserver nach: Zustellstatus (pending → gesendet → zugestellt/fehlgeschlagen), Eskalationsstufen und Alleinarbeits-Timer laufen in Echtzeit
-- **Hinweis:** Es werden keine echten SMS/Anrufe/Push-Nachrichten versendet – alle Kanäle sind simuliert. Für den Produktivbetrieb wären entsprechende Gateways (SMS-Provider, Push-Dienste, Telefonie) anzubinden.
+- Alle Daten liegen auf dem Alarmserver (`server/`); Portal und App sehen denselben Bestand
+- Zustellstatus, Eskalationsstufen und Alleinarbeits-Timer rechnet der Server
+- Push-Nachrichten werden echt versendet. SMS und Anrufe brauchen ein angebundenes Gateway (SMS-Provider, Telefonie) – siehe **Integrationen**.
 
 ## Native Mobile-App (Expo)
 
@@ -88,18 +88,12 @@ Kunde kann jederzeit ein **zweiter Alarmserver (Standby)** angebunden werden –
 er spiegelt den Datenbestand laufend, die App weicht bei einem Ausfall
 selbständig dorthin aus. Anleitung: [`KUNDEN-SETUP.md`](KUNDEN-SETUP.md).
 
-## Betriebsarten
+## Betrieb
 
-| | Demo | Live |
-| --- | --- | --- |
-| Daten | Beispieldaten auf dem Gerät | Alarmserver (`server/`) |
-| Zustellung | simuliert | echte Push-Nachrichten an registrierte iPhones |
-| Geräte | jedes Gerät für sich | Portal und App sehen denselben Bestand |
-| Netz | nicht nötig | Server muss erreichbar sein |
-
-Der Live-Modus braucht den Alarmserver – ohne ihn haben Webportal und App
-getrennte Datenbestände, und ein im Portal angelegtes Konto existiert auf dem
-Telefon nicht. Zum Starten siehe [`server/README.md`](server/README.md):
+Portal und App arbeiten ausschliesslich gegen den Alarmserver: Dort liegen alle
+Konten und Daten, dort laufen Zustellung, Eskalation und die Alleinarbeits-Timer.
+Ohne erreichbaren Server ist keine Anmeldung möglich. Zum Starten siehe
+[`server/README.md`](server/README.md):
 
 ```bash
 cd server && npm install && npm run dev
@@ -152,31 +146,24 @@ Alarmauslösung.
 
 ## Anmeldung
 
-| Modus | Konto | Passwort |
-| --- | --- | --- |
-| Demo | alle zehn Beispielkonten, z. B. `stefan.gross@sonnenberg-baar.ch` (Admin), `anna.mueller@sonnenberg-baar.ch` (Krisenstab), `lea.weber@sonnenberg-baar.ch` (Mitarbeiterin) | `sobe2026` |
-| Live | `stefan.gross@sonnenberg-baar.ch` (einziges Konto beim ersten Start des Servers) | `SOBE-Start2026!`, muss bei der ersten Anmeldung geändert werden |
+| Konto | Passwort |
+| --- | --- |
+| `stefan.gross@sonnenberg-baar.ch` (einziges Konto beim ersten Start des Servers) | `SOBE-Start2026!`, muss bei der ersten Anmeldung geändert werden |
 
-Weitere Live-Konten werden im Portal unter **Benutzer** angelegt; sie liegen auf
+Weitere Konten werden im Portal unter **Benutzer** angelegt; sie liegen auf
 dem Server und gelten damit sofort auch in der App auf dem Telefon.
 
-Die Demo-Zugänge stehen zum Hineinklicken auf der Anmeldemaske; im Live-Modus erscheinen sie nicht.
-Demo- und Live-Modus haben getrennte Datenbestände und damit auch getrennte Anmeldungen – der Modus lässt
-sich deshalb direkt auf der Anmeldemaske umschalten.
+Der Datenbestand kann sich nicht dauerhaft aussperren: Der letzte verbliebene Administrator kann weder
+gelöscht noch in eine andere Rolle versetzt werden. Ist trotzdem kein Zugang mehr möglich, setzt
+`npm run reset-admin` im Serverordner das Administratorkonto zurück.
 
-Ein Datenbestand kann sich nicht dauerhaft aussperren: Existiert kein anmeldefähiges Konto, erhalten alle
-Administratoren das Erstpasswort mit erzwungener Änderung; fehlt auch ein Administrator, wird das Konto aus
-der Grundkonfiguration wiederhergestellt. Der letzte verbliebene Administrator kann weder gelöscht noch in
-eine andere Rolle versetzt werden.
-
-> Im Demo-Modus liegen die Passwort-Hashes auf dem Gerät – das genügt für Vorführung und Test, ersetzt aber
-> keine serverseitige Prüfung. Im Live-Modus prüft der Alarmserver die Anmeldung; dort liegen die Passwörter
-> als PBKDF2-SHA256-Hash und verlassen den Server nie.
+> Der Alarmserver prüft jede Anmeldung; die Passwörter liegen dort als
+> PBKDF2-SHA256-Hash und verlassen den Server nie.
 
 ## Bedienung (Schnellstart)
 
 1. **Alarm auslösen** → Szenario wählen (Kanäle und zuständige Gruppen werden automatisch vorbefüllt) → prüfen → auslösen.
 2. In der **Alarmzentrale** den Live-Zustellstatus und das Alarmjournal beobachten.
-3. In der **Benutzeransicht (App)** über Profil → «Demo: Ansicht als andere Person» einen Mitarbeiter wählen und den Alarm quittieren.
+3. In der **App-Vorschau** über die gelbe Leiste «Vorschau als» prüfen, wie eine Person die App sieht – Gruppen, Schritte und Standort.
 4. Unter **Alleinarbeit** einen kurzen Timer (1 Min.) starten und ablaufen lassen – der automatische Alarm erscheint in der Alarmzentrale.
-5. Über **Ereignisprotokoll → Demo zurücksetzen** lässt sich der Ausgangszustand wiederherstellen.
+5. Im **Ereignisprotokoll** ist jede Aktion mit Zeitstempel nachvollziehbar.

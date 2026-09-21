@@ -1,10 +1,8 @@
 import type { AppState, User } from '../types'
 
 /**
- * Verbindung zum Alarmserver (Live-Modus).
- *
- * Der Demo-Modus arbeitet weiterhin rein lokal. Im Live-Modus liegen alle Daten
- * auf dem Server, damit Portal und App denselben Bestand sehen.
+ * Verbindung zum Alarmserver. Alle Daten liegen auf dem Server, damit Portal
+ * und App denselben Bestand sehen.
  */
 
 const URL_KEY = 'sobe-server-url'

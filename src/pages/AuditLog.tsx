@@ -32,20 +32,6 @@ export default function AuditLog() {
           <h1 className="text-2xl font-bold text-slate-800">Ereignisprotokoll</h1>
           <p className="text-sm text-slate-500">Revisionssicheres Journal aller Aktionen – Alarme, Verwaltung, Konfiguration</p>
         </div>
-        <Button
-          variant="secondary"
-          onClick={() =>
-            ask(
-              state.mode === 'live'
-                ? 'Live-Datenbestand vollständig zurücksetzen? Alle Benutzer, Gruppen und Einstellungen gehen verloren.'
-                : 'Demo-Daten vollständig zurücksetzen? Alle Änderungen gehen verloren.',
-              () => dispatch({ type: 'RESET_DEMO' }),
-              'Zurücksetzen',
-            )
-          }
-        >
-          <RotateCcw size={14} /> {state.mode === 'live' ? 'Live-Daten zurücksetzen' : 'Demo zurücksetzen'}
-        </Button>
       </div>
 
       {confirmEl}

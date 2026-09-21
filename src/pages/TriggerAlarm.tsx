@@ -200,9 +200,9 @@ export default function TriggerAlarm() {
             {requireAck && <Badge color="green">mit Quittierung</Badge>}
             {drill && <Badge color="amber">ÜBUNG</Badge>}
           </div>
-          {state.mode === 'live' && !state.integrations.smsGateway.enabled && !state.integrations.telephony.enabled && (
+          {!state.integrations.smsGateway.enabled && !state.integrations.telephony.enabled && (
             <div className="text-xs text-amber-700 pt-1">
-              Live-Modus ohne SMS-/Anruf-Gateway: Der Alarm geht per Push und an Webhooks, aber nicht per SMS/Anruf.
+              Kein SMS-/Anruf-Gateway angebunden: Der Alarm geht per Push und an Webhooks, aber nicht per SMS/Anruf.
               Anbindung unter Integrationen.
             </div>
           )}

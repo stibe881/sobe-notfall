@@ -1,75 +1,60 @@
 import React, { createContext, useCallback, useContext, useEffect, useReducer, useRef, useState } from 'react'
-import { Vibration } from 'react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import type { Alarm, AlarmLogEntry, Channel, Delivery, EmergencyContact, EscalationLevel, Group, IntegrationSettings, Location, LoneWorkSession, Scenario, Session, User } from './types'
+import type { Alarm, Channel, Delivery, EmergencyContact, EscalationLevel, Group, IntegrationSettings, Location, LoneWorkSession, Scenario, Session, User } from './types'
 import { CHANNEL_LABELS, LONE_WORK_DEFAULT_GROUPS } from './types'
-import { LIVE_INITIAL_PASSWORD, SCENARIO_CONTENT_VERSION, SEED_CONTACTS, SEED_GROUPS, SEED_INTEGRATIONS, SEED_LOCATIONS, SEED_SCENARIOS, SEED_USERS } from './seed'
+import { LIVE_INITIAL_PASSWORD, SCENARIO_CONTENT_VERSION, SEED_SCENARIOS, SEED_USERS } from './seed'
 import { hashPassword, randomSalt } from './auth'
 import { criticalAlertsGranted, getPushToken, notifyNow } from './notifications'
 import { stopGeofencing, syncGeofencing, type GeofenceRegion } from './geofencing'
 import { ApiError, api, authToken, loadApiSettings, merkeServerInfo, setAuthToken, setFallbackUrl, setServerUrl, type ServerData } from './api'
-import { authenticate, passwordProblem, verifyPassword } from './auth'
-
-export type AppMode = 'demo' | 'live'
 
 /** Erhöhen, wenn gespeicherte Passwortdaten einmalig korrigiert werden müssen */
 const AUTH_MIGRATION_VERSION = 1
 
-const MODE_KEY = 'sonnenberg-mobile-mode'
-const DATA_KEYS: Record<AppMode, string> = {
-  demo: 'sonnenberg-mobile-v1',
-  live: 'sonnenberg-mobile-live-v1',
-}
+/** Zwischenspeicher auf dem Gerät – damit Szenarien und Checklisten offline bereitstehen */
+const DATA_KEY = 'sonnenberg-mobile-live-v1'
 
 export function uid(prefix: string): string {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`
 }
 
 export interface MobileState {
-  mode: AppMode
-  /** Version der Anmelde-Migration – für einmalige Korrekturen an Passwortdaten */
-  authVersion?: number
   /** Version der Standard-Szenarien-Inhalte – für einmalige Content-Updates beim Laden */
   scenarioContentVersion?: number
+  /** Version der Anmelde-Migration – für einmalige Korrekturen an Passwortdaten */
+  authVersion?: number
   /** Angemeldete Sitzung – null bedeutet: Anmeldemaske anzeigen */
   session: Session | null
-  /**
-   * Datenbestand. Im Demo-Modus die mitgelieferten Beispieldaten, im Live-Modus
-   * der Stand des Alarmservers – damit App und Webportal dasselbe sehen.
-   */
+  /** Datenbestand des Alarmservers – damit App und Webportal dasselbe sehen */
   users: User[]
   groups: Group[]
   locations: Location[]
   scenarios: Scenario[]
   contacts: EmergencyContact[]
-  /** Einstellungen wie die interne Notfallnummer – im Live-Modus vom Server */
+  /** Einstellungen wie die interne Notfallnummer – vom Server */
   integrations?: IntegrationSettings
   currentUserId: string
   alarms: Alarm[]
   loneWorkSessions: LoneWorkSession[]
 }
 
-function initialState(mode: AppMode): MobileState {
-  // Im Live-Modus füllt der Server den Bestand; bis dahin bleibt er leer
-  const live = mode === 'live'
-  const users = live ? [] : SEED_USERS
+/** Leerer Bestand; gefüllt wird er vom Alarmserver */
+function initialState(): MobileState {
   return {
-    mode,
-    authVersion: AUTH_MIGRATION_VERSION,
     session: null,
-    users,
-    groups: live ? [] : SEED_GROUPS,
-    locations: live ? [] : SEED_LOCATIONS,
-    scenarios: live ? [] : SEED_SCENARIOS,
-    contacts: live ? [] : SEED_CONTACTS,
-    integrations: SEED_INTEGRATIONS,
-    currentUserId: users[0]?.id ?? '',
+    users: [],
+    groups: [],
+    locations: [],
+    scenarios: [],
+    contacts: [],
+    integrations: undefined,
+    currentUserId: '',
     alarms: [],
     loneWorkSessions: [],
   }
 }
 
-// ---------- Alarm-Logik (identisch zur Web-App, Alarmserver wird lokal simuliert) ----------
+// ---------- Alarm-Logik (identisch zur Web-App) ----------
 
 /**
  * Empfänger eines Alleinarbeits-Alarms: gewählte Gruppen am Standort plus
@@ -157,116 +142,11 @@ export type Action =
   | { type: 'END_ALARM'; alarmId: string; note?: string }
   | { type: 'ALARM_UPDATE'; alarmId: string; message: string; kind: 'lage' | 'fehlalarm' }
   | { type: 'ACK_ALARM'; alarmId: string; userId: string; ack: 'acknowledged' | 'declined' }
-  | { type: 'TICK'; now: number }
   | { type: 'START_LONE_WORK'; session: LoneWorkSession }
   | { type: 'EXTEND_LONE_WORK'; sessionId: string; minutes: number }
   | { type: 'COMPLETE_LONE_WORK'; sessionId: string }
   | { type: 'HYDRATE'; state: MobileState }
   | { type: 'ADOPT_SERVER'; data: ServerData; session: Session | null }
-  | { type: 'RESET' }
-
-/** Zustellsimulation (nur Demo), Eskalation, Alleinarbeits-Timer */
-function tick(state: MobileState, now: number): MobileState {
-  let changed = false
-  const simulate = state.mode === 'demo'
-
-  const alarms = state.alarms.map((alarm) => {
-    if (alarm.status !== 'active') return alarm
-    let aChanged = false
-    let deliveries = !simulate
-      ? alarm.deliveries
-      : alarm.deliveries.map((d) => {
-          const age = now - d.updatedAt
-          if (d.status === 'pending' && age > 1200 + Math.random() * 1500) {
-            aChanged = true
-            return { ...d, status: 'sent' as const, updatedAt: now }
-          }
-          if (d.status === 'sent' && age > 1500 + Math.random() * 2500) {
-            aChanged = true
-            return { ...d, status: Math.random() < 0.04 ? ('failed' as const) : ('delivered' as const), updatedAt: now }
-          }
-          return d
-        })
-
-    const log: AlarmLogEntry[] = [...alarm.log]
-
-    // Simulierte Rückmeldungen (nur Demo): alarmierte Personen quittieren nach Zustellung
-    if (simulate && alarm.requireAck) {
-      const pendingUsers = [...new Set(deliveries.map((d) => d.userId))].filter(
-        (userId) =>
-          userId !== state.currentUserId &&
-          deliveries.some((d) => d.userId === userId && d.status === 'delivered') &&
-          deliveries.every((d) => d.userId !== userId || d.ack === 'none'),
-      )
-      for (const userId of pendingUsers) {
-        if (Math.random() < 0.06) {
-          const ack = Math.random() < 0.85 ? ('acknowledged' as const) : ('declined' as const)
-          deliveries = deliveries.map((d) => (d.userId === userId ? { ...d, ack } : d))
-          const user = state.users.find((u) => u.id === userId)
-          log.push({
-            ts: now,
-            message: `${user ? `${user.firstName} ${user.lastName}` : userId} hat ${ack === 'acknowledged' ? 'quittiert (kommt)' : 'abgelehnt (nicht verfügbar)'}`,
-          })
-          aChanged = true
-        }
-      }
-    }
-
-    // Eskalation
-    let escalationStage = alarm.escalationStage
-    const nextLevel = alarm.escalation[escalationStage]
-    const anyAck = deliveries.some((d) => d.ack === 'acknowledged')
-    if (nextLevel && !anyAck && now - alarm.triggeredAt > nextLevel.afterMinutes * 60_000) {
-      escalationStage += 1
-      const recipients = resolveRecipients(state.users, nextLevel.groupIds, alarm.locationIds)
-      deliveries = [...deliveries, ...buildDeliveries(recipients, nextLevel.channels)]
-      log.push({
-        ts: now,
-        message: `Eskalationsstufe ${escalationStage}: ${recipients.length} weitere Empfänger${nextLevel.notifyEmergencyServices ? ' – Blaulichtorganisationen benachrichtigt' : ''}`,
-      })
-      aChanged = true
-    }
-
-    if (!aChanged) return alarm
-    changed = true
-    return { ...alarm, deliveries, log, escalationStage }
-  })
-
-  // Alleinarbeits-Timer abgelaufen -> automatischer Alarm
-  let loneWorkSessions = state.loneWorkSessions
-  let newAlarms: Alarm[] = []
-  const expired = state.loneWorkSessions.filter((s) => s.status === 'running' && now > s.expiresAt)
-  if (expired.length > 0) {
-    changed = true
-    loneWorkSessions = state.loneWorkSessions.map((s) =>
-      expired.some((e) => e.id === s.id) ? { ...s, status: 'alarm' as const } : s,
-    )
-    for (const session of expired) {
-      const user = state.users.find((u) => u.id === session.userId)
-      const ziel = alleinarbeitEmpfaenger(state.users, session)
-      newAlarms = [
-        createAlarm(state.users, {
-          scenarioId: 'sc-medizin',
-          message: `ALLEINARBEIT: Timer von ${user ? `${user.firstName} ${user.lastName}` : '?'} abgelaufen (${session.activity}). Keine Rückmeldung – bitte sofort prüfen!`,
-          silent: session.silent,
-          requireAck: true,
-          channels: ['push', 'sms', 'voice'],
-          groupIds: ziel.groupIds,
-          recipientUserIds: ziel.recipientUserIds,
-          locationIds: [session.locationId],
-          triggeredByUserId: session.userId,
-          triggeredVia: 'timer',
-          escalation: [{ afterMinutes: 5, channels: ['voice'], groupIds: ['gr-krisenstab'], notifyEmergencyServices: true }],
-        }),
-        ...newAlarms,
-      ]
-    }
-    Vibration.vibrate([0, 300, 150, 300])
-  }
-
-  if (!changed) return state
-  return { ...state, alarms: [...newAlarms, ...alarms], loneWorkSessions }
-}
 
 function reducer(state: MobileState, action: Action): MobileState {
   switch (action.type) {
@@ -360,8 +240,6 @@ function reducer(state: MobileState, action: Action): MobileState {
             : a,
         ),
       }
-    case 'TICK':
-      return tick(state, action.now)
     case 'START_LONE_WORK':
       return { ...state, loneWorkSessions: [action.session, ...state.loneWorkSessions].slice(0, 20) }
     case 'EXTEND_LONE_WORK':
@@ -377,7 +255,7 @@ function reducer(state: MobileState, action: Action): MobileState {
         loneWorkSessions: state.loneWorkSessions.map((s) => (s.id === action.sessionId ? { ...s, status: 'completed' as const } : s)),
       }
     case 'ADOPT_SERVER': {
-      // Im Live-Modus ist der Server die Wahrheit; Modus und Anmeldung bleiben lokal.
+      // Der Server ist die Wahrheit; die Anmeldung bleibt lokal.
       // Die Anmeldeart überlebt den regelmässigen Abgleich – sie ist beim
       // Anmelden bekannt, nicht bei jedem Neuladen des Datenbestands
       const session = action.session
@@ -393,20 +271,13 @@ function reducer(state: MobileState, action: Action): MobileState {
         integrations: action.data.integrations ?? state.integrations,
         alarms: action.data.alarms ?? [],
         loneWorkSessions: action.data.loneWorkSessions ?? [],
-        mode: 'live',
         session,
         currentUserId: session?.userId ?? state.currentUserId,
       }
     }
     case 'HYDRATE':
       // Fehlende Felder auffüllen, damit ein alter Stand nie zu undefined führt
-      return fuelleFehlendeFelder(action.state, action.state.mode ?? state.mode)
-    case 'RESET': {
-      const fresh = initialState(state.mode)
-      // Angemeldet bleiben, sofern das eigene Konto im frischen Bestand existiert
-      const keep = fresh.users.some((u) => u.id === state.session?.userId)
-      return keep ? { ...fresh, session: state.session, currentUserId: state.session!.userId } : fresh
-    }
+      return fuelleFehlendeFelder(action.state)
     default:
       return state
   }
@@ -458,8 +329,6 @@ function toastForAction(action: Action): Toast['message'] | { message: string; k
       return 'Lebenszeichen erhalten – Timer verlängert'
     case 'COMPLETE_LONE_WORK':
       return 'Alleinarbeit sicher beendet'
-    case 'RESET':
-      return 'Demo zurückgesetzt'
     default:
       return null
   }
@@ -474,27 +343,6 @@ function withInitialPassword(user: User): User {
 }
 
 /**
- * Sicherstellen, dass mindestens ein Konto anmeldefähig bleibt. Gibt es keines,
- * erhalten alle Administratoren das Erstpasswort mit erzwungener Änderung; fehlt
- * auch ein Administrator, wird das Konto aus der Grundkonfiguration wiederhergestellt.
- */
-function ensureLoginPossible(users: User[]): User[] {
-  if (users.some((u) => u.passwordHash && u.passwordSalt)) return users
-  if (users.some((u) => u.role === 'admin')) {
-    return users.map((u) => (u.role === 'admin' ? withInitialPassword(u) : u))
-  }
-  const rescue = SEED_USERS.find((u) => u.role === 'admin')
-  if (!rescue) return users
-  return [withInitialPassword({ ...rescue, passwordHash: undefined, passwordSalt: undefined }), ...users.filter((u) => u.id !== rescue.id)]
-}
-
-/**
- * Gespeicherte Stände auf die Anmeldung umstellen. Ältere Stände kennen weder
- * Benutzerverzeichnis noch Sitzung; sie erhalten das Verzeichnis des Modus.
- * Demo-Passwörter gelten nur im Demo-Modus; Live-Bestände, denen eine frühere
- * Fassung ein Demo-Passwort zugewiesen hat, werden auf das Erstpasswort gesetzt.
- */
-/**
  * Gespeicherten Stand auf die aktuelle Form bringen.
  *
  * Ältere Versionen der App kannten weder Gruppen, Standorte, Szenarien noch
@@ -502,12 +350,11 @@ function ensureLoginPossible(users: User[]): User[] {
  * stünde beim Start `undefined` statt einer Liste, und die App stürzt beim
  * ersten Zugriff ab.
  */
-export function fuelleFehlendeFelder(parsed: Partial<MobileState>, mode: AppMode): MobileState {
-  const fallback = initialState(mode)
+export function fuelleFehlendeFelder(parsed: Partial<MobileState>): MobileState {
+  const fallback = initialState()
   return {
     ...fallback,
     ...parsed,
-    mode,
     users: parsed.users ?? fallback.users,
     groups: parsed.groups ?? fallback.groups,
     locations: parsed.locations ?? fallback.locations,
@@ -518,29 +365,21 @@ export function fuelleFehlendeFelder(parsed: Partial<MobileState>, mode: AppMode
   }
 }
 
-function migrateAuth(roh: Partial<MobileState>, mode: AppMode): MobileState {
-  const parsed = fuelleFehlendeFelder(roh, mode)
-  const fallback = initialState(mode)
-  const seedById = new Map(SEED_USERS.map((u) => [u.id, u]))
-  let users = parsed.users?.length ? parsed.users : fallback.users
+/**
+ * Gespeicherten Stand auf die aktuelle Form heben. Die Konten liefert der
+ * Alarmserver; lokal wird nichts erzeugt. Frühere Fassungen haben Konten
+ * versehentlich ein Passwort aus der Grundkonfiguration mitgegeben – diese
+ * werden einmalig auf das Erstpasswort mit erzwungener Änderung gesetzt.
+ */
+function migrateAuth(roh: Partial<MobileState>): MobileState {
+  const parsed = fuelleFehlendeFelder(roh)
+  const fallback = initialState()
+  let users = parsed.users ?? fallback.users
 
-  if (mode === 'demo') {
-    users = users.map((u) => {
-      if (u.passwordHash && u.passwordSalt) return u
-      const seed = seedById.get(u.id)
-      return seed?.passwordHash && seed.passwordSalt
-        ? { ...u, passwordSalt: seed.passwordSalt, passwordHash: seed.passwordHash }
-        : u
-    })
-  }
-
-  if (mode === 'live' && (parsed.authVersion ?? 0) < AUTH_MIGRATION_VERSION) {
+  if ((parsed.authVersion ?? 0) < AUTH_MIGRATION_VERSION) {
     const seedHashes = new Set(SEED_USERS.map((u) => u.passwordHash))
     users = users.map((u) => (u.passwordHash && seedHashes.has(u.passwordHash) ? withInitialPassword(u) : u))
   }
-
-  // Im Live-Modus liefert der Server die Konten – lokal wird nichts erzeugt
-  users = mode === 'demo' ? ensureLoginPossible(users) : users
 
   // Einmalige Inhalts-Aktualisierung: Standard-Szenarien auf die neue Version
   // heben, selbst erstellte Szenarien (custom) bleiben unverändert erhalten.
@@ -559,28 +398,28 @@ function migrateAuth(roh: Partial<MobileState>, mode: AppMode): MobileState {
   return {
     ...parsed,
     integrations,
-    mode,
     authVersion: AUTH_MIGRATION_VERSION,
     scenarioContentVersion: SCENARIO_CONTENT_VERSION,
     scenarios,
     users,
     session: session && users.some((u) => u.id === session.userId) ? session : null,
-    // Im Live-Modus ist die Liste vor der Anmeldung leer – dann bleibt sie leer
+    // Vor der Anmeldung ist die Liste leer – dann bleibt sie leer
     currentUserId: users.some((u) => u.id === parsed.currentUserId) ? parsed.currentUserId : (users[0]?.id ?? ''),
   }
 }
 
-async function loadStateForMode(mode: AppMode): Promise<MobileState> {
+/** Zwischenspeicher vom Gerät lesen; ohne brauchbaren Stand ein leerer Bestand */
+async function ladeZustand(): Promise<MobileState> {
   try {
-    const raw = await AsyncStorage.getItem(DATA_KEYS[mode])
+    const raw = await AsyncStorage.getItem(DATA_KEY)
     if (raw) {
       const parsed = JSON.parse(raw) as Partial<MobileState>
-      if (parsed.currentUserId) return migrateAuth(parsed, mode)
+      if (parsed.currentUserId) return migrateAuth(parsed)
     }
   } catch {
     // korrupte Daten -> Ausgangszustand
   }
-  return initialState(mode)
+  return initialState()
 }
 
 export type ServerStatus = 'lokal' | 'verbindet' | 'verbunden' | 'getrennt'
@@ -588,8 +427,7 @@ export type ServerStatus = 'lokal' | 'verbindet' | 'verbunden' | 'getrennt'
 interface StoreCtx {
   state: MobileState
   dispatch: React.Dispatch<Action>
-  switchMode: (mode: AppMode) => void
-  /** Anmelden – im Demo-Modus lokal, im Live-Modus über den Alarmserver */
+  /** Anmelden über den Alarmserver */
   login: (email: string, password: string) => Promise<{ ok: true } | { ok: false; error: string }>
   /** Anmeldung über Single Sign-On: Der Server hat das Sitzungs-Token bereits ausgestellt */
   loginWithToken: (token: string) => Promise<{ ok: true } | { ok: false; error: string }>
@@ -608,10 +446,11 @@ interface StoreCtx {
 const StoreContext = createContext<StoreCtx | null>(null)
 
 /**
- * Eine Aktion im Live-Modus auf dem Server ausführen. Der Server ist dort die
- * einzige Wahrheit; der neue Stand kommt anschliessend über /state zurück.
+ * Eine Aktion auf dem Server ausführen. Der Server ist die einzige Wahrheit;
+ * der neue Stand kommt anschliessend über /state zurück.
+ *
+ * true: vom Server erledigt · 'merged': dem laufenden Alarm hinzugefügt · false: rein lokal
  */
-/** true: vom Server erledigt · 'merged': dem laufenden Alarm hinzugefügt · false: rein lokal */
 async function serverEffekt(action: Action): Promise<boolean | 'merged'> {
   switch (action.type) {
     case 'TRIGGER_ALARM': {
@@ -650,7 +489,7 @@ async function serverEffekt(action: Action): Promise<boolean | 'merged'> {
 }
 
 export function StoreProvider({ children }: { children: React.ReactNode }) {
-  const [state, rawDispatch] = useReducer(reducer, undefined, () => initialState('demo'))
+  const [state, rawDispatch] = useReducer(reducer, undefined, initialState)
   const stateRef = useRef(state)
   stateRef.current = state
   const [hydrated, setHydrated] = useState(false)
@@ -669,7 +508,6 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   /** Datenbestand vom Alarmserver holen */
   const refresh = useCallback(async () => {
-    if (stateRef.current.mode !== 'live') return
     if (!authToken()) {
       setServerStatus('getrennt')
       return
@@ -705,13 +543,6 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const login = useCallback<StoreCtx['login']>(async (email, password) => {
-    if (stateRef.current.mode === 'demo') {
-      const ergebnis = authenticate(stateRef.current.users, email, password)
-      if (!ergebnis.ok) return { ok: false, error: ergebnis.error }
-      setKnownPassword(password)
-      rawDispatch({ type: 'LOGIN', userId: ergebnis.user.id })
-      return { ok: true }
-    }
     try {
       const { token } = await api.login(email, password)
       await setAuthToken(token)
@@ -744,14 +575,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, [refresh, registerPush])
 
   const logout = useCallback(() => {
-    if (stateRef.current.mode === 'live') {
-      void getPushToken().then((t) => (t ? api.unregisterPush(t) : undefined)).catch(() => undefined)
-      void stopGeofencing()
-      api.logout().catch(() => {
-        // Server nicht erreichbar – lokal trotzdem abmelden
-      })
-      void setAuthToken(null)
-    }
+    void getPushToken().then((t) => (t ? api.unregisterPush(t) : undefined)).catch(() => undefined)
+    void stopGeofencing()
+    api.logout().catch(() => {
+      // Server nicht erreichbar – lokal trotzdem abmelden
+    })
+    void setAuthToken(null)
     setKnownPassword(null)
     rawDispatch({ type: 'LOGOUT' })
     pushToast('Abgemeldet')
@@ -761,15 +590,6 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     const eigen = stateRef.current.users.find((u) => u.id === stateRef.current.session?.userId)
     if (!eigen) return { ok: false, error: 'Nicht angemeldet.' }
 
-    if (stateRef.current.mode === 'demo') {
-      if (!verifyPassword(eigen, aktuell)) return { ok: false, error: 'Das aktuelle Passwort ist falsch.' }
-      const problem = passwordProblem(neu)
-      if (problem) return { ok: false, error: problem }
-      rawDispatch({ type: 'SET_PASSWORD', userId: eigen.id, password: neu })
-      setKnownPassword(neu)
-      pushToast('Passwort gespeichert')
-      return { ok: true }
-    }
     try {
       await api.changePassword(aktuell, neu)
       setKnownPassword(neu)
@@ -783,96 +603,59 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const dispatch = useCallback(
     (action: Action) => {
-      if (stateRef.current.mode === 'live') {
-        if (action.type === 'LOGIN' || action.type === 'LOGOUT') {
-          rawDispatch(action)
-          return
-        }
-        serverEffekt(action)
-          .then((behandelt) => {
-            if (!behandelt) {
-              rawDispatch(action)
-              return
-            }
-            if (behandelt === 'merged') {
-              pushToast('Für dieses Ereignis lief bereits ein Alarm – Ihre Meldung wurde ihm hinzugefügt', 'alarm')
-              return refresh()
-            }
-            if (action.type === 'TRIGGER_ALARM' && !action.alarm.silent) {
-              const scenario = stateRef.current.scenarios.find((s) => s.id === action.alarm.scenarioId)
-              notifyNow(scenario ? `Alarm: ${scenario.title}` : 'Alarm ausgelöst', action.alarm.message, true)
-            }
-            const t = toastForAction(action)
-            if (t) {
-              if (typeof t === 'string') pushToast(t)
-              else pushToast(t.message, t.kind)
-            }
-            return refresh()
-          })
-          .catch((fehler) => {
-            pushToast(fehler instanceof ApiError ? fehler.message : 'Der Alarmserver hat die Aktion abgelehnt.', 'alarm')
-          })
-        return
-      }
-
-      // Demo: Zusammenführen ist am Toast erkennbar
-      if (action.type === 'TRIGGER_ALARM' && laufenderAlarmZu(stateRef.current.alarms, action.alarm)) {
+      if (action.type === 'LOGIN' || action.type === 'LOGOUT') {
         rawDispatch(action)
-        pushToast('Für dieses Ereignis lief bereits ein Alarm – Ihre Meldung wurde ihm hinzugefügt', 'alarm')
         return
       }
-      rawDispatch(action)
-      if (action.type === 'TRIGGER_ALARM' && !action.alarm.silent) {
-        const scenario = stateRef.current.scenarios.find((s) => s.id === action.alarm.scenarioId)
-        notifyNow(scenario ? `Alarm: ${scenario.title}` : 'Alarm ausgelöst', action.alarm.message, true)
-      }
-      const t = toastForAction(action)
-      if (t) {
-        if (typeof t === 'string') pushToast(t)
-        else pushToast(t.message, t.kind)
-      }
+      serverEffekt(action)
+        .then((behandelt) => {
+          if (!behandelt) {
+            rawDispatch(action)
+            return
+          }
+          if (behandelt === 'merged') {
+            pushToast('Für dieses Ereignis lief bereits ein Alarm – Ihre Meldung wurde ihm hinzugefügt', 'alarm')
+            return refresh()
+          }
+          if (action.type === 'TRIGGER_ALARM' && !action.alarm.silent) {
+            const scenario = stateRef.current.scenarios.find((s) => s.id === action.alarm.scenarioId)
+            notifyNow(scenario ? `Alarm: ${scenario.title}` : 'Alarm ausgelöst', action.alarm.message, true)
+          }
+          const t = toastForAction(action)
+          if (t) {
+            if (typeof t === 'string') pushToast(t)
+            else pushToast(t.message, t.kind)
+          }
+          return refresh()
+        })
+        .catch((fehler) => {
+          pushToast(fehler instanceof ApiError ? fehler.message : 'Der Alarmserver hat die Aktion abgelehnt.', 'alarm')
+        })
     },
     [pushToast, refresh],
   )
 
   useEffect(() => {
     loadApiSettings()
-      .then(() => AsyncStorage.getItem(MODE_KEY))
-      .then((stored) => loadStateForMode(stored === 'live' ? 'live' : 'demo'))
+      .then(() => ladeZustand())
       .then((loaded) => rawDispatch({ type: 'HYDRATE', state: loaded }))
       .catch(() => {
-        // kein Storage verfügbar -> Demo-Ausgangszustand
+        // kein Storage verfügbar -> leerer Ausgangszustand
       })
       .finally(() => setHydrated(true))
   }, [])
 
   useEffect(() => {
     if (!hydrated) return
-    // Auch der Live-Stand bleibt auf dem Gerät: Ohne Empfang zeigt die App den
-    // letzten bekannten Stand – Szenarien, Kontakte, Alarme – statt einer leeren Seite.
-    AsyncStorage.setItem(DATA_KEYS[state.mode], JSON.stringify(state)).catch(() => {})
-    AsyncStorage.setItem(MODE_KEY, state.mode).catch(() => {})
+    // Der Stand bleibt auf dem Gerät: Ohne Empfang zeigt die App den letzten
+    // bekannten Stand – Szenarien, Kontakte, Alarme – statt einer leeren Seite.
+    AsyncStorage.setItem(DATA_KEY, JSON.stringify(state)).catch(() => {})
   }, [state, hydrated])
-
-  const switchMode = useCallback(
-    (mode: AppMode) => {
-      if (stateRef.current.mode === mode) return
-      loadStateForMode(mode).then((loaded) => {
-        rawDispatch({ type: 'HYDRATE', state: loaded })
-        pushToast(
-          mode === 'live'
-            ? 'Live-Modus aktiv – Daten vom Alarmserver'
-            : 'Demo-Modus aktiv – Zustellung wird simuliert',
-        )
-      })
-    },
-    [pushToast],
-  )
 
   /**
    * Verbindungs-Link aus dem Portal (QR-Code oder verteilter Link): Die App
-   * übernimmt Serveradresse und Ausweichserver und wechselt in den Live-Modus –
-   * niemand muss eine Adresse eintippen.
+   * übernimmt Serveradresse und Ausweichserver – niemand muss eine Adresse
+   * eintippen.
    */
   const uebernehmeServerLink = useCallback<StoreCtx['uebernehmeServerLink']>(
     (server, fallback, name) => {
@@ -880,17 +663,17 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         await setServerUrl(server)
         await setFallbackUrl(fallback)
         pushToast(`Mit Alarmserver verbunden: ${name || server}`)
-        if (stateRef.current.mode !== 'live') switchMode('live')
-        else void refresh()
+        void refresh()
       })()
     },
-    [pushToast, switchMode, refresh],
+    [pushToast, refresh],
   )
 
-  // Im Live-Modus regelmässig abgleichen. React Native kennt kein EventSource,
-  // deshalb wird abgefragt statt abonniert – im Vordergrund alle fünf Sekunden.
+  // Regelmässig mit dem Alarmserver abgleichen. React Native kennt kein
+  // EventSource, deshalb wird abgefragt statt abonniert – im Vordergrund alle
+  // fünf Sekunden.
   useEffect(() => {
-    if (!hydrated || state.mode !== 'live') {
+    if (!hydrated) {
       setServerStatus('lokal')
       return
     }
@@ -903,21 +686,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     void registerPush()
     const interval = setInterval(() => void refresh(), 5000)
     return () => clearInterval(interval)
-  }, [hydrated, state.mode, state.session?.userId, refresh, registerPush])
-
-  // Simulation nur im Demo-Modus; im Live-Betrieb rechnet der Server
-  useEffect(() => {
-    if (state.mode !== 'demo') return
-    const interval = setInterval(() => rawDispatch({ type: 'TICK', now: Date.now() }), 1000)
-    return () => clearInterval(interval)
-  }, [state.mode])
+  }, [hydrated, state.session?.userId, refresh, registerPush])
 
   // Geofencing mit der Serverkonfiguration abgleichen. Der Schlüssel fasst die
   // relevanten Teile zusammen, damit der Abgleich nur bei echten Änderungen
   // läuft – nicht bei jedem Fünf-Sekunden-Datenabruf. syncGeofencing selbst
   // ist zusätzlich idempotent.
   const geoKonfig = JSON.stringify({
-    aktiv: state.mode === 'live' && Boolean(state.session) && Boolean(state.integrations?.geofencing),
+    aktiv: Boolean(state.session) && Boolean(state.integrations?.geofencing),
     regionen: state.locations.filter((l) => l.geofence).map((l) => ({ id: l.id, ...l.geofence! })),
   })
   useEffect(() => {
@@ -928,7 +704,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <StoreContext.Provider
-      value={{ state, dispatch, switchMode, login, loginWithToken, logout, changePassword, serverStatus, knownPassword, refresh: () => void refresh(), uebernehmeServerLink, toasts, hydrated }}
+      value={{ state, dispatch, login, loginWithToken, logout, changePassword, serverStatus, knownPassword, refresh: () => void refresh(), uebernehmeServerLink, toasts, hydrated }}
     >
       {children}
     </StoreContext.Provider>
@@ -940,5 +716,3 @@ export function useStore() {
   if (!ctx) throw new Error('useStore muss innerhalb von StoreProvider verwendet werden')
   return ctx
 }
-
-export { SEED_GROUPS }

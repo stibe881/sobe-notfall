@@ -120,7 +120,7 @@ Für den Betrieb ausserhalb des Schulnetzes gehört der Server hinter HTTPS
 
 ## Wenn die Anmeldung nicht klappt
 
-Im Live-Modus kommen alle Konten vom Server – ohne laufenden Server gibt es keine
+Alle Konten kommen vom Server – ohne laufenden Server gibt es keine
 Anmeldung. Die Anmeldemaske sagt das inzwischen ausdrücklich und zeigt bei einer
 frischen Installation Konto und Erstpasswort an.
 

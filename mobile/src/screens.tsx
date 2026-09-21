@@ -1387,47 +1387,6 @@ export function ContactsScreen() {
 
 // ---------- Profil ----------
 
-/** Demo/Live-Umschalter – nur für Admins sichtbar */
-function ModeCard() {
-  const { state, switchMode } = useStore()
-  return (
-    <Card>
-      <Text style={[styles.cardTitle, { marginBottom: 8 }]}>Modus</Text>
-      <View style={{ flexDirection: 'row', backgroundColor: '#e2e8f0', borderRadius: 10, padding: 3 }}>
-        {(['demo', 'live'] as const).map((m) => (
-          <Pressable
-            key={m}
-            onPress={() => switchMode(m)}
-            style={{
-              flex: 1,
-              paddingVertical: 8,
-              borderRadius: 8,
-              alignItems: 'center',
-              backgroundColor: state.mode === m ? (m === 'live' ? '#059669' : '#f59e0b') : 'transparent',
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 13,
-                fontWeight: '800',
-                letterSpacing: 0.5,
-                color: state.mode === m ? (m === 'live' ? '#fff' : '#0f172a') : colors.muted,
-              }}
-            >
-              {m === 'demo' ? 'DEMO' : 'LIVE'}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-      <Text style={[styles.faint, { marginTop: 8 }]}>
-        {state.mode === 'demo'
-          ? 'Beispieldaten, Zustellung und Rückmeldungen werden simuliert.'
-          : 'Eigener Datenbestand ohne Simulation – Zustellungen bleiben offen, bis ein Versand-Gateway angebunden ist. Beide Modi behalten ihre Daten.'}
-      </Text>
-    </Card>
-  )
-}
-
 /**
  * Handbücher zur eigenen Rolle – ausgeliefert vom Alarmserver unter
  * /handbuecher, geöffnet im Browser. Mitarbeitende sehen nur ihr eigenes
@@ -1522,61 +1481,27 @@ export function ProfileScreen() {
 
       <PasswordCard />
 
-      {state.mode === 'demo' && (
       <Card>
-        <Text style={[styles.cardTitle, { marginBottom: 8 }]}>Demo: Ansicht als andere Person</Text>
-        {state.users.map((u) => (
-          <Pressable
-            key={u.id}
-            style={[styles.row, { paddingVertical: 7 }]}
-            onPress={() => dispatch({ type: 'SET_USER', userId: u.id })}
-          >
-            <View style={[styles.radio, u.id === me.id && { borderColor: colors.brand }]}>
-              {u.id === me.id && <View style={styles.radioDot} />}
-            </View>
-            <Text style={[styles.body, { flex: 1 }]}>{u.firstName} {u.lastName}</Text>
-            <Text style={styles.faint}>{u.role}</Text>
-          </Pressable>
-        ))}
-        <Pressable
-          style={[styles.outlineButton, { marginTop: 10 }]}
-          onPress={() =>
-            Alert.alert('Zurücksetzen', 'Demo-Daten zurücksetzen?', [
-              { text: 'Abbrechen', style: 'cancel' },
-              { text: 'Zurücksetzen', style: 'destructive', onPress: () => dispatch({ type: 'RESET' }) },
-            ])
-          }
-        >
-          <Text style={styles.outlineButtonText}>Demo zurücksetzen</Text>
-        </Pressable>
+        <View style={styles.row}>
+          <View
+            style={{
+              width: 8, height: 8, borderRadius: 4,
+              backgroundColor: serverStatus === 'verbunden' ? colors.green : serverStatus === 'getrennt' ? colors.alarm : '#f59e0b',
+            }}
+          />
+          <Text style={[styles.cardTitle, { flex: 1 }]}>
+            {serverStatus === 'verbunden'
+              ? 'Mit Alarmserver verbunden'
+              : serverStatus === 'getrennt'
+                ? 'Alarmserver nicht erreichbar'
+                : 'Verbinde mit Alarmserver …'}
+          </Text>
+        </View>
       </Card>
-      )}
-
-      {state.mode === 'live' && (
-        <Card>
-          <View style={styles.row}>
-            <View
-              style={{
-                width: 8, height: 8, borderRadius: 4,
-                backgroundColor: serverStatus === 'verbunden' ? colors.green : serverStatus === 'getrennt' ? colors.alarm : '#f59e0b',
-              }}
-            />
-            <Text style={[styles.cardTitle, { flex: 1 }]}>
-              {serverStatus === 'verbunden'
-                ? 'Mit Alarmserver verbunden'
-                : serverStatus === 'getrennt'
-                  ? 'Alarmserver nicht erreichbar'
-                  : 'Verbinde mit Alarmserver …'}
-            </Text>
-          </View>
-        </Card>
-      )}
-
-      {me.role === 'admin' && <ModeCard />}
 
       <PushStatusCard />
 
-      {state.mode === 'live' && <HandbuchCard rolle={me.role} />}
+      <HandbuchCard rolle={me.role} />
 
       <Card>
         <View style={styles.row}>

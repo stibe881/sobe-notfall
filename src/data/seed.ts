@@ -1046,43 +1046,12 @@ export function integrationenMitVorgaben(roh: Partial<IntegrationSettings> | und
   }
 }
 
-/** Passwort aller Demo-Benutzer – wird auf der Anmeldemaske im Demo-Modus angezeigt */
-export const DEMO_PASSWORD = 'sobe2026'
-
-/** Erstpasswort des Live-Administrators; muss bei der ersten Anmeldung geändert werden */
+/** Erstpasswort des Administrators; muss bei der ersten Anmeldung geändert werden */
 export const LIVE_INITIAL_PASSWORD = 'SOBE-Start2026!'
 
-export function createInitialState(): AppState {
-  return {
-    mode: 'demo',
-    session: null,
-    scenarioContentVersion: SCENARIO_CONTENT_VERSION,
-    currentUserId: 'u-admin',
-    users: SEED_USERS,
-    groups: SEED_GROUPS,
-    locations: SEED_LOCATIONS,
-    scenarios: SEED_SCENARIOS,
-    plans: SEED_PLANS,
-    alarms: [],
-    buttons: SEED_BUTTONS,
-    loneWorkSessions: [],
-    integrations: SEED_INTEGRATIONS,
-    contacts: SEED_CONTACTS,
-    audit: [
-      { id: 'a-1', ts: Date.now() - 3600_000, type: 'system', message: 'System initialisiert – Alarmserver für SONNENBERG Kompetenzzentrum betriebsbereit (Cloud-Hosting Schweiz).' },
-    ],
-  }
-}
-
-/**
- * Live-Modus: echter Datenbestand ohne Mock-Daten.
- * Behalten wird nur reale Grundkonfiguration (Szenarien, Standorte, Gruppenstruktur,
- * Notrufnummern, Alarmplan-Vorlagen) plus ein Admin-Konto. Keine Beispiel-Benutzer,
- * -Alarme, -Alarmknöpfe, -Webhooks oder -Zugangscodes; alle Integrationen deaktiviert.
- */
+/** Ausgangsbestand einer frischen Installation – Grundkonfiguration plus Administratorkonto */
 export function createLiveInitialState(): AppState {
   return {
-    mode: 'live',
     session: null,
     scenarioContentVersion: SCENARIO_CONTENT_VERSION,
     currentUserId: 'u-admin',
@@ -1116,7 +1085,7 @@ export function createLiveInitialState(): AppState {
     },
     contacts: SEED_CONTACTS,
     audit: [
-      { id: 'a-live-1', ts: Date.now(), type: 'system', message: 'Live-Modus initialisiert – Datenbestand ohne Demo-Daten. Versand-Gateways unter Integrationen anbinden.' },
+      { id: 'a-live-1', ts: Date.now(), type: 'system', message: 'System initialisiert. Versand-Gateways unter Integrationen anbinden.' },
     ],
   }
 }

@@ -171,14 +171,7 @@ function Root() {
           <Siren size={20} color={colors.brandLight} />
         )}
         <View style={{ flex: 1 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Text style={styles.headerTitle}>SOBE Notfall</Text>
-            <View style={[styles.modeChip, state.mode === 'live' ? styles.modeChipLive : styles.modeChipDemo]}>
-              <Text style={[styles.modeChipText, state.mode === 'demo' && { color: '#0f172a' }]}>
-                {state.mode === 'live' ? 'LIVE' : 'DEMO'}
-              </Text>
-            </View>
-          </View>
+          <Text style={styles.headerTitle}>SOBE Notfall</Text>
           <View style={styles.headerSubRow}>
             <Text style={styles.headerSub}>{me.firstName} {me.lastName} · </Text>
             <MapPin size={10} color="#94a3b8" />
@@ -343,8 +336,4 @@ const styles = StyleSheet.create({
     paddingHorizontal: 2,
   },
   tabBadgeText: { color: '#fff', fontSize: 9, fontWeight: '800' },
-  modeChip: { borderRadius: 5, paddingHorizontal: 5, paddingVertical: 1 },
-  modeChipLive: { backgroundColor: '#059669' },
-  modeChipDemo: { backgroundColor: '#f59e0b' },
-  modeChipText: { color: '#fff', fontSize: 9, fontWeight: '800', letterSpacing: 0.5 },
 })

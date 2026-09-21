@@ -20,7 +20,7 @@ Die PDF zum Ausdrucken und Verteilen entstehen mit einem Befehl (siehe unten)
 und liegen bewusst nicht in der Versionsverwaltung: Sie sind erzeugt, wiegen
 zusammen rund 19 MB, und jede Neuerzeugung bliebe für immer in der Historie.
 
-Die Bildschirmfotos liegen in `bilder/` und stammen aus dem Demo-Modus – dort
+Die Bildschirmfotos liegen in `bilder/` und zeigen Beispieldaten – dort
 sind keine echten Personendaten sichtbar.
 
 ## Corporate Design

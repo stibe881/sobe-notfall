@@ -47,7 +47,6 @@ export default function Integrations() {
         <p className="text-sm text-slate-500">
           Von der Organisation über die App und die Alarmierungskanäle bis zur Ausfallsicherheit – geordnet nach
           der Reihenfolge der Einrichtung.
-          {state.mode === 'demo' && ' Im Demo-Modus wird der Versand simuliert – die Einstellungen lassen sich trotzdem erfassen.'}
         </p>
         {/* Schnellnavigation: springt zum Bereich, ohne die Adresse (Hash-Routing) zu verändern */}
         <div className="flex flex-wrap gap-1.5 mt-3">
@@ -284,14 +283,6 @@ function LogoEinstellungen() {
   const [fehler, setFehler] = useState<string | null>(null)
   const [laedt, setLaedt] = useState(false)
 
-  if (state.mode !== 'live') {
-    return (
-      <p className="text-xs text-slate-400 pt-3 border-t border-slate-100">
-        Das Kundenlogo wird auf dem Alarmserver hinterlegt – im Live-Modus verfügbar.
-      </p>
-    )
-  }
-
   function hochladen(datei: File) {
     setFehler(null)
     if (!/^image\/(png|jpe?g|svg\+xml|webp)$/.test(datei.type)) {
@@ -432,14 +423,9 @@ function RedundanzEinstellungen() {
       .catch((f: Error) => setFehler(f.message))
   }
   useEffect(() => {
-    if (state.mode !== 'live') return
     laden()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.mode])
-
-  if (state.mode !== 'live') {
-    return <p className="text-sm text-slate-500">Die Redundanz wird auf dem Alarmserver eingerichtet – im Live-Modus verfügbar.</p>
-  }
+  }, [])
   if (fehler && !daten) return <p className="text-sm text-alarm-600">{fehler}</p>
   if (!daten || !entwurf) return <p className="text-sm text-slate-500">Lade Konfiguration …</p>
 
@@ -556,14 +542,9 @@ function AppVerbindung() {
   const [kopiert, setKopiert] = useState(false)
 
   useEffect(() => {
-    if (state.mode !== 'live') return
     // Ausweichadresse aus der Redundanz-Konfiguration übernehmen, falls vorhanden
     api.redundanz().then((d) => { if (d.config.enabled && d.config.peerUrl) setFallback(d.config.peerUrl) }).catch(() => {})
-  }, [state.mode])
-
-  if (state.mode !== 'live') {
-    return <p className="text-sm text-slate-500">Den Verbindungs-QR-Code zeigt der Alarmserver im Live-Modus an.</p>
-  }
+  }, [])
 
   const orgName = state.integrations.organization?.name ?? ''
   const link =
@@ -700,7 +681,7 @@ function SmsEinstellungen() {
           )}
           <div className="flex items-center gap-2 flex-wrap">
             <Button onClick={speichern} disabled={!geaendert}>Speichern</Button>
-            {state.mode === 'live' && <Button variant="secondary" onClick={testen} disabled={geaendert}>Test-SMS an mich</Button>}
+            {<Button variant="secondary" onClick={testen} disabled={geaendert}>Test-SMS an mich</Button>}
             <TestErgebnis status={test} />
           </div>
           <p className="text-xs text-slate-400">
@@ -763,7 +744,7 @@ function TelefonieEinstellungen() {
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             <Button onClick={speichern} disabled={!geaendert}>Speichern</Button>
-            {state.mode === 'live' && <Button variant="secondary" onClick={testen} disabled={geaendert}>Verbindung testen</Button>}
+            {<Button variant="secondary" onClick={testen} disabled={geaendert}>Verbindung testen</Button>}
             <TestErgebnis status={test} />
           </div>
           <p className="text-xs text-slate-400">
@@ -817,7 +798,7 @@ function TeamsEinstellungen() {
           </Field>
           <div className="flex items-center gap-2 flex-wrap">
             <Button onClick={speichern} disabled={!geaendert}>Speichern</Button>
-            {state.mode === 'live' && <Button variant="secondary" onClick={testen} disabled={geaendert}>Testmeldung senden</Button>}
+            {<Button variant="secondary" onClick={testen} disabled={geaendert}>Testmeldung senden</Button>}
             <TestErgebnis status={test} />
           </div>
 
@@ -917,7 +898,7 @@ function SsoEinstellungen() {
           />
           <div className="flex items-center gap-2 flex-wrap">
             <Button onClick={speichern} disabled={!geaendert}>Speichern</Button>
-            {state.mode === 'live' && <Button variant="secondary" onClick={testen} disabled={geaendert}>Verbindung testen</Button>}
+            {<Button variant="secondary" onClick={testen} disabled={geaendert}>Verbindung testen</Button>}
             <TestErgebnis status={test} />
           </div>
           <p className="text-xs text-slate-400">
@@ -942,9 +923,9 @@ function LorawanEinstellungen() {
   const [kopiert, setKopiert] = useState<string | null>(null)
 
   useEffect(() => {
-    if (state.mode !== 'live' || !lorawan.enabled) return
+    if (!lorawan.enabled) return
     api.lorawanInfo().then((i) => setInfo({ url: i.url, token: i.token })).catch((f: Error) => setFehler(f.message))
-  }, [state.mode, lorawan.enabled])
+  }, [lorawan.enabled])
 
   async function neuesToken() {
     setFehler(null)
@@ -1016,7 +997,7 @@ function LorawanEinstellungen() {
               12 bis 24 Stunden ein Lebenszeichen.
             </p>
           </div>
-          {state.mode === 'live' ? (
+          {(
             <div className="space-y-2 text-sm">
               {info && (
                 <>
@@ -1037,8 +1018,6 @@ function LorawanEinstellungen() {
               )}
               {fehler && <div className="text-xs text-alarm-600">{fehler}</div>}
             </div>
-          ) : (
-            <p className="text-xs text-slate-400">Endpunkt-Adresse und Zugangstoken zeigt der Alarmserver im Live-Modus an.</p>
           )}
           <p className="text-xs text-slate-400">
             Im Netzserver einen Webhook auf den Endpunkt einrichten (Kopfzeile «Authorization: Bearer &lt;Token&gt;»).

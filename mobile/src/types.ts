@@ -1,8 +1,5 @@
 export type Role = 'admin' | 'krisenstab' | 'mitarbeiter'
 
-/** Demo: Beispieldaten + simulierte Zustellung · Live: echter, leerer Datenbestand ohne Simulation */
-export type AppMode = 'demo' | 'live'
-
 export type Channel = 'push' | 'sms' | 'email' | 'voice' | 'conference' | 'tts' | 'teams'
 
 export const CHANNEL_LABELS: Record<Channel, string> = {
@@ -28,9 +25,8 @@ export interface User {
   absence?: { from: string; to: string }
   partTimeNote?: string
   /**
-   * Anmeldung im Demo-Modus: Salt und Hash liegen lokal (siehe src/lib/auth.ts).
-   * Im Live-Modus liefert der Server diese Felder nie – er sendet stattdessen
-   * hasPassword, weil Hashes den Server nicht verlassen.
+   * Der Server liefert diese Felder nie – er sendet stattdessen hasPassword,
+   * weil Hashes den Server nicht verlassen.
    */
   passwordSalt?: string
   passwordHash?: string
@@ -288,8 +284,7 @@ export interface Session {
 }
 
 export interface AppState {
-  mode: AppMode
-  /** Aktuelle Anmeldung (pro Modus getrennt gespeichert) */
+  /** Aktuelle Anmeldung */
   session: Session | null
   /** Version der Standard-Szenarien-Inhalte – für einmalige Content-Updates beim Laden */
   scenarioContentVersion?: number
@@ -307,7 +302,7 @@ export interface AppState {
   integrations: IntegrationSettings
   contacts: EmergencyContact[]
   audit: AuditEntry[]
-  /** Rolle und Ausweichadresse des Alarmservers (nur im Live-Modus vorhanden) */
+  /** Rolle und Ausweichadresse des Alarmservers */
   serverInfo?: ServerInfo
 }
 

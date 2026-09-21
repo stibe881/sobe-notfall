@@ -1,24 +1,16 @@
 import React, { createContext, useCallback, useContext, useEffect, useReducer, useRef, useState } from 'react'
 import { CheckCircle2, Siren } from 'lucide-react'
-import type { AppMode, AppState, Alarm, AlarmButton, AlarmPlan, Channel, Delivery, EscalationLevel, Group, Location, LoneWorkSession, Scenario, Session, User, Webhook, AuditEntry } from './types'
+import type { AppState, Alarm, AlarmButton, AlarmPlan, Channel, Delivery, EscalationLevel, Group, Location, LoneWorkSession, Scenario, Session, User, Webhook, AuditEntry } from './types'
 
 /** Datenbestand, wie ihn der Alarmserver liefert – ohne lokale Anteile */
 export type ServerData = Omit<AppState, 'mode' | 'session' | 'currentUserId' | 'scenarioContentVersion' | 'authVersion'>
 import { CHANNEL_LABELS, LONE_WORK_DEFAULT_GROUPS } from './types'
-import { LIVE_INITIAL_PASSWORD, SCENARIO_CONTENT_VERSION, SEED_SCENARIOS, SEED_USERS, createInitialState, createLiveInitialState, integrationenMitVorgaben } from './data/seed'
+import { LIVE_INITIAL_PASSWORD, createLiveInitialState, integrationenMitVorgaben } from './data/seed'
 import { authenticate, hashPassword, passwordProblem, randomSalt, verifyPassword } from './lib/auth'
 import { ApiError, api, authToken, setAuthToken, subscribeToServer } from './lib/api'
-import { LEGACY_EMOJI_TO_ICON } from './components/ScenarioIcon'
 
 /** Erhöhen, wenn gespeicherte Passwortdaten einmalig korrigiert werden müssen */
-const AUTH_MIGRATION_VERSION = 1
 
-// Demo und Live haben getrennte Speicherstände; der Modus selbst wird separat gemerkt
-const MODE_KEY = 'e-mergency-mode'
-const DATA_KEYS: Record<AppMode, string> = {
-  demo: 'e-mergency-state-v2',
-  live: 'e-mergency-state-live-v1',
-}
 
 export function uid(prefix: string): string {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`
@@ -60,10 +52,7 @@ export type Action =
   | { type: 'ADD_CONTACT'; contact: AppState['contacts'][number] }
   | { type: 'DELETE_CONTACT'; contactId: string }
   | { type: 'AUDIT'; entryType: string; message: string; userId?: string }
-  | { type: 'SET_MODE'; mode: AppMode }
-  | { type: 'ADOPT_EXTERNAL'; state: AppState }
   | { type: 'ADOPT_SERVER'; data: ServerData; session: Session | null }
-  | { type: 'RESET_DEMO' }
 
 /** Ist dieses Konto der einzige verbleibende Administrator? */
 export function isLastAdmin(state: AppState, userId: string): boolean {
@@ -177,31 +166,14 @@ export function createAlarm(state: AppState, opts: TriggerOptions): Alarm {
   }
 }
 
-/** Zustellsimulation (nur Demo), Eskalationsstufen, Alleinarbeits-Timer */
+/** Eskalationsstufen und Alleinarbeits-Timer; den echten Versand rechnet der Server */
 function tick(state: AppState, now: number): AppState {
   let changed = false
-  const simulate = state.mode === 'demo'
 
-  // 1. Zustellungen fortschreiben (pending -> sent -> delivered) – nur im Demo-Modus;
-  //    im Live-Modus bleiben Zustellungen offen, bis ein echtes Gateway angebunden ist
   const alarms = state.alarms.map((alarm) => {
     if (alarm.status !== 'active') return alarm
     let aChanged = false
-    const deliveries = !simulate
-      ? alarm.deliveries
-      : alarm.deliveries.map((d) => {
-          const age = now - d.updatedAt
-          if (d.status === 'pending' && age > 1200 + Math.random() * 1500) {
-            aChanged = true
-            return { ...d, status: 'sent' as const, updatedAt: now }
-          }
-          if (d.status === 'sent' && age > 1500 + Math.random() * 2500) {
-            aChanged = true
-            const failed = Math.random() < 0.04
-            return { ...d, status: failed ? ('failed' as const) : ('delivered' as const), updatedAt: now }
-          }
-          return d
-        })
+    const deliveries = alarm.deliveries
 
     // 2. Eskalation
     const log = [...alarm.log]
@@ -305,10 +277,8 @@ function reducer(state: AppState, action: Action): AppState {
     case 'SET_CURRENT_USER':
       return { ...state, currentUserId: action.userId }
     case 'SET_PREVIEW_USER': {
-      // Demo: die gewählte Person handelt auch (wie die Demo-Ansicht in der Seitenleiste).
-      // Live: nur die Ansicht wechselt; angemeldet bleibt das eigene Konto.
+      // Nur die Ansicht wechselt; angemeldet bleibt das eigene Konto
       const eigene = state.session?.userId ?? state.currentUserId
-      if (state.mode === 'demo') return { ...state, currentUserId: action.userId ?? eigene, previewUserId: undefined }
       return { ...state, previewUserId: action.userId && action.userId !== eigene ? action.userId : undefined }
     }
     case 'UPSERT_USER': {
@@ -533,11 +503,8 @@ function reducer(state: AppState, action: Action): AppState {
       return { ...state, contacts: state.contacts.filter((c) => c.id !== action.contactId), audit: audit(state, 'admin', 'Notfallkontakt gelöscht') }
     case 'AUDIT':
       return { ...state, audit: audit(state, action.entryType, action.message, action.userId) }
-    case 'SET_MODE':
-      if (action.mode === state.mode) return state
-      return action.mode === 'live' ? leererLiveZustand() : loadStateFor('demo')
     case 'ADOPT_SERVER': {
-      // Im Live-Modus ist der Server die Wahrheit; Modus und Anmeldung bleiben lokal.
+      // Der Server ist die Wahrheit; die Anmeldung bleibt lokal.
       // Fehlt eine Sammlung in der Antwort, bleibt die bisherige stehen – so führt
       // eine unvollständige Antwort nie zu undefined im Zustand.
       const d = action.data
@@ -560,34 +527,9 @@ function reducer(state: AppState, action: Action): AppState {
         integrations: d.integrations ? integrationenMitVorgaben(d.integrations) : state.integrations,
         contacts: d.contacts ?? state.contacts,
         audit: d.audit ?? [],
-        mode: 'live',
         session,
         currentUserId: session?.userId ?? state.currentUserId,
       }
-    }
-    case 'ADOPT_EXTERNAL': {
-      // Änderungen aus einem anderen Browser-Tab übernehmen. Die Anmeldung dieses
-      // Tabs bleibt bestehen, solange das Konto im übernommenen Bestand existiert –
-      // so kann das Portal als Administrator und die App-Vorschau als Mitarbeitende
-      // parallel offen sein.
-      const incoming = action.state
-      const sessionGiltNoch = state.session && incoming.users.some((u) => u.id === state.session!.userId)
-      return {
-        ...incoming,
-        mode: state.mode,
-        session: sessionGiltNoch ? state.session : incoming.session,
-        currentUserId: incoming.users.some((u) => u.id === state.currentUserId)
-          ? state.currentUserId
-          : incoming.currentUserId,
-      }
-    }
-    case 'RESET_DEMO': {
-      const fresh = state.mode === 'live' ? createLiveInitialState() : createInitialState()
-      // Angemeldet bleiben, sofern das eigene Konto im frischen Bestand existiert
-      const keep = fresh.users.some((u) => u.id === state.session?.userId)
-      return keep
-        ? { ...fresh, session: state.session, currentUserId: state.session!.userId }
-        : fresh
     }
     default:
       return state
@@ -660,12 +602,6 @@ function toastForAction(action: Action): Toast['message'] | { message: string; k
       return 'Notfallkontakt gelöscht'
     case 'UPDATE_INTEGRATIONS':
       return 'Einstellungen gespeichert'
-    case 'SET_MODE':
-      return action.mode === 'live'
-        ? 'Live-Modus aktiv – eigener Datenbestand ohne Demo-Daten'
-        : 'Demo-Modus aktiv – Beispieldaten und simulierte Zustellung'
-    case 'RESET_DEMO':
-      return 'Daten zurückgesetzt'
     default:
       return null
   }
@@ -690,67 +626,8 @@ function ToastHost({ toasts }: { toasts: Toast[] }) {
   )
 }
 
-/** Konto auf das Erstpasswort setzen, Änderung bei der nächsten Anmeldung erzwingen */
-function withInitialPassword(user: User): User {
-  const salt = randomSalt()
-  return { ...user, passwordSalt: salt, passwordHash: hashPassword(LIVE_INITIAL_PASSWORD, salt), mustChangePassword: true }
-}
 
-/**
- * Sicherstellen, dass mindestens ein Konto anmeldefähig bleibt. Gibt es keines,
- * erhalten alle Administratoren das Erstpasswort mit erzwungener Änderung; fehlt
- * auch ein Administrator, wird das Konto aus der Grundkonfiguration wiederhergestellt.
- * Damit kann sich ein Datenbestand nie dauerhaft selbst aussperren.
- */
-function ensureLoginPossible(users: User[]): User[] {
-  if (users.some((u) => u.passwordHash && u.passwordSalt)) return users
-  if (users.some((u) => u.role === 'admin')) {
-    return users.map((u) => (u.role === 'admin' ? withInitialPassword(u) : u))
-  }
-  const rescue = createLiveInitialState().users[0]
-  return [withInitialPassword(rescue), ...users.filter((u) => u.id !== rescue.id)]
-}
-
-/**
- * Bestehende Speicherstände auf die Anmeldung umstellen.
- * Im Demo-Modus erhalten Konten ohne Passwort das des gleichnamigen Beispielkontos,
- * damit die dokumentierten Demo-Zugänge auch für alte Stände gelten. Im Live-Modus
- * gilt das bewusst nicht – ein echter Datenbestand trägt nie ein Demo-Passwort.
- */
-function migrateAuth(parsed: AppState): AppState {
-  const seedById = new Map(SEED_USERS.map((u) => [u.id, u]))
-  let users = parsed.users ?? []
-
-  // Im Demo-Modus gelten die dokumentierten Beispiel-Passwörter auch für alte Stände
-  if (parsed.mode === 'demo') {
-    users = users.map((u) => {
-      if (u.passwordHash && u.passwordSalt) return u
-      const seed = seedById.get(u.id)
-      return seed?.passwordHash && seed.passwordSalt
-        ? { ...u, passwordSalt: seed.passwordSalt, passwordHash: seed.passwordHash }
-        : u
-    })
-  }
-
-  // Einmalige Korrektur: Eine frühere Fassung hat Live-Beständen die Demo-Passwörter
-  // zugewiesen. Betroffene Konten erhalten direkt das Erstpasswort mit erzwungenem
-  // Wechsel. Selbst vergebene Passwörter bleiben unberührt.
-  if (parsed.mode === 'live' && (parsed.authVersion ?? 0) < AUTH_MIGRATION_VERSION) {
-    const seedHashes = new Set(SEED_USERS.map((u) => u.passwordHash))
-    users = users.map((u) =>
-      u.passwordHash && seedHashes.has(u.passwordHash) ? withInitialPassword(u) : u,
-    )
-  }
-
-  return {
-    ...parsed,
-    users: ensureLoginPossible(users),
-    session: parsed.session ?? null,
-    authVersion: AUTH_MIGRATION_VERSION,
-  }
-}
-
-/** Live-Modus: aktive ausgehende Webhooks bei Alarmauslösung tatsächlich aufrufen */
+/** Aktive ausgehende Webhooks bei Alarmauslösung tatsächlich aufrufen */
 function sendOutboundWebhooks(state: AppState, alarm: Alarm) {
   const scenario = state.scenarios.find((s) => s.id === alarm.scenarioId)
   const payload = JSON.stringify({
@@ -777,7 +654,7 @@ function sendOutboundWebhooks(state: AppState, alarm: Alarm) {
 }
 
 /**
- * Eine Aktion im Live-Modus auf dem Server ausführen.
+ * Eine Aktion auf dem Server ausführen.
  *
  * Der Server ist dort die einzige Wahrheit: Die Aktion wird nicht lokal auf den
  * Zustand angewendet, sondern verschickt; der neue Stand kommt anschliessend
@@ -910,7 +787,7 @@ export type ServerStatus = 'lokal' | 'verbindet' | 'verbunden' | 'getrennt'
 interface StoreCtx {
   state: AppState
   dispatch: React.Dispatch<Action>
-  /** Anmelden – im Demo-Modus lokal, im Live-Modus über den Alarmserver */
+  /** Anmelden über den Alarmserver */
   login: (email: string, password: string) => Promise<{ ok: true } | { ok: false; error: string }>
   logout: () => void
   /** Eigenes Passwort ändern */
@@ -928,60 +805,15 @@ interface StoreCtx {
 
 const StoreContext = createContext<StoreCtx | null>(null)
 
-function loadStateFor(mode: AppMode): AppState {
-  try {
-    const raw = localStorage.getItem(DATA_KEYS[mode])
-    if (raw) {
-      const parsed = JSON.parse(raw) as AppState
-      if (parsed.users && parsed.scenarios) {
-        parsed.mode = mode
-        // Einmalige Inhalts-Aktualisierung: Standard-Szenarien auf neue Version heben,
-        // selbst erstellte Szenarien (custom) bleiben unverändert erhalten
-        if ((parsed.scenarioContentVersion ?? 1) < SCENARIO_CONTENT_VERSION) {
-          const customScenarios = parsed.scenarios.filter((sc) => sc.custom)
-          parsed.scenarios = [...SEED_SCENARIOS, ...customScenarios]
-          parsed.scenarioContentVersion = SCENARIO_CONTENT_VERSION
-        }
-        // Migration: Emoji-Icons auf Icon-Schlüssel umstellen, fehlende Szenario-Felder auffüllen
-        parsed.scenarios = parsed.scenarios.map((s) => ({
-          ...s,
-          priority: s.priority ?? 'mittel',
-          followUp: s.followUp ?? [],
-          defaultChannels: s.defaultChannels ?? [],
-          responsibleGroupIds: s.responsibleGroupIds ?? [],
-          contactIds: s.contactIds ?? [],
-          icon: LEGACY_EMOJI_TO_ICON[s.icon] ?? s.icon,
-        }))
-        // Fehlende Integrations-Abschnitte neuer Versionen (Telefonie, LoRaWAN) ergänzen
-        parsed.integrations = integrationenMitVorgaben(parsed.integrations)
-        // Platzhalternummer aus früheren Versionen durch die echte Notfallnummer ersetzen
-        if (parsed.integrations.hotline && ['', '+41 41 000 11 22'].includes(parsed.integrations.hotline.number.trim())) {
-          parsed.integrations = { ...parsed.integrations, hotline: { enabled: true, number: '+41 41 767 49 48' } }
-        }
-        return migrateAuth(parsed)
-      }
-    }
-  } catch {
-    // korrupte Daten -> Neustart mit Seed
-  }
-  return mode === 'live' ? createLiveInitialState() : createInitialState()
-}
-
-/** Gerüst für den Live-Modus, bevor der Server geantwortet hat */
+/** Gerüst, bevor der Server geantwortet hat */
 function leererLiveZustand(): AppState {
   const basis = createLiveInitialState()
   return { ...basis, users: [], alarms: [], loneWorkSessions: [], audit: [], session: null }
 }
 
+/** Der Datenbestand kommt immer vom Alarmserver, nie aus dem Browserspeicher */
 function loadState(): AppState {
-  let mode: AppMode = 'demo'
-  try {
-    if (localStorage.getItem(MODE_KEY) === 'live') mode = 'live'
-  } catch {
-    // kein Storage verfügbar -> Demo
-  }
-  // Live-Daten kommen vom Server, nicht aus dem Browserspeicher
-  return mode === 'live' ? leererLiveZustand() : loadStateFor(mode)
+  return leererLiveZustand()
 }
 
 export function StoreProvider({ children }: { children: React.ReactNode }) {
@@ -1011,7 +843,6 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   /** Datenbestand vom Alarmserver holen */
   const refresh = useCallback(async () => {
-    if (stateRef.current.mode !== 'live') return
     if (!authToken()) {
       setServerStatus('getrennt')
       return
@@ -1040,20 +871,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setAuthToken(decodeURIComponent(treffer[1]))
     window.history.replaceState(null, '', window.location.pathname + '#/')
     anmeldeArt.current = 'sso'
-    // SSO gibt es nur im Live-Modus
-    if (stateRef.current.mode !== 'live') rawDispatch({ type: 'SET_MODE', mode: 'live' })
     void refresh()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const login = useCallback<StoreCtx['login']>(async (email, password) => {
-    if (stateRef.current.mode === 'demo') {
-      const ergebnis = authenticate(stateRef.current.users, email, password)
-      if (!ergebnis.ok) return { ok: false, error: ergebnis.error }
-      setKnownPassword(password)
-      rawDispatch({ type: 'LOGIN', userId: ergebnis.user.id })
-      return { ok: true }
-    }
     try {
       const { token } = await api.login(email, password)
       setAuthToken(token)
@@ -1067,12 +889,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, [refresh])
 
   const logout = useCallback(() => {
-    if (stateRef.current.mode === 'live') {
-      api.logout().catch(() => {
-        // Server nicht erreichbar – lokal trotzdem abmelden
-      })
-      setAuthToken(null)
-    }
+    api.logout().catch(() => {
+      // Server nicht erreichbar – lokal trotzdem abmelden
+    })
+    setAuthToken(null)
     setKnownPassword(null)
     rawDispatch({ type: 'LOGOUT' })
     pushToast('Abgemeldet')
@@ -1082,15 +902,6 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     const eigen = stateRef.current.users.find((u) => u.id === stateRef.current.session?.userId)
     if (!eigen) return { ok: false, error: 'Nicht angemeldet.' }
 
-    if (stateRef.current.mode === 'demo') {
-      if (!verifyPassword(eigen, aktuell)) return { ok: false, error: 'Das aktuelle Passwort ist falsch.' }
-      const problem = passwordProblem(neu)
-      if (problem) return { ok: false, error: problem }
-      rawDispatch({ type: 'SET_PASSWORD', userId: eigen.id, password: neu })
-      setKnownPassword(neu)
-      pushToast('Passwort gespeichert')
-      return { ok: true }
-    }
     try {
       await api.changePassword(aktuell, neu)
       setKnownPassword(neu)
@@ -1104,113 +915,49 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const dispatch = useCallback(
     (action: Action) => {
-      const modus = stateRef.current.mode
-
-      if (modus === 'live') {
-        // Anmeldung und Modus laufen über eigene Wege, nicht über den Server
-        if (action.type === 'LOGIN' || action.type === 'LOGOUT') {
-          rawDispatch(action)
-          return
-        }
-        const vorher = stateRef.current
-        // In der Vorschau als andere Person sind Alarm- und Timer-Aktionen gesperrt:
-        // Sie liefen sonst unter dem angemeldeten Konto, nicht unter der angezeigten Person.
-        if (vorher.previewUserId && VORSCHAU_GESPERRT.has(action.type)) {
-          pushToast('Vorschau: Aktionen sind gesperrt – dafür die Vorschau beenden.', 'alarm')
-          return
-        }
-        serverEffekt(action, vorher)
-          .then((behandelt) => {
-            if (!behandelt) {
-              rawDispatch(action)
-              return
-            }
-            if (behandelt === 'merged') {
-              pushToast('Für dieses Ereignis lief bereits ein Alarm – die Meldung wurde ihm hinzugefügt', 'alarm')
-              return refresh()
-            }
-            const t = toastForAction(action)
-            if (t) {
-              if (typeof t === 'string') pushToast(t)
-              else pushToast(t.message, t.kind)
-            }
-            return refresh()
-          })
-          .catch((fehler) => {
-            pushToast(fehler instanceof ApiError ? fehler.message : 'Der Alarmserver hat die Aktion abgelehnt.', 'alarm')
-          })
-        return
-      }
-
-      // Demo: Zusammenführen ist am Toast erkennbar
-      if (action.type === 'TRIGGER_ALARM' && laufenderAlarmZu(stateRef.current.alarms, action.alarm)) {
+      // Die Anmeldung läuft über einen eigenen Weg, nicht über den Server
+      if (action.type === 'LOGIN' || action.type === 'LOGOUT') {
         rawDispatch(action)
-        pushToast('Für dieses Ereignis lief bereits ein Alarm – die Meldung wurde ihm hinzugefügt', 'alarm')
         return
       }
-      rawDispatch(action)
-      const t = toastForAction(action)
-      if (t) {
-        if (typeof t === 'string') pushToast(t)
-        else pushToast(t.message, t.kind)
+      const vorher = stateRef.current
+      // In der Vorschau als andere Person sind Alarm- und Timer-Aktionen gesperrt:
+      // Sie liefen sonst unter dem angemeldeten Konto, nicht unter der angezeigten Person.
+      if (vorher.previewUserId && VORSCHAU_GESPERRT.has(action.type)) {
+        pushToast('Vorschau: Aktionen sind gesperrt – dafür die Vorschau beenden.', 'alarm')
+        return
       }
+      serverEffekt(action, vorher)
+        .then((behandelt) => {
+          if (!behandelt) {
+            rawDispatch(action)
+            return
+          }
+          if (behandelt === 'merged') {
+            pushToast('Für dieses Ereignis lief bereits ein Alarm – die Meldung wurde ihm hinzugefügt', 'alarm')
+            return refresh()
+          }
+          const t = toastForAction(action)
+          if (t) {
+            if (typeof t === 'string') pushToast(t)
+            else pushToast(t.message, t.kind)
+          }
+          return refresh()
+        })
+        .catch((fehler) => {
+          pushToast(fehler instanceof ApiError ? fehler.message : 'Der Alarmserver hat die Aktion abgelehnt.', 'alarm')
+        })
     },
     [pushToast, refresh],
   )
 
+  // Serverstand laden und Änderungen anderer Geräte abonnieren
   useEffect(() => {
-    // Ein von aussen übernommener Zustand wird nicht zurückgeschrieben,
-    // sonst schaukeln sich zwei Tabs gegenseitig hoch
-    if (adopted.current) {
-      adopted.current = false
-      return
-    }
-    try {
-      // Live-Daten gehören dem Server; lokal wird nur der Modus gemerkt
-      if (state.mode === 'demo') localStorage.setItem(DATA_KEYS.demo, JSON.stringify(state))
-      localStorage.setItem(MODE_KEY, state.mode)
-    } catch {
-      // Speicher voll – Offline-Cache nicht kritisch
-    }
-  }, [state])
-
-  // Portal und App-Vorschau laufen im Demo-Modus in getrennten Tabs auf demselben
-  // Speicher. Ohne diesen Abgleich arbeitet jeder Tab auf einem veralteten Stand
-  // und überschreibt beim nächsten Schreiben die Änderungen des anderen.
-  useEffect(() => {
-    const onStorage = (e: StorageEvent) => {
-      if (stateRef.current.mode !== 'demo' || e.key !== DATA_KEYS.demo || !e.newValue) return
-      try {
-        const incoming = JSON.parse(e.newValue) as AppState
-        if (!incoming.users || !incoming.scenarios) return
-        adopted.current = true
-        rawDispatch({ type: 'ADOPT_EXTERNAL', state: incoming })
-      } catch {
-        // unlesbarer Fremdstand -> eigenen Zustand behalten
-      }
-    }
-    window.addEventListener('storage', onStorage)
-    return () => window.removeEventListener('storage', onStorage)
-  }, [])
-
-  // Im Live-Modus den Serverstand laden und Änderungen anderer Geräte abonnieren
-  useEffect(() => {
-    if (state.mode !== 'live') {
-      setServerStatus('lokal')
-      return
-    }
     setServerStatus('verbindet')
     void refresh()
     if (!state.session) return
     return subscribeToServer(() => void refresh())
-  }, [state.mode, state.session?.userId, refresh])
-
-  // Simulation nur im Demo-Modus; im Live-Betrieb rechnet der Server
-  useEffect(() => {
-    if (state.mode !== 'demo') return
-    const interval = setInterval(() => rawDispatch({ type: 'TICK', now: Date.now() }), 1000)
-    return () => clearInterval(interval)
-  }, [state.mode])
+  }, [state.session?.userId, refresh])
 
   return (
     <StoreContext.Provider value={{ state, dispatch, login, logout, changePassword, serverStatus, knownPassword, refresh: () => void refresh() }}>

@@ -75,12 +75,11 @@ KOERPER = r"""
   <h2 class="abschnitt"><span class="zahl">2</span> Anmelden</h2>
   <p>
     Portal und App teilen sich dasselbe Konto: Ihre E-Mail-Adresse und Ihr Passwort.
-    Der Umschalter oben muss auf <span class="ui">Live</span> stehen &ndash;
-    <span class="ui">Demo</span> ist ein getrennter Übungsbestand mit erfundenen Personen.
+    Beide melden sich beim Alarmserver an; dort liegen alle Konten und Daten.
   </p>
   <figure class="bild-breit">
-    <img src="bilder/web-01-anmeldung.webp" alt="Anmeldemaske mit Umschalter zwischen Demo und Live">
-    <figcaption><b>Abb.</b> &nbsp; Die Anmeldemaske. Wenn die Anmeldung mit richtigen Daten scheitert, steht dieser Umschalter fast immer falsch.</figcaption>
+    <img src="bilder/web-01-anmeldung.webp" alt="Anmeldemaske mit Feldern für E-Mail-Adresse und Passwort">
+    <figcaption><b>Abb.</b> &nbsp; Die Anmeldemaske. Unten steht, mit welchem Alarmserver das Portal verbunden ist.</figcaption>
   </figure>
   <p>
     Beim ersten Mal verlangt das System ein eigenes Passwort. Danach melden Sie sich
@@ -384,8 +383,8 @@ KOERPER = r"""
 
   <h4>Die Anmeldung scheitert mit richtigen Daten</h4>
   <p>
-    Der Umschalter steht auf <span class="ui">Demo</span> statt auf
-    <span class="ui">Live</span>. Die beiden Bestände haben getrennte Konten.
+    Prüfen Sie unten auf der Anmeldemaske, mit welchem Alarmserver das Portal
+    verbunden ist. Steht dort eine andere Adresse, gilt Ihr Konto dort nicht.
   </p>
 
   <h4>Speichern wird abgelehnt</h4>
@@ -417,7 +416,7 @@ KOERPER = r"""
     Für die Systemverwaltung gilt Handbuch 1, für Mitarbeitende Handbuch 3.
   </p>
   <p>
-    Die Bildschirmfotos stammen aus dem Demo-Modus. Angaben zu Rechtsgrundlagen in den
+    Die Bildschirmfotos zeigen Beispieldaten. Angaben zu Rechtsgrundlagen in den
     Szenarien sind eine Orientierungshilfe und ersetzen keine Rechtsberatung.
   </p>
   {ADRESSE}

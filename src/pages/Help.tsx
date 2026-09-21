@@ -45,13 +45,12 @@ export default function Help() {
   const [fehler, setFehler] = useState<string | null>(null)
 
   useEffect(() => {
-    if (state.mode !== 'live') return
     api.handbuecher()
       .then(({ handbuecher }) => setDateien(handbuecher))
       .catch((f: Error) => setFehler(f.message))
-  }, [state.mode])
+  }, [])
 
-  // Im Demo-Modus (und solange die Liste lädt) die bekannten Handbücher zeigen
+  // Solange die Liste lädt, die bekannten Handbücher zeigen
   const liste = (dateien && dateien.length > 0 ? dateien : Object.keys(BEKANNT).map((datei) => ({ datei, titel: BEKANNT[datei].titel })))
     .map((h) => ({ ...h, info: BEKANNT[h.datei] as (typeof BEKANNT)[string] | undefined }))
     .sort((a, b) => (a.info?.nr ?? 99) - (b.info?.nr ?? 99) || a.datei.localeCompare(b.datei))
@@ -106,7 +105,6 @@ export default function Help() {
       <p className="text-xs text-slate-400 max-w-2xl">
         Die Handbücher werden vom Alarmserver mit ausgeliefert und mit jeder Aktualisierung
         automatisch nachgeführt – sie passen immer zur Version, die gerade läuft.
-        {state.mode === 'demo' && ' Im Demo-Modus öffnen die Links den Bestand des eingestellten Alarmservers.'}
       </p>
     </div>
   )

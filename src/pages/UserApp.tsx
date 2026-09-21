@@ -99,8 +99,8 @@ export default function UserApp() {
               ))}
           </select>
           {me.id !== angemeldetId && (
-            <span className="shrink-0 font-semibold" title="Im Live-Betrieb sind Aktionen in der Vorschau gesperrt">
-              {state.mode === 'live' ? 'nur Ansicht' : 'handelt als diese Person'}
+            <span className="shrink-0 font-semibold" title="In der Vorschau sind Aktionen gesperrt">
+              nur Ansicht
             </span>
           )}
         </div>
@@ -1477,34 +1477,6 @@ function ProfileTab() {
         </div>
       </div>
 
-      {me.role === 'admin' && (
-        <div className="rounded-2xl bg-white border border-slate-200 p-4">
-          <div className="text-sm font-semibold text-slate-700 mb-2">Modus</div>
-          <div className="flex rounded-xl bg-slate-100 p-1">
-            {(['demo', 'live'] as const).map((m) => (
-              <button
-                key={m}
-                onClick={() => dispatch({ type: 'SET_MODE', mode: m })}
-                className={`flex-1 rounded-lg py-2 text-xs font-bold uppercase tracking-wide transition ${
-                  state.mode === m
-                    ? m === 'live'
-                      ? 'bg-emerald-600 text-white'
-                      : 'bg-amber-500 text-slate-900'
-                    : 'text-slate-500'
-                }`}
-              >
-                {m === 'demo' ? 'Demo' : 'Live'}
-              </button>
-            ))}
-          </div>
-          <p className="text-xs text-slate-400 mt-2">
-            {state.mode === 'demo'
-              ? 'Beispieldaten, Zustellung wird simuliert.'
-              : 'Eigener Datenbestand ohne Simulation. Beide Modi behalten ihre Daten.'}
-          </p>
-        </div>
-      )}
-
       {isStaff && (
         <button
           className="w-full rounded-2xl bg-slate-800 text-white py-3 font-semibold flex items-center justify-center gap-2"
@@ -1527,21 +1499,6 @@ function ProfileTab() {
       </div>
 
       <PasswordCard />
-
-      {state.mode === 'demo' && (
-        <div className="rounded-2xl bg-white border border-slate-200 p-4">
-          <div className="text-sm font-semibold text-slate-700 mb-2">Demo: Ansicht als andere Person</div>
-          <select
-            className={inputClass}
-            value={me.id}
-            onChange={(e) => dispatch({ type: 'SET_CURRENT_USER', userId: e.target.value })}
-          >
-            {state.users.map((u) => (
-              <option key={u.id} value={u.id}>{u.firstName} {u.lastName} ({u.role})</option>
-            ))}
-          </select>
-        </div>
-      )}
 
       <button
         className="w-full rounded-2xl border border-slate-200 bg-white text-slate-600 py-3 font-semibold flex items-center justify-center gap-2 hover:bg-slate-50 transition"
