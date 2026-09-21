@@ -44,12 +44,18 @@ async function speichere(): Promise<void> {
   await AsyncStorage.setItem(SPEICHER, JSON.stringify(eintraege ?? {})).catch(() => {})
 }
 
-/** Gestaltung: Hausfarbe Petrol, Ring in Mint, Antippen öffnet die Alleinarbeit */
+/**
+ * Gestaltung: durchscheinendes Alarmrot statt Hausfarbe – die laufende
+ * Alleinarbeit soll auf dem Sperrbildschirm sofort als sicherheitsrelevant
+ * auffallen. Die letzten beiden Hex-Stellen sind die Deckkraft (CC ≈ 80 %);
+ * iOS legt die Farbe als Tönung über das Systemmaterial, der Hintergrund
+ * scheint also durch. Antippen öffnet die Alleinarbeit.
+ */
 const GESTALTUNG = {
-  backgroundColor: '#1c504b',
+  backgroundColor: '#c81e1ecc',
   titleColor: '#ffffff',
-  subtitleColor: '#cfe1de',
-  progressViewTint: '#7fb8af',
+  subtitleColor: '#ffdcdc',
+  progressViewTint: '#ffc9c9',
   progressViewLabelColor: '#ffffff',
   deepLinkUrl: 'sobenotfall://alleinarbeit',
   timerType: 'circular' as const,
