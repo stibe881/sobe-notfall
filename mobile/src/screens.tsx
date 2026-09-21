@@ -7,7 +7,7 @@ import {
 import { alleinarbeitEmpfaenger, createAlarm, resolveRecipients, uid, useStore } from './store'
 import { ScenarioIcon } from './ScenarioIcon'
 import Constants from 'expo-constants'
-import { cancelScheduled, ensurePermissions, scheduleAt } from './notifications'
+import { ensurePermissions } from './notifications'
 import { androidCountdownVerfuegbar } from './androidTimer'
 import { serverUrl } from './api'
 import { LONE_WORK_DEFAULT_GROUPS, type Alarm, type LoneWorkSession, type Scenario, type User } from './types'
@@ -1074,19 +1074,10 @@ function EmpfaengerScreen({
 
 // ---------- Alleinarbeit ----------
 
-// Geplante Timer-Benachrichtigungen pro Sitzung (überleben den App-Neustart als iOS-Planung;
-// die Zuordnung hier genügt für Verlängern/Beenden innerhalb der laufenden App)
-const loneWorkNotifIds = new Map<string, (string | null)[]>()
-
-async function scheduleLoneWorkNotifications(sessionId: string, activity: string, expiresAt: number) {
-  await cancelScheduled(loneWorkNotifIds.get(sessionId) ?? [])
-  const warnAt = expiresAt - 5 * 60_000
-  const ids = await Promise.all([
-    scheduleAt('Alleinarbeit: Timer läuft bald ab', `Noch 5 Minuten (${activity}) – Lebenszeichen geben, sonst wird alarmiert.`, warnAt),
-    scheduleAt('Alleinarbeit: Alarm ausgelöst', `Timer abgelaufen (${activity}) – Schulsanität und Hausdienst werden alarmiert.`, expiresAt, true),
-  ])
-  loneWorkNotifIds.set(sessionId, ids)
-}
+// Die Vorwarnung fünf Minuten vor Ablauf und der Hinweis beim Ablauf werden
+// zentral aus dem Zustand abgeglichen (src/alleinarbeitMeldungen.ts) – so
+// verschwinden sie auch, wenn die Sitzung im Portal oder auf einem anderen
+// Gerät beendet wird.
 
 /** Abschnitts-Überschrift im Formular: Versal-Titel links, aktueller Wert rechts */
 function FormAbschnitt({ text, rechts }: { text: string; rechts?: string }) {
@@ -1159,7 +1150,6 @@ export function LoneWorkScreen() {
       alertUserIds,
     }
     dispatch({ type: 'START_LONE_WORK', session })
-    scheduleLoneWorkNotifications(session.id, session.activity, session.expiresAt)
     setActivity('')
   }
 
@@ -1179,7 +1169,6 @@ export function LoneWorkScreen() {
             style={[styles.bigButton, { backgroundColor: colors.green }]}
             onPress={() => {
               dispatch({ type: 'EXTEND_LONE_WORK', sessionId: running.id, minutes: running.durationMin })
-              scheduleLoneWorkNotifications(running.id, running.activity, running.expiresAt + running.durationMin * 60_000)
             }}
           >
             <Clock size={18} color="#fff" />
@@ -1189,8 +1178,6 @@ export function LoneWorkScreen() {
             style={[styles.bigButton, { backgroundColor: colors.dark, marginTop: 8 }]}
             onPress={() => {
               dispatch({ type: 'COMPLETE_LONE_WORK', sessionId: running.id })
-              cancelScheduled(loneWorkNotifIds.get(running.id) ?? [])
-              loneWorkNotifIds.delete(running.id)
             }}
           >
             <CheckCircle2 size={16} color="#fff" />

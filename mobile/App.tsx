@@ -7,6 +7,7 @@ import { StoreProvider, useStore } from './src/store'
 import { ensurePermissions, onNotificationTap, setAppBadge, type PushDaten } from './src/notifications'
 import { alleinarbeitAbgleichen } from './src/liveActivity'
 import { alleinarbeitAndroidAbgleichen } from './src/androidTimer'
+import { alleinarbeitMeldungenAbgleichen } from './src/alleinarbeitMeldungen'
 import { logoUri } from './src/api'
 import type { Alarm, Scenario } from './src/types'
 import { colors } from './src/ui'
@@ -94,6 +95,8 @@ function Root() {
     void alleinarbeitAbgleichen(eigene)
     // Android: dauerhafte Countdown-Benachrichtigung statt Live-Aktivität
     void alleinarbeitAndroidAbgleichen(eigene)
+    // Vorwarnung und Ablauf-Hinweis planen bzw. abbestellen
+    void alleinarbeitMeldungenAbgleichen(eigene)
   }, [hydrated, state.session, state.currentUserId, state.loneWorkSessions])
 
   // Zahl auf dem App-Symbol: laufende Alarme, die mich betreffen. Die
