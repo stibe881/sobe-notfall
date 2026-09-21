@@ -988,7 +988,7 @@ export const SEED_INTEGRATIONS: IntegrationSettings = {
   smsGateway: { enabled: true, provider: 'ecall', senderId: 'SONNENBERG', username: 'sonnenberg-demo', password: 'demo-geheim', httpUrl: '', sentCount: 128 },
   telephony: { enabled: true, tenantId: 'sonnenberg-baar.onmicrosoft.com', clientId: '00000000-demo-4000-a000-000000000000', clientSecret: 'demo-geheim', organizerEmail: 'krisenstab@sonnenberg-baar.ch' },
   teams: { enabled: true, tenant: 'sonnenberg-baar.onmicrosoft.com', webhookUrl: 'https://sonnenbergbaar.webhook.office.com/webhookb2/demo' },
-  lorawan: { enabled: true, provider: 'ttn', token: 'lw_demo0000000000000000000000000000000000000000000000' },
+  lorawan: { enabled: true, provider: 'ttn', token: 'lw_demo0000000000000000000000000000000000000000000000', stilleWarnungStunden: 36, batterieWarnungProzent: 20 },
   sso: { enabled: false, tenantId: '', clientId: '', clientSecret: '', adminGroupId: '', krisenstabGroupId: '', autoCreate: true },
   hrSync: { enabled: false, system: 'Abacus HR' },
   hotline: { enabled: true, number: '+41 41 767 49 48' },

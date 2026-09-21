@@ -376,6 +376,50 @@ async function main(): Promise<void> {
   pruefe('Knopf-Alarm beendet',
     (await ruf(`/alarms/${gedrueckt.body.alarm}/end`, { method: 'POST', token: adminToken })).status === 200)
 
+  // --- Uplink-Erkennung: herstellerspezifische Feldnamen ---
+  const erkannt = async (nutzlast: Record<string, unknown>) => {
+    const antwort = await ruf('/hooks/lorawan', {
+      method: 'POST', token: lwToken.body.token,
+      body: JSON.stringify({ serial: 'LW-TEST-99', ...nutzlast }),
+    })
+    if (typeof antwort.body.alarm === 'string') {
+      await ruf(`/alarms/${antwort.body.alarm}/end`, { method: 'POST', token: adminToken })
+      return true
+    }
+    return false
+  }
+  pruefe('Uplink «sos_alarm» erkannt', await erkannt({ sos_alarm: true }))
+  pruefe('Uplink mit event «short_press» erkannt', await erkannt({ event: 'SHORT_PRESS' }))
+  pruefe('Uplink mit messageType «button» erkannt', await erkannt({ messageType: 'button' }))
+  pruefe('Reine Statusmeldung löst weiterhin keinen Alarm aus', !(await erkannt({ battery: 90, press_count: 7 })))
+
+  // --- Wachhund: stumme Knöpfe und schwache Batterie ---
+  const wachStand = (await ruf('/state', { token: adminToken })).body.integrations
+  pruefe('Überwachungsschwellen haben Vorgaben',
+    wachStand.lorawan.stilleWarnungStunden === 36 && wachStand.lorawan.batterieWarnungProzent === 20)
+
+  // Knopf künstlich altern lassen und die Batterie leeren
+  const zuUeberwachen = (await ruf('/state', { token: adminToken })).body.buttons.find((b: any) => b.serial === 'LW-TEST-99')
+  await ruf('/buttons', {
+    method: 'POST', token: adminToken,
+    body: JSON.stringify({ ...zuUeberwachen, lastSeen: Date.now() - 48 * 3600_000, batteryPct: 8 }),
+  })
+  await ruf('/wartung/knoepfe-pruefen', { method: 'POST', token: adminToken })
+  const gemeldet = (await ruf('/state', { token: adminToken })).body.buttons.find((b: any) => b.serial === 'LW-TEST-99')
+  pruefe('Wachhund meldet stummen Knopf', typeof gemeldet?.gewarnt?.stillAt === 'number')
+  pruefe('Wachhund meldet schwache Batterie', typeof gemeldet?.gewarnt?.batterieAt === 'number')
+  const knopfProtokoll = (await ruf('/state', { token: adminToken })).body.audit
+  pruefe('Störung steht im Protokoll',
+    knopfProtokoll.some((e: any) => String(e.message).includes('Alarmknöpfe brauchen Aufmerksamkeit')))
+
+  // Meldet sich der Knopf wieder, verfällt die Sperre – eine neue Störung wird wieder gemeldet
+  await ruf(`/hooks/lorawan?token=${lwToken.body.token}`, {
+    method: 'POST', body: JSON.stringify({ serial: 'LW-TEST-99', battery: 0.95 }),
+  })
+  await ruf('/wartung/knoepfe-pruefen', { method: 'POST', token: adminToken })
+  const erholt = (await ruf('/state', { token: adminToken })).body.buttons.find((b: any) => b.serial === 'LW-TEST-99')
+  pruefe('Nach Erholung ist die Warnsperre gelöst', !erholt?.gewarnt?.stillAt && !erholt?.gewarnt?.batterieAt)
+
   // Aufräumen: SMS-Gateway und LoRaWAN wieder deaktivieren
   const aufraeumen = (await ruf('/state', { token: adminToken })).body.integrations
   aufraeumen.smsGateway.enabled = false

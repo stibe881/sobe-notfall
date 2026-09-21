@@ -204,6 +204,8 @@ export interface AlarmButton {
   escalateToEmergencyServicesAfterMin: number
   /** Szenario des ausgelösten Alarms; ohne Angabe Gewalt/Bedrohung */
   scenarioId?: string
+  /** Wann der Server zuletzt wegen Stille bzw. schwacher Batterie gewarnt hat */
+  gewarnt?: { stillAt?: number; batterieAt?: number }
 }
 
 export interface LoneWorkSession {
@@ -282,6 +284,10 @@ export interface LorawanSettings {
   enabled: boolean
   /** 'ttn' | 'chirpstack' | 'generic' */
   provider: string
+  /** Warnen, wenn ein Knopf so lange kein Lebenszeichen mehr gesendet hat */
+  stilleWarnungStunden: number
+  /** Warnen, wenn die Batterie unter diesen Prozentwert fällt */
+  batterieWarnungProzent: number
   /** Bearer-Token des Endpunkts – maskiert; Klartext holt die Administration beim Server */
   token: string
 }

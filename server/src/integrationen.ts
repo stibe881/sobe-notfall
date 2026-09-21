@@ -13,7 +13,7 @@ export const INTEGRATION_VORGABEN: IntegrationSettings = {
   smsGateway: { enabled: false, provider: 'ecall', senderId: 'ALARM', username: '', password: '', httpUrl: '', sentCount: 0 },
   telephony: { enabled: false, tenantId: '', clientId: '', clientSecret: '', organizerEmail: '' },
   teams: { enabled: false, tenant: '', webhookUrl: '' },
-  lorawan: { enabled: false, provider: 'ttn', token: '' },
+  lorawan: { enabled: false, provider: 'ttn', token: '', stilleWarnungStunden: 36, batterieWarnungProzent: 20 },
   sso: { enabled: false, tenantId: '', clientId: '', clientSecret: '', adminGroupId: '', krisenstabGroupId: '', autoCreate: true },
   hrSync: { enabled: false, system: '' },
   hotline: { enabled: true, number: '' },
@@ -382,13 +382,32 @@ function alsProzent(wert: unknown): number | undefined {
   return pct <= 100 ? Math.round(pct) : undefined
 }
 
+/**
+ * Ist dieser Uplink ein Knopfdruck?
+ *
+ * Jeder Hersteller nennt das Feld anders. Der Decoder im Netzserver
+ * (TTN/ChirpStack) übersetzt die rohen Bytes, danach greift diese Erkennung.
+ * Ein reiner Zustandswert wie `press_count` wird bewusst nicht gewertet: Er
+ * steht auch in Statusmeldungen und löste sonst Fehlalarme aus.
+ */
 function istAlarmNutzlast(nutzlast: Record<string, unknown>): boolean {
-  for (const schluessel of ['alarm', 'button', 'pressed', 'sos', 'panic', 'trigger']) {
-    const wert = nutzlast[schluessel]
-    if (wert === true || wert === 1 || wert === '1' || wert === 'true') return true
+  const wahr = (wert: unknown) =>
+    wert === true || wert === 1 || wert === '1' || wert === 'true' || wert === 'TRUE'
+
+  for (const schluessel of [
+    'alarm', 'button', 'pressed', 'sos', 'panic', 'trigger',
+    // Weitere gängige Schreibweisen: Milesight, Browan, Dragino, Adeunis
+    'sos_alarm', 'emergency', 'alert', 'button_pressed', 'buttonPressed', 'press',
+  ]) {
+    if (wahr(nutzlast[schluessel])) return true
   }
-  const ereignis = String(nutzlast.event ?? nutzlast.type ?? '').toLowerCase()
-  return ['alarm', 'sos', 'button', 'panic', 'pressed'].includes(ereignis)
+
+  // Ereignisfelder, teils mit Hersteller-Präfix («short_press», «SOS_ALARM»)
+  const ereignisse = ['event', 'type', 'message_type', 'messageType', 'action', 'state']
+    .map((feld) => String(nutzlast[feld] ?? '').toLowerCase().trim())
+    .filter(Boolean)
+  const treffer = ['alarm', 'sos', 'button', 'panic', 'pressed', 'press', 'emergency', 'alert']
+  return ereignisse.some((e) => treffer.some((t) => e === t || e.endsWith(`_${t}`) || e.startsWith(`${t}_`)))
 }
 
 function gpsAus(nutzlast: Record<string, unknown>): { lat: number; lng: number } | undefined {

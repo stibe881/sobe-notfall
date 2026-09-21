@@ -60,9 +60,15 @@ export default function Buttons() {
         {state.buttons.map((b) => {
           const location = state.locations.find((l) => l.id === b.locationId)
           const assignee = state.users.find((u) => u.id === b.assignedUserId)
-          const BatteryIcon = b.batteryPct < 20 ? BatteryLow : b.batteryPct < 60 ? BatteryMedium : BatteryFull
+          const schwelleBatterie = state.integrations?.lorawan?.batterieWarnungProzent ?? 20
+          const BatteryIcon = b.batteryPct < schwelleBatterie ? BatteryLow : b.batteryPct < 60 ? BatteryMedium : BatteryFull
+          // Der Server überwacht dasselbe und meldet es der Administration –
+          // hier steht es dort, wo man den Knopf ohnehin verwaltet
+          const stundenStill = (Date.now() - b.lastSeen) / 3600_000
+          const stummSeit = b.lastSeen > 0 && stundenStill > (state.integrations?.lorawan?.stilleWarnungStunden ?? 36)
+          const batterieSchwach = b.batteryPct < schwelleBatterie
           return (
-            <Card key={b.id}>
+            <Card key={b.id} className={stummSeit || batterieSchwach ? 'border-amber-300' : ''}>
               <div className="flex items-start gap-3">
                 <Radio size={28} className="text-slate-400 mt-1" />
                 <div className="flex-1 min-w-0">
@@ -70,9 +76,10 @@ export default function Buttons() {
                   <div className="text-xs text-slate-400">{b.serial}</div>
                   <div className="flex gap-1.5 mt-1.5 flex-wrap">
                     <Badge color={b.type === 'lorawan' ? 'blue' : 'violet'}>{b.type === 'lorawan' ? 'LoRaWAN' : 'GSM + GPS'}</Badge>
-                    <Badge color={b.batteryPct < 20 ? 'red' : 'green'}>
+                    <Badge color={batterieSchwach ? 'red' : 'green'}>
                       <BatteryIcon size={12} /> {b.batteryPct} %
                     </Badge>
+                    {stummSeit && <Badge color="amber">ohne Signal</Badge>}
                   </div>
                 </div>
               </div>
@@ -80,7 +87,10 @@ export default function Buttons() {
                 <div>Standort: {location?.name ?? 'mobil'}</div>
                 {assignee && <div>Zugewiesen: {assignee.firstName} {assignee.lastName}</div>}
                 {b.gps && <div className="flex items-center gap-1"><MapPin size={12} /> GPS: {b.gps.lat.toFixed(4)}, {b.gps.lng.toFixed(4)}</div>}
-                <div>Letztes Signal: {formatDateTime(b.lastSeen)}</div>
+                <div className={stummSeit ? 'text-amber-700 font-medium' : ''}>
+                  Letztes Signal: {b.lastSeen > 0 ? formatDateTime(b.lastSeen) : 'noch keines empfangen'}
+                  {stummSeit && ' – Knopf prüfen'}
+                </div>
                 <div>Eskalation an Blaulicht nach {b.escalateToEmergencyServicesAfterMin} Min. ohne Reaktion</div>
               </div>
               <div className="flex gap-2 mt-4">

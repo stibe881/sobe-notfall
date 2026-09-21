@@ -5,7 +5,7 @@ import {
 } from './push.js'
 import { standbyPassiv } from './replikation.js'
 import {
-  addAudit, allAlarms, allLoneWork, allScenarios, allStoredUsers, buildDeliveries, createAlarm,
+  addAudit, allAlarms, allButtons, allLoneWork, allScenarios, allStoredUsers, buildDeliveries, createAlarm,
   integrations, purgePresence, resolveRecipients, saveAlarm, upsertDoc,
 } from './store.js'
 import { LONE_WORK_DEFAULT_GROUPS, type Alarm, type AlarmLogEntry, type AlarmUpdate, type LoneWorkSession } from './types.js'
@@ -201,6 +201,7 @@ export async function tick(): Promise<void> {
     letzteDienstpruefung = jetzt
     await pruefePushDienst()
     await woechentlicherTestpush(jetzt)
+    await pruefeAlarmknoepfe(jetzt)
     // Alte Aufenthaltsmeldungen entfernen – es entsteht nie eine Bewegungshistorie
     purgePresence()
   }
@@ -223,6 +224,82 @@ async function woechentlicherTestpush(jetzt: number): Promise<void> {
   if (admins.length === 0) return
   const anzahl = await testPush(admins)
   addAudit('system', `Wöchentliche Testmeldung an ${anzahl} Gerät(e) der Administration gesendet.`)
+}
+
+/**
+ * Wachhund über die Alarmknöpfe.
+ *
+ * Ein Knopf, der stumm an der Wand hängt, wiegt in falscher Sicherheit: Die
+ * Person drückt im Ernstfall und nichts passiert. Darum prüft der Server
+ * regelmässig, ob jedes Gerät noch ein Lebenszeichen sendet und wie es um die
+ * Batterie steht, und meldet Abweichungen der Administration.
+ *
+ * Gemeldet wird pro Zustand einmal; erholt sich ein Knopf, wird die Sperre
+ * gelöst und eine erneute Störung wieder gemeldet.
+ */
+export async function pruefeAlarmknoepfe(jetzt = Date.now()): Promise<void> {
+  const lorawan = integrations().lorawan
+  if (!lorawan.enabled) return
+  const stilleMs = Math.max(1, lorawan.stilleWarnungStunden) * 3600_000
+  const schwelleBatterie = lorawan.batterieWarnungProzent
+
+  const stumm: string[] = []
+  const schwach: string[] = []
+  let veraendert = false
+
+  for (const knopf of allButtons()) {
+    const gewarnt = knopf.gewarnt ?? {}
+    const neuGewarnt: { stillAt?: number; batterieAt?: number } = { ...gewarnt }
+
+    // Ein Knopf ohne je empfangenes Signal zählt nicht als stumm – er ist
+    // erfasst, aber noch nicht in Betrieb genommen
+    const istStumm = knopf.lastSeen > 0 && jetzt - knopf.lastSeen > stilleMs
+    if (istStumm && !gewarnt.stillAt) {
+      stumm.push(`${knopf.name} (${knopf.serial}, zuletzt ${stundenText(jetzt - knopf.lastSeen)})`)
+      neuGewarnt.stillAt = jetzt
+    } else if (!istStumm && gewarnt.stillAt) {
+      delete neuGewarnt.stillAt
+    }
+
+    const istSchwach = knopf.batteryPct < schwelleBatterie
+    if (istSchwach && !gewarnt.batterieAt) {
+      schwach.push(`${knopf.name} (${knopf.serial}, ${knopf.batteryPct} %)`)
+      neuGewarnt.batterieAt = jetzt
+    } else if (!istSchwach && gewarnt.batterieAt) {
+      delete neuGewarnt.batterieAt
+    }
+
+    if (JSON.stringify(neuGewarnt) !== JSON.stringify(gewarnt)) {
+      upsertDoc('buttons', knopf.id, { ...knopf, gewarnt: neuGewarnt })
+      veraendert = true
+    }
+  }
+
+  if (veraendert) broadcast('state')
+  if (stumm.length === 0 && schwach.length === 0) return
+
+  const admins = allStoredUsers().filter((u) => u.role === 'admin').map((u) => u.id)
+  const zeilen = [
+    stumm.length ? `Ohne Signal: ${stumm.join(', ')}` : '',
+    schwach.length ? `Batterie schwach: ${schwach.join(', ')}` : '',
+  ].filter(Boolean)
+  const text = zeilen.join(' · ')
+  addAudit('system', `Alarmknöpfe brauchen Aufmerksamkeit. ${text}`)
+  if (admins.length > 0) {
+    await sendPush(admins, {
+      title: 'Alarmknopf prüfen',
+      body: text,
+      data: { kind: 'buttons' },
+      wichtig: true,
+    })
+  }
+}
+
+/** «vor 2 Tagen» / «vor 14 Stunden» – für die Störungsmeldung */
+function stundenText(ms: number): string {
+  const stunden = Math.floor(ms / 3600_000)
+  if (stunden < 48) return `vor ${stunden} Stunden`
+  return `vor ${Math.floor(stunden / 24)} Tagen`
 }
 
 /**

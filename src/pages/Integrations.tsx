@@ -983,6 +983,39 @@ function LorawanEinstellungen() {
               <option value="generic">Generisch (eigene Bridge, GSM-Knöpfe)</option>
             </select>
           </Field>
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+            <div className="text-xs font-semibold text-slate-600 mb-1">Überwachung der Knöpfe</div>
+            <p className="text-xs text-slate-500 mb-2.5">
+              Ein Knopf, der stumm an der Wand hängt, wiegt in falscher Sicherheit. Der Server meldet
+              der Administration, wenn ein Gerät kein Lebenszeichen mehr sendet oder die Batterie zur Neige geht.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Field label="Warnen ohne Signal nach (Stunden)">
+                <input
+                  type="number" min={1} max={720} className={inputClass}
+                  value={lorawan.stilleWarnungStunden}
+                  onChange={(e) => dispatch({
+                    type: 'UPDATE_INTEGRATIONS',
+                    integrations: { ...integ, lorawan: { ...lorawan, stilleWarnungStunden: Math.max(1, Number(e.target.value) || 1) } },
+                  })}
+                />
+              </Field>
+              <Field label="Warnen bei Batterie unter (%)">
+                <input
+                  type="number" min={1} max={99} className={inputClass}
+                  value={lorawan.batterieWarnungProzent}
+                  onChange={(e) => dispatch({
+                    type: 'UPDATE_INTEGRATIONS',
+                    integrations: { ...integ, lorawan: { ...lorawan, batterieWarnungProzent: Math.min(99, Math.max(1, Number(e.target.value) || 1)) } },
+                  })}
+                />
+              </Field>
+            </div>
+            <p className="text-xs text-slate-400 mt-1">
+              Richten Sie die Stundenzahl nach dem Melde-Intervall der Geräte – die meisten senden alle
+              12 bis 24 Stunden ein Lebenszeichen.
+            </p>
+          </div>
           {state.mode === 'live' ? (
             <div className="space-y-2 text-sm">
               {info && (

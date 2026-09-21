@@ -305,10 +305,11 @@ footer .adressfuss { margin-top: 22px; }
     <li><a href="#a6"><span class="zahl">6</span> Grundkonfiguration</a></li>
     <li><a href="#a7"><span class="zahl">7</span> Organisation und Integrationen</a></li>
     <li><a href="#a8"><span class="zahl">8</span> Die App verteilen und verbinden</a></li>
-    <li><a href="#a9"><span class="zahl">9</span> Redundanz: zweiter Alarmserver</a></li>
-    <li><a href="#a10"><span class="zahl">10</span> Weitere Kunden aufsetzen</a></li>
-    <li><a href="#a11"><span class="zahl">11</span> Aktualisierung und Sicherung</a></li>
-    <li><a href="#a12"><span class="zahl">12</span> Wenn etwas nicht geht</a></li>
+    <li><a href="#a9"><span class="zahl">9</span> Alarmknöpfe anbinden</a></li>
+    <li><a href="#a10"><span class="zahl">10</span> Redundanz: zweiter Alarmserver</a></li>
+    <li><a href="#a11"><span class="zahl">11</span> Weitere Kunden aufsetzen</a></li>
+    <li><a href="#a12"><span class="zahl">12</span> Aktualisierung und Sicherung</a></li>
+    <li><a href="#a13"><span class="zahl">13</span> Wenn etwas nicht geht</a></li>
   </ol>
 </nav>
 
@@ -519,7 +520,7 @@ footer .adressfuss { margin-top: 22px; }
   </p>
   <figure class="bild-breit">
     <img src="bilder/web-26-organisation-redundanz.webp" alt="Seite Integrationen mit den Karten Organisation und Auftritt sowie Redundanz">
-    <figcaption><b>Abb. 3</b> &nbsp; Oben links <span class="ui">Organisation &amp; Auftritt</span> (Name und Kurzname), rechts die Redundanz (Abschnitt 9). Darunter folgen App-Verbindung, SMS-Gateway, Teams, Telefonie, SSO und LoRaWAN.</figcaption>
+    <figcaption><b>Abb. 3</b> &nbsp; Oben links <span class="ui">Organisation &amp; Auftritt</span> (Name und Kurzname), rechts die Redundanz (Abschnitt 10). Darunter folgen App-Verbindung, SMS-Gateway, Teams, Telefonie, SSO und LoRaWAN.</figcaption>
   </figure>
   <h3>Logo und Akzentfarbe</h3>
   <p>
@@ -620,7 +621,79 @@ footer .adressfuss { margin-top: 22px; }
 </section>
 
 <section id="a9">
-  <h2 class="abschnitt"><span class="zahl">9</span> Redundanz: zweiter Alarmserver</h2>
+  <h2 class="abschnitt"><span class="zahl">9</span> Alarmknöpfe anbinden</h2>
+  <p>
+    Alarmknöpfe und tragbare Notrufgeräte melden sich über ein Funknetz beim
+    Alarmserver. Ein Knopfdruck löst einen <b>stillen Alarm mit Quittierpflicht</b>
+    aus &ndash; nach der eingestellten Zeit ohne Reaktion eskaliert er an den
+    Krisenstab und, wenn vorgesehen, an die Blaulichtorganisationen.
+  </p>
+
+  <h3>Was es dafür braucht</h3>
+  <div class="tabelle-huelle">
+    <table>
+      <caption>Bestandteile einer Knopf-Installation</caption>
+      <thead><tr><th>Teil</th><th>Wozu</th></tr></thead>
+      <tbody>
+        <tr><td><b>Knöpfe / Badges</b></td><td>Das Gerät, das gedrückt wird. LoRaWAN im Band EU868, oder GSM-Geräte mit eigener SIM-Karte.</td></tr>
+        <tr><td><b>Gateways</b></td><td>Empfangen den Funkruf und leiten ihn ins Internet weiter. Mindestens eines je Standort; in Kellern, Technikräumen und Bädern meist ein zusätzliches.</td></tr>
+        <tr><td><b>Netzserver</b></td><td>The Things Stack oder ChirpStack. Verwaltet die Geräte, entschlüsselt die Funkdaten und ruft den Alarmserver auf.</td></tr>
+        <tr><td><b>Decoder</b></td><td>Kleines Skript im Netzserver, das die rohen Bytes des Geräts in lesbare Felder übersetzt. Liefert in der Regel der Hersteller.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="hinweis">
+    <p class="marke-klein">Zwei Gateways statt eines</p>
+    <p>
+      LoRaWAN funktioniert als Rundruf: Jedes Gateway in Reichweite empfängt
+      denselben Knopfdruck, der Netzserver verwirft die Duplikate. Zwei Gateways
+      ergeben damit <em>ohne jede Konfiguration</em> Redundanz. Mit nur einem
+      Gateway steht ein einzelner Ausfallpunkt in genau der Kette, die Leben
+      schützen soll.
+    </p>
+  </div>
+
+  <h3>Einrichten</h3>
+  <ol>
+    <li>Im Portal unter <span class="ui">Integrationen &rsaquo; LoRaWAN-Netz / Alarmknöpfe</span>
+      den Endpunkt einschalten und ein <b>Token erzeugen</b>. Endpunkt-Adresse und Token
+      werden dort angezeigt und lassen sich kopieren.</li>
+    <li>Im Netzserver einen <b>Webhook</b> auf diese Adresse einrichten und das Token als
+      <code>Authorization: Bearer …</code> mitgeben (alternativ als <code>?token=</code> in der Adresse).</li>
+    <li>Jedes Gerät im Portal unter <span class="ui">Alarmknöpfe</span> registrieren.
+      Entscheidend ist die <b>Seriennummer</b>: Sie muss der Geräte-Kennung im Netzserver
+      entsprechen (DevEUI bei LoRaWAN). Gross- und Kleinschreibung sowie Bindestriche
+      spielen keine Rolle.</li>
+    <li>Mit <span class="ui">Auslösen (Test)</span> die Kette prüfen, danach am Gerät selbst.</li>
+  </ol>
+  <p>
+    Verstanden werden die Formate von <b>The Things Network v3</b>, <b>ChirpStack v4</b>
+    und ein generisches JSON für eigene Bridges und GSM-Knöpfe:
+    <code>{ serial, event, battery, lat, lng }</code>. Als Knopfdruck gilt ein Uplink,
+    dessen entschlüsselte Daten ein Feld wie <code>alarm</code>, <code>sos</code>,
+    <code>button</code> oder <code>emergency</code> enthalten beziehungsweise ein
+    Ereignis dieses Namens melden. Reine Statusmeldungen aktualisieren nur Batteriestand
+    und Zeitpunkt des letzten Signals.
+  </p>
+  <div class="hinweis hinweis--warnung">
+    <p class="marke-klein">Vor dem Kauf: Funkmessung</p>
+    <p>
+      Wie viele Gateways es braucht, lässt sich nicht am Schreibtisch bestimmen.
+      Beschaffen Sie zuerst <b>ein Gateway und je ein Mustergerät</b> und messen Sie
+      den Empfang genau dort, wo jemand allein arbeitet &ndash; Untergeschoss,
+      Technikraum, Therapiebad. Dort ist der Empfang am schlechtesten, und genau dort
+      muss der Knopf funktionieren. Die meisten Geräte haben einen Testmodus, der die
+      Empfangsqualität anzeigt.
+    </p>
+  </div>
+  <p>
+    Die Überwachung der Knöpfe (stumme Geräte, schwache Batterie) beschreibt
+    Handbuch&nbsp;1, Abschnitt «Alleinarbeit und Alarmknöpfe».
+  </p>
+</section>
+
+<section id="a10">
+  <h2 class="abschnitt"><span class="zahl">10</span> Redundanz: zweiter Alarmserver</h2>
   <p>
     Ein zweiter Alarmserver sichert den Betrieb gegen den Ausfall des ersten ab &ndash;
     von Anfang an oder nachträglich, idealerweise auf einer anderen Maschine in
@@ -687,8 +760,8 @@ footer .adressfuss { margin-top: 22px; }
   </ol>
 </section>
 
-<section id="a10">
-  <h2 class="abschnitt"><span class="zahl">10</span> Weitere Kunden aufsetzen</h2>
+<section id="a11">
+  <h2 class="abschnitt"><span class="zahl">11</span> Weitere Kunden aufsetzen</h2>
   <p>
     Jeder weitere Kunde bekommt eine eigene Instanz: eigene Domain, eigenes
     Verzeichnis, eigene <code>server/.env</code> mit eigenem <code>PORT</code> und eigenem
@@ -720,8 +793,8 @@ footer .adressfuss { margin-top: 22px; }
   </div>
 </section>
 
-<section id="a11">
-  <h2 class="abschnitt"><span class="zahl">11</span> Aktualisierung und Sicherung</h2>
+<section id="a12">
+  <h2 class="abschnitt"><span class="zahl">12</span> Aktualisierung und Sicherung</h2>
   <h3>Aktualisieren per Knopfdruck</h3>
   <p>
     Administratoren aktualisieren den Server aus dem Portal: Der Knopf
@@ -770,8 +843,8 @@ footer .adressfuss { margin-top: 22px; }
   </ol>
 </section>
 
-<section id="a12">
-  <h2 class="abschnitt"><span class="zahl">12</span> Wenn etwas nicht geht</h2>
+<section id="a13">
+  <h2 class="abschnitt"><span class="zahl">13</span> Wenn etwas nicht geht</h2>
 
   <h4>Der Server startet nicht</h4>
   <p>

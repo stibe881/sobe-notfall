@@ -204,6 +204,8 @@ export interface AlarmButton {
   escalateToEmergencyServicesAfterMin: number
   /** Szenario des ausgelösten Alarms; ohne Angabe Gewalt/Bedrohung */
   scenarioId?: string
+  /** Wann der Server zuletzt wegen Stille bzw. schwacher Batterie gewarnt hat */
+  gewarnt?: { stillAt?: number; batterieAt?: number }
 }
 
 export interface LoneWorkSession {
@@ -248,7 +250,7 @@ export interface IntegrationSettings {
   smsGateway: { enabled: boolean; provider: string; senderId: string; username: string; password: string; httpUrl: string; sentCount: number }
   telephony: { enabled: boolean; tenantId: string; clientId: string; clientSecret: string; organizerEmail: string }
   teams: { enabled: boolean; tenant: string; webhookUrl: string }
-  lorawan: { enabled: boolean; provider: string; token: string }
+  lorawan: { enabled: boolean; provider: string; token: string; stilleWarnungStunden: number; batterieWarnungProzent: number }
   sso: { enabled: boolean; tenantId: string; clientId: string; clientSecret: string; adminGroupId: string; krisenstabGroupId: string; autoCreate: boolean }
   hrSync: { enabled: boolean; system: string; lastSync?: number }
   hotline: { enabled: boolean; number: string }

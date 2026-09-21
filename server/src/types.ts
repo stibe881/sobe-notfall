@@ -197,6 +197,13 @@ export interface AlarmButton {
   escalateToEmergencyServicesAfterMin: number
   /** Szenario des ausgelösten Alarms; ohne Angabe Gewalt/Bedrohung */
   scenarioId?: string
+  /**
+   * Wann zuletzt wegen Stille bzw. schwacher Batterie gewarnt wurde. Verhindert,
+   * dass derselbe Zustand alle zehn Minuten erneut gemeldet wird; meldet sich
+   * der Knopf wieder oder wird die Batterie gewechselt, wird der Eintrag
+   * gelöscht und eine neue Störung wieder gemeldet.
+   */
+  gewarnt?: { stillAt?: number; batterieAt?: number }
 }
 
 export interface LoneWorkSession {
@@ -277,6 +284,15 @@ export interface LorawanSettings {
   provider: string
   /** Bearer-Token des Endpunkts – maskiert; Klartext über /integrations/lorawan */
   token: string
+  /**
+   * Überwachung der Knöpfe: Ein Alarmknopf, der niemand mehr erreicht, ist
+   * gefährlicher als gar keiner – deshalb meldet sich der Server, bevor es
+   * ernst wird. Die Stundenzahl richtet sich nach dem Melde-Intervall der
+   * Geräte (die meisten senden alle 12 oder 24 Stunden ein Lebenszeichen).
+   */
+  stilleWarnungStunden: number
+  /** Unter diesem Batteriestand (Prozent) wird gewarnt */
+  batterieWarnungProzent: number
 }
 
 /** Single Sign-On über Microsoft Entra ID (OpenID Connect) */

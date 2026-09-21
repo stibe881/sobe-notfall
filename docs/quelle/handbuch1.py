@@ -423,10 +423,40 @@ KOERPER = r"""
     <figcaption><b>Abb.</b> &nbsp; Die fest installierten und tragbaren Alarmknöpfe mit Batteriestand und Funkverbindung. Ein Knopf mit schwacher Batterie ist hier zu erkennen, bevor er ausfällt.</figcaption>
   </figure>
   <p>
-    Die Alarmknöpfe sind <em>vorbereitet, noch nicht aktiv</em>: Sie können Geräte
-    erfassen, Standort, Nachricht und Zielgruppen planen, aber ein Knopfdruck löst
-    heute keinen Alarm aus, solange kein LoRaWAN- oder GSM-Netz angebunden ist.
+    Sobald ein LoRaWAN- oder GSM-Netz angebunden ist, löst ein Knopfdruck einen
+    stillen Alarm mit Quittierpflicht aus. Ohne angebundenes Netz bleibt der
+    Eintrag eine Planung: Sie erfassen Geräte, Standort, Nachricht und
+    Zielgruppen, aber es kommt kein Knopfdruck herein. Die Anbindung beschreibt
+    Handbuch&nbsp;4, Abschnitt «Alarmknöpfe anbinden».
   </p>
+
+  <h3>Überwachung: Wenn ein Knopf stumm bleibt</h3>
+  <p>
+    Ein Alarmknopf, der niemand mehr erreicht, ist gefährlicher als gar keiner
+    &ndash; im Ernstfall wird gedrückt, und nichts passiert. Der Alarmserver prüft
+    deshalb regelmässig jedes Gerät und meldet der Administration per
+    Push-Mitteilung und im Ereignisprotokoll, wenn
+  </p>
+  <ul>
+    <li>ein Knopf länger kein Lebenszeichen mehr gesendet hat (Vorgabe: 36 Stunden) oder</li>
+    <li>die Batterie unter einen Schwellenwert fällt (Vorgabe: 20 %).</li>
+  </ul>
+  <p>
+    Beide Werte stellen Sie unter <span class="ui">Integrationen &rsaquo; LoRaWAN-Netz /
+    Alarmknöpfe</span> ein. Richten Sie die Stundenzahl nach dem Melde-Intervall
+    Ihrer Geräte &ndash; die meisten senden alle 12 bis 24 Stunden ein Lebenszeichen.
+    Auf der Knopf-Übersicht trägt ein betroffenes Gerät das Abzeichen
+    <span class="ui">ohne Signal</span> beziehungsweise einen roten Batteriestand.
+  </p>
+  <div class="hinweis">
+    <p class="marke-klein">Gemeldet wird einmal, nicht dauernd</p>
+    <p>
+      Jede Störung wird einmal gemeldet, nicht bei jedem Durchlauf erneut. Meldet
+      sich der Knopf wieder oder ist die Batterie gewechselt, verfällt die Sperre
+      von selbst &ndash; eine erneute Störung wird dann wieder gemeldet. Nach einer
+      Wartung müssen Sie also nichts quittieren.
+    </p>
+  </div>
 </section>
 
 <section id="a9">

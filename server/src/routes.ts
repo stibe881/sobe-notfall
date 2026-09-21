@@ -7,7 +7,7 @@ import {
 } from './auth.js'
 import { addClient } from './events.js'
 import { broadcast } from './events.js'
-import { UEBUNG, alarmPush, ausgehendeWebhooks, entwarnungPush, lagemeldungPush, testPush } from './engine.js'
+import { UEBUNG, alarmPush, ausgehendeWebhooks, entwarnungPush, lagemeldungPush, pruefeAlarmknoepfe, testPush } from './engine.js'
 import {
   erstelleKonferenz, graphToken, lorawanTokenAusRequest, lorawanTokenGueltig,
   mergeIntegrationen, neuesLorawanToken, normierteSerie, parseLorawanUplink, sendeSms, sendeTeamsKarte,
@@ -844,6 +844,15 @@ router.post('/hooks/lorawan', async (req, res) => {
   await alarmPush(alarm)
   await sendeAlarmKanaele(alarm)
   await ausgehendeWebhooks(alarm)
+})
+
+/**
+ * Knöpfe jetzt prüfen, statt auf den nächsten Durchlauf zu warten – für die
+ * Kontrolle nach einer Wartung und für die Testsuite.
+ */
+router.post('/wartung/knoepfe-pruefen', auth, adminOnly, async (_req, res) => {
+  await pruefeAlarmknoepfe()
+  res.json({ ok: true })
 })
 
 /** Rückrufe der Microsoft-Graph-Anrufschnittstelle – nur bestätigen */
