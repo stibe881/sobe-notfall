@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { BatteryLow, BatteryMedium, BatteryFull, MapPin, Pencil, Plus, Radio, Trash2, Zap } from 'lucide-react'
+import { BatteryLow, BatteryMedium, BatteryFull, MapPin, Pencil, Plus, Radio, Trash2, Zap, PlugZap, Check } from 'lucide-react'
 import { createAlarm, uid, useStore } from '../store'
 import type { AlarmButton } from '../types'
-import { Badge, Button, Card, Field, Modal, formatDateTime, inputClass, useConfirm, Vorbereitet } from '../components/ui'
+import { Badge, Button, Card, Field, Modal, formatDateTime, inputClass, useConfirm } from '../components/ui'
 
 export default function Buttons() {
   const { state, dispatch } = useStore()
@@ -11,6 +11,15 @@ export default function Buttons() {
   const [editing, setEditing] = useState<AlarmButton | null>(null)
   const { ask, confirmEl } = useConfirm()
   const lorawanAktiv = state.integrations.lorawan.enabled
+  const istAdmin = state.users.find((u) => u.id === state.currentUserId)?.role === 'admin'
+
+  /** Endpunkt direkt von hier einschalten – wer Knöpfe erfasst, will ihn auch scharf stellen */
+  function aktiviereUplink() {
+    dispatch({
+      type: 'UPDATE_INTEGRATIONS',
+      integrations: { ...state.integrations, lorawan: { ...state.integrations.lorawan, enabled: true } },
+    })
+  }
 
   function newButton(): AlarmButton {
     return {
@@ -41,20 +50,45 @@ export default function Buttons() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between">
+      <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-3">
-            Physische Alarmknöpfe {!lorawanAktiv && <Vorbereitet />}
+            Physische Alarmknöpfe
+            {lorawanAktiv && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 text-emerald-700 px-2.5 py-0.5 text-xs font-medium">
+                <Check size={12} /> Uplink aktiv
+              </span>
+            )}
           </h1>
           <p className="text-sm text-slate-500">
             LoRaWAN- und GSM-Notfallknöpfe – app-unabhängig, diskret, mit Standortübertragung und automatischer Eskalation.
-            {lorawanAktiv
-              ? ' Der Uplink-Endpunkt ist aktiv: Ein Knopfdruck löst den hier hinterlegten stillen Alarm aus, Statusmeldungen aktualisieren Batterie und «letztes Signal».'
-              : ' Der Uplink-Endpunkt ist unter Integrationen noch nicht aktiviert – die Einträge hier dienen der Planung, ein Knopfdruck löst noch keinen Alarm aus.'}
+            {lorawanAktiv && ' Ein Knopfdruck löst den hier hinterlegten stillen Alarm aus; Statusmeldungen aktualisieren Batterie und «letztes Signal».'}
           </p>
         </div>
         <Button onClick={() => setEditing(newButton())}><Plus size={16} /> Knopf registrieren</Button>
       </div>
+
+      {!lorawanAktiv && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 flex items-start gap-3">
+          <PlugZap size={18} className="text-amber-600 shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <div className="font-medium text-amber-900 text-sm">Uplink-Endpunkt ist ausgeschaltet</div>
+            <p className="text-sm text-amber-800 mt-0.5">
+              Geräte können Sie hier trotzdem erfassen und vorbereiten. Damit ein Knopfdruck aber wirklich
+              einen Alarm auslöst, muss der Endpunkt eingeschaltet sein – danach tragen Sie die angezeigte
+              Adresse und das Zugangstoken im Netzserver ein.
+            </p>
+          </div>
+          {istAdmin ? (
+            <div className="flex flex-col sm:flex-row gap-2 shrink-0">
+              <Button onClick={aktiviereUplink}><PlugZap size={14} /> Jetzt aktivieren</Button>
+              <Button variant="secondary" onClick={() => navigate('/integrationen')}>Zu den Integrationen</Button>
+            </div>
+          ) : (
+            <span className="text-xs text-amber-700 shrink-0">Einschalten kann das die Administration.</span>
+          )}
+        </div>
+      )}
 
       <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
         {state.buttons.map((b) => {
