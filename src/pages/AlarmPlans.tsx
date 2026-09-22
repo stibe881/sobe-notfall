@@ -37,7 +37,7 @@ function KanalBadge({ kanal, integ }: { kanal: Channel; integ: IntegrationSettin
  * graue Textzeilen untereinander – wer wann dazukommt, musste man sich
  * zusammenlesen.
  */
-function Ablauf({ plan }: { plan: AlarmPlan }) {
+export function Ablauf({ plan }: { plan: AlarmPlan }) {
   const { state } = useStore()
   const integ = state.integrations
   const name = (id: string) => state.groups.find((g) => g.id === id)?.name ?? id
@@ -205,7 +205,7 @@ export default function AlarmPlans() {
 }
 
 /** Kanalwahl als Chips samt Hinweis, worüber heute nichts hinausgeht */
-function KanalWahl({ gewaehlt, onToggle }: { gewaehlt: Channel[]; onToggle: (c: Channel) => void }) {
+export function KanalWahl({ gewaehlt, onToggle }: { gewaehlt: Channel[]; onToggle: (c: Channel) => void }) {
   const { state } = useStore()
   const integ = state.integrations
   const stumm = gewaehlt.filter((c) => kanalZustand(c, integ) !== 'aktiv')
@@ -235,7 +235,7 @@ function KanalWahl({ gewaehlt, onToggle }: { gewaehlt: Channel[]; onToggle: (c: 
 }
 
 /** Eine Eskalationsstufe im Editor */
-function StufenEditor({
+export function StufenEditor({
   stufe, nummer, onAendern, onLoeschen,
 }: { stufe: EscalationLevel; nummer: number; onAendern: (patch: Partial<EscalationLevel>) => void; onLoeschen: () => void }) {
   const { state } = useStore()

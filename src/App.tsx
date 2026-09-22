@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { NavLink, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import {
   AlertTriangle, BellRing, BookMarked, BookOpen, Building2, ClipboardList, ExternalLink, FileClock, LayoutDashboard,
-  Download, Lock, LogOut, Menu, Phone, Plug, Radio, Siren, Smartphone, Timer, Users, UsersRound, X,
+  Download, LifeBuoy, Lock, LogOut, Menu, Phone, Plug, Radio, Siren, Smartphone, Timer, Users, UsersRound, X,
 } from 'lucide-react'
 import { useStore } from './store'
 import Dashboard from './pages/Dashboard'
@@ -13,6 +13,7 @@ import UsersPage from './pages/UsersPage'
 import Groups from './pages/Groups'
 import Locations from './pages/Locations'
 import AlarmPlans from './pages/AlarmPlans'
+import Soforthilfe from './pages/Soforthilfe'
 import LoneWorker from './pages/LoneWorker'
 import Buttons from './pages/Buttons'
 import Integrations from './pages/Integrations'
@@ -47,6 +48,7 @@ const NAV = [
   { section: 'Vorbereitung' },
   { to: '/szenarien', label: 'Szenarien', icon: BookOpen },
   { to: '/alarmplaene', label: 'Alarmpläne', icon: ClipboardList },
+  { to: '/soforthilfe', label: 'Soforthilfe-Knopf', icon: LifeBuoy },
   { to: '/notfallkontakte', label: 'Notfallkontakte', icon: Phone },
   { section: 'Organisation' },
   { to: '/benutzer', label: 'Benutzende', icon: Users },
@@ -380,6 +382,7 @@ export default function App() {
             <Route path="/alarmknoepfe" element={<Buttons />} />
             <Route path="/szenarien" element={<Scenarios />} />
             <Route path="/alarmplaene" element={<AlarmPlans />} />
+            <Route path="/soforthilfe" element={<Soforthilfe />} />
             <Route path="/benutzer" element={<UsersPage />} />
             <Route path="/gruppen" element={<Groups />} />
             <Route path="/standorte" element={<Locations />} />
