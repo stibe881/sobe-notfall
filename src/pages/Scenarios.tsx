@@ -25,17 +25,36 @@ export default function Scenarios() {
   const [categoryFilter, setCategoryFilter] = useState('')
   const { ask, confirmEl } = useConfirm()
   const [search, setSearch] = useState('')
+  const [zeigeInaktive, setZeigeInaktive] = useState(true)
 
   const categories = useMemo(
     () => [...new Set([...CATEGORIES, ...state.scenarios.map((s) => s.category)])],
     [state.scenarios],
   )
 
-  const filtered = state.scenarios.filter(
-    (s) =>
-      (!categoryFilter || s.category === categoryFilter) &&
-      (!search || s.title.toLowerCase().includes(search.toLowerCase())),
+  /**
+   * Sortiert alphabetisch, ausgeblendete Szenarien dahinter. Die Reihenfolge
+   * aus der Grundkonfiguration war für die Suche nach einem bestimmten
+   * Szenario unbrauchbar, und die ausgeblendeten standen mitten dazwischen –
+   * obwohl sie im Ernstfall gar nicht erscheinen.
+   */
+  const filtered = useMemo(
+    () =>
+      state.scenarios
+        .filter(
+          (s) =>
+            (!categoryFilter || s.category === categoryFilter) &&
+            (!search || s.title.toLowerCase().includes(search.toLowerCase())) &&
+            (zeigeInaktive || isActive(s)),
+        )
+        .sort(
+          (a, b) =>
+            Number(isActive(b)) - Number(isActive(a)) || a.title.localeCompare(b.title, 'de'),
+        ),
+    [state.scenarios, categoryFilter, search, zeigeInaktive],
   )
+
+  const inaktivAnzahl = state.scenarios.filter((s) => !isActive(s)).length
 
   return (
     <div className="space-y-6">
@@ -53,6 +72,20 @@ export default function Scenarios() {
 
       <div className="flex flex-wrap items-center gap-3">
         <input className={inputClass + ' max-w-xs'} placeholder="Szenario suchen…" value={search} onChange={(e) => setSearch(e.target.value)} />
+        {inaktivAnzahl > 0 && (
+          <button
+            onClick={() => setZeigeInaktive(!zeigeInaktive)}
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition ${
+              zeigeInaktive
+                ? 'bg-white border border-slate-200 text-slate-600 hover:border-slate-400'
+                : 'bg-slate-800 text-white'
+            }`}
+            title={zeigeInaktive ? 'Ausgeblendete Szenarien nicht anzeigen' : 'Ausgeblendete Szenarien wieder anzeigen'}
+          >
+            {zeigeInaktive ? <EyeOff size={13} /> : <Eye size={13} />}
+            {zeigeInaktive ? `${inaktivAnzahl} ausgeblendete verbergen` : `${inaktivAnzahl} ausgeblendete zeigen`}
+          </button>
+        )}
         <div className="flex flex-wrap gap-1.5">
           <button
             onClick={() => setCategoryFilter('')}
