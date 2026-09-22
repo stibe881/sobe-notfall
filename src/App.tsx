@@ -26,26 +26,35 @@ import { api, logoUrl } from './lib/api'
 import { wendeAkzentfarbeAn } from './lib/branding'
 import { Button, Field, Modal, inputClass } from './components/ui'
 
+/**
+ * Das Menü folgt dem Lebenszyklus eines Ereignisses, von oben nach unten:
+ * zuerst, was im Ernstfall in Sekunden erreichbar sein muss, dann der Betrieb
+ * zwischen den Ereignissen, dann die Vorbereitung, dann wer dazugehört, und
+ * zuunterst das System. Vorher standen Alarmknöpfe beim Alleinarbeitsschutz
+ * (sie sind eine Auslösequelle, kein Timer), das Ereignisprotokoll bei den
+ * Systemeinstellungen, und Konten, Gruppen und Standorte lagen zwischen den
+ * Szenarien – Inhalte und Organisation in einem Block.
+ */
 const NAV = [
-  { section: 'Gefahrenabwehr' },
+  { section: 'Im Ereignis' },
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/alarm', label: 'Alarm auslösen', icon: Siren },
   { to: '/monitor', label: 'Alarmzentrale', icon: BellRing },
-  { to: '/app', label: 'App-Vorschau (iOS)', icon: Smartphone, newTab: true },
-  { section: 'Alleinarbeitsschutz' },
+  { section: 'Laufender Betrieb' },
   { to: '/alleinarbeit', label: 'Alleinarbeit (Timer)', icon: Timer },
   { to: '/alarmknoepfe', label: 'Alarmknöpfe', icon: Radio },
-  { section: 'Vorbereitung (Admin-Web)' },
+  { to: '/protokoll', label: 'Ereignisprotokoll', icon: FileClock },
+  { section: 'Vorbereitung' },
   { to: '/szenarien', label: 'Szenarien', icon: BookOpen },
   { to: '/alarmplaene', label: 'Alarmpläne', icon: ClipboardList },
+  { to: '/notfallkontakte', label: 'Notfallkontakte', icon: Phone },
+  { section: 'Organisation' },
   { to: '/benutzer', label: 'Benutzende', icon: Users },
   { to: '/gruppen', label: 'Gruppen & Krisenteams', icon: UsersRound },
   { to: '/standorte', label: 'Standorte', icon: Building2 },
-  { to: '/notfallkontakte', label: 'Notfallkontakte', icon: Phone },
-  { section: 'System' },
+  { section: 'System & Hilfe' },
   { to: '/integrationen', label: 'Integrationen', icon: Plug },
-  { to: '/protokoll', label: 'Ereignisprotokoll', icon: FileClock },
-  { section: 'Hilfe' },
+  { to: '/app', label: 'App-Vorschau', icon: Smartphone, newTab: true },
   { to: '/hilfe', label: 'Handbücher', icon: BookMarked },
 ] as const
 
