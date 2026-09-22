@@ -70,9 +70,24 @@ export default function Locations() {
   )
 }
 
+/** Wert für ein Zeitfeld: gültiges HH:MM, «24:00» wird zu «23:59» */
+function zeitOderLeer(wert: string): string {
+  if (wert === '24:00') return '23:59'
+  return /^([01]\d|2[0-3]):[0-5]\d$/.test(wert) ? wert : ''
+}
+
 function LocationEditor({ location, onClose }: { location: Location; onClose: () => void }) {
   const { dispatch } = useStore()
-  const [draft, setDraft] = useState<Location>({ ...location })
+  const [draft, setDraft] = useState<Location>(() => ({
+    ...location,
+    // «24:00» kennt ein Zeitfeld nicht – es bliebe leer und wäre beim Speichern
+    // stillschweigend weg. Rund um die Uhr heisst hier 00:00 bis 23:59.
+    operatingHours: {
+      ...location.operatingHours,
+      open: zeitOderLeer(location.operatingHours.open),
+      close: zeitOderLeer(location.operatingHours.close),
+    },
+  }))
   const [geoEnabled, setGeoEnabled] = useState(!!location.geofence)
   const [geo, setGeo] = useState(location.geofence ?? { lat: 47.3769, lng: 8.5417, radiusM: 300 })
   const [suchLauft, setSuchLauft] = useState(false)
@@ -166,7 +181,7 @@ function LocationEditor({ location, onClose }: { location: Location; onClose: ()
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 min-w-0">
         <Field label="Betriebstage">
           <input className={inputClass} value={draft.operatingHours.days} onChange={(e) => setDraft({ ...draft, operatingHours: { ...draft.operatingHours, days: e.target.value } })} />
         </Field>

@@ -919,7 +919,7 @@ export const SEED_LOCATIONS: Location[] = [
   {
     id: 'loc-baar', name: 'Hauptsitz Baar', address: 'SONNENBERG Kompetenzzentrum, 6340 Baar',
     geofence: { lat: 47.1954, lng: 8.5289, radiusM: 400 },
-    operatingHours: { days: 'Mo–So (inkl. Wohngruppen)', open: '00:00', close: '24:00' },
+    operatingHours: { days: 'Mo–So (inkl. Wohngruppen)', open: '00:00', close: '23:59' },
   },
   {
     id: 'loc-menzingen', name: 'Standort Menzingen', address: 'Schulstandort, 6313 Menzingen',

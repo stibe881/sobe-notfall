@@ -21,6 +21,25 @@ body {
   @apply bg-slate-100 text-slate-900 antialiased;
 }
 
+/*
+ * Zeit- und Datumsfelder auf iOS.
+ *
+ * Safari gibt input[type=time] und [type=date] eine eigene Darstellung mit
+ * fester Mindestbreite und ignoriert dabei die Breitenangabe. Auf dem iPhone
+ * ragten die Felder «Von» und «Bis» damit über den Dialog hinaus. Mit
+ * abgeschalteter Systemdarstellung und min-width: 0 fügen sie sich ein; das
+ * Antippen öffnet weiterhin die Systemauswahl.
+ */
+input[type='time'],
+input[type='date'],
+input[type='datetime-local'] {
+  /* Nur die WebKit-Darstellung abschalten – die Auswahlsymbole anderer Browser
+     bleiben damit erhalten, die Felder öffnen ihre Auswahl wie gewohnt. */
+  -webkit-appearance: none;
+  min-width: 0;
+  max-width: 100%;
+}
+
 @keyframes pulse-ring {
   0% { box-shadow: 0 0 0 0 rgba(224, 36, 36, 0.5); }
   70% { box-shadow: 0 0 0 12px rgba(224, 36, 36, 0); }
