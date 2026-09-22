@@ -2,6 +2,7 @@ import * as Notifications from 'expo-notifications'
 import * as Device from 'expo-device'
 import Constants from 'expo-constants'
 import { Platform } from 'react-native'
+import { playAlarmSound, stopAlarmSound } from 'alarm-sound'
 
 // Benachrichtigungen auch anzeigen, wenn die App im Vordergrund ist.
 // shouldSetBadge übernimmt die vom Server mitgeschickte Zahl aufs App-Symbol.
@@ -34,6 +35,103 @@ export interface PushDaten {
   kind?: 'alarm' | 'ended'
   alarmId?: string
   scenarioId?: string
+}
+
+/**
+ * Android: kritische Alarme (SOS, Timer-Alarm) laufen über notifee statt expo-notifications –
+ * nur notifee kann eine Vollbild-Meldung wie bei einem eingehenden Anruf über den Sperrbildschirm
+ * legen. Der Ton läuft zusätzlich über das native Modul `alarm-sound` auf Wecker-Lautstärke
+ * (siehe dort) – das bleibt auch bei stummgeschaltetem Gerät hörbar, was ein Notification-Kanal
+ * allein nicht kann. Auf iOS und in Expo Go/älteren Builds ohne natives Modul bleibt es beim
+ * bisherigen Weg über expo-notifications. Siehe CRITICAL-ALERTS.md, Abschnitt Android.
+ */
+type NotifeeApi = typeof import('@notifee/react-native')
+let notifeeApi: NotifeeApi | null | undefined
+function notifee(): NotifeeApi | null {
+  if (notifeeApi !== undefined) return notifeeApi
+  if (Platform.OS !== 'android') return (notifeeApi = null)
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    notifeeApi = require('@notifee/react-native') as NotifeeApi
+  } catch {
+    notifeeApi = null
+  }
+  return notifeeApi
+}
+
+/** PushDaten in das von notifee erwartete String-Format bringen (undefinierte Felder weglassen) */
+function notifeeDaten(daten?: PushDaten): Record<string, string> {
+  const eintraege = Object.entries(daten ?? {}).filter(([, wert]) => wert !== undefined) as [string, string][]
+  return Object.fromEntries(eintraege)
+}
+
+const NOTIFEE_ID_PREFIX = 'notifee:'
+/** Nach dieser Zeit hört der Alarmton von selbst auf, falls niemand die Meldung antippt oder wegwischt */
+const ALARM_SOUND_TIMEOUT_MS = 2 * 60_000
+
+/** Sofortige Vollbild-Meldung für einen kritischen Android-Alarm, plus Ton auf Wecker-Lautstärke */
+async function androidAlarmAnzeigen(title: string, body: string, daten?: PushDaten): Promise<void> {
+  const n = notifee()
+  if (!n) return
+  try {
+    await n.default.displayNotification({
+      title,
+      body,
+      data: notifeeDaten(daten),
+      android: {
+        channelId: ALARM_CHANNEL_ID,
+        category: n.AndroidCategory.ALARM,
+        importance: n.AndroidImportance.HIGH,
+        visibility: n.AndroidVisibility.PUBLIC,
+        autoCancel: true,
+        pressAction: { id: 'default' },
+        fullScreenAction: { id: 'default', launchActivity: 'default' },
+      },
+    })
+    playAlarmSound()
+    setTimeout(stopAlarmSound, ALARM_SOUND_TIMEOUT_MS)
+  } catch {
+    // Keine Vollbild-Berechtigung (Android 14+, manuell in den Einstellungen zu erteilen) –
+    // die Meldung im Kanal `alarme` bleibt trotzdem laut und umgeht «Nicht stören»
+  }
+}
+
+/**
+ * Für einen späteren Zeitpunkt geplante Vollbild-Meldung (z. B. Ablauf des Alleinarbeits-Timers).
+ * Läuft über Androids AlarmManager wie ein Weckerklingeln (SET_ALARM_CLOCK) – zuverlässiger als
+ * die Standardplanung, die der Energiesparmodus verzögern kann. Der Alarmton über `alarm-sound`
+ * lässt sich dafür nicht vorausplanen: er wird nur ausgelöst, wenn zum Ablaufzeitpunkt JS läuft
+ * (siehe store.tsx, wo der laufende Timer selbst notifyNow() aufruft). Diese geplante Meldung ist
+ * das Sicherheitsnetz, falls die App zu dem Zeitpunkt beendet ist.
+ */
+async function androidAlarmPlanen(title: string, body: string, timestamp: number): Promise<string | null> {
+  const n = notifee()
+  if (!n) return null
+  try {
+    const id = await n.default.createTriggerNotification(
+      {
+        title,
+        body,
+        android: {
+          channelId: ALARM_CHANNEL_ID,
+          category: n.AndroidCategory.ALARM,
+          importance: n.AndroidImportance.HIGH,
+          visibility: n.AndroidVisibility.PUBLIC,
+          autoCancel: true,
+          pressAction: { id: 'default' },
+          fullScreenAction: { id: 'default', launchActivity: 'default' },
+        },
+      },
+      {
+        type: n.TriggerType.TIMESTAMP,
+        timestamp,
+        alarmManager: { type: n.AlarmType.SET_ALARM_CLOCK },
+      },
+    )
+    return `${NOTIFEE_ID_PREFIX}${id}`
+  } catch {
+    return null
+  }
 }
 
 async function ensureAlarmChannel(): Promise<void> {
@@ -139,6 +237,11 @@ async function alarmInhalt(title: string, body: string, kritisch: boolean) {
  * `kritisch` steht für einen nicht stillen Alarm.
  */
 export async function notifyNow(title: string, body: string, kritisch = false, daten?: PushDaten) {
+  if (kritisch && Platform.OS === 'android' && notifee()) {
+    await ensureAlarmChannel()
+    await androidAlarmAnzeigen(title, body, daten)
+    return
+  }
   try {
     await ensureAlarmChannel()
     await Notifications.scheduleNotificationAsync({
@@ -153,6 +256,10 @@ export async function notifyNow(title: string, body: string, kritisch = false, d
 /** Lokale Benachrichtigung zu einem Zeitpunkt planen (z. B. Timer-Ablauf) */
 export async function scheduleAt(title: string, body: string, timestamp: number, kritisch = false): Promise<string | null> {
   if (timestamp <= Date.now()) return null
+  if (kritisch && Platform.OS === 'android' && notifee()) {
+    await ensureAlarmChannel()
+    return androidAlarmPlanen(title, body, timestamp)
+  }
   try {
     await ensureAlarmChannel()
     return await Notifications.scheduleNotificationAsync({
@@ -166,7 +273,14 @@ export async function scheduleAt(title: string, body: string, timestamp: number,
 
 export async function cancelScheduled(ids: (string | null)[]) {
   for (const id of ids) {
-    if (id) await Notifications.cancelScheduledNotificationAsync(id).catch(() => {})
+    if (!id) continue
+    if (id.startsWith(NOTIFEE_ID_PREFIX)) {
+      await notifee()
+        ?.default.cancelTriggerNotification(id.slice(NOTIFEE_ID_PREFIX.length))
+        .catch(() => {})
+      continue
+    }
+    await Notifications.cancelScheduledNotificationAsync(id).catch(() => {})
   }
 }
 
@@ -211,7 +325,50 @@ export function onNotificationTap(handler: (daten: PushDaten) => void): () => vo
   }
   const abo = Notifications.addNotificationResponseReceivedListener(lesen)
   Notifications.getLastNotificationResponseAsync().then(lesen).catch(() => {})
-  return () => abo.remove()
+
+  // Android: Vollbild-Alarme laufen über notifee (siehe oben) und lösen daher auch dessen
+  // eigene Ereignisse aus, nicht die von expo-notifications
+  const n = notifee()
+  let aboNotifee: (() => void) | undefined
+  if (n) {
+    const lesenNotifee = (daten: unknown) => {
+      const pushDaten = daten as PushDaten | undefined
+      if (pushDaten && (pushDaten.alarmId || pushDaten.scenarioId)) handler(pushDaten)
+    }
+    aboNotifee = n.default.onForegroundEvent(({ type, detail }) => {
+      if (type !== n.EventType.PRESS && type !== n.EventType.DISMISSED) return
+      stopAlarmSound()
+      if (type === n.EventType.PRESS) lesenNotifee(detail.notification?.data)
+    })
+    n.default
+      .getInitialNotification()
+      .then((initial) => {
+        if (!initial) return
+        stopAlarmSound()
+        lesenNotifee(initial.notification.data)
+      })
+      .catch(() => {})
+  }
+
+  return () => {
+    abo.remove()
+    aboNotifee?.()
+  }
+}
+
+/**
+ * Einmalig beim App-Start zu registrieren (in index.ts, nicht in einer Komponente) – notifee
+ * erlaubt nur einen einzigen Background-Handler pro App. Stoppt den Alarmton, wenn eine
+ * Vollbild-Meldung im Hintergrund angetippt oder weggewischt wird.
+ */
+export function registerAndroidAlarmBackgroundHandler(): void {
+  const n = notifee()
+  if (!n) return
+  n.default.onBackgroundEvent(async ({ type }) => {
+    if (type === n.EventType.PRESS || type === n.EventType.DISMISSED) {
+      stopAlarmSound()
+    }
+  })
 }
 
 export async function getPushToken(): Promise<string | null> {

@@ -11,5 +11,5 @@ expo-env.d.ts
 *.mobileprovision
 play-service-account.json
 .DS_Store
-ios/
-android/
+/ios/
+/android/
