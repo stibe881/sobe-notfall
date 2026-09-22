@@ -2,8 +2,8 @@ import { createHash } from 'node:crypto'
 import { Router, type NextFunction, type Request, type Response } from 'express'
 import { db, getSetting, setSetting } from './db.js'
 import {
-  createSession, destroySession, destroyUserSessions, hashPassword, newSalt, normalizeEmail,
-  passwordProblem, publicUser, sessionUserId, verifyPassword,
+  createSession, destroySession, destroyUserSessions, hashPassword, herkunftAus, merkeAktivitaet, newSalt,
+  normalizeEmail, passwordProblem, publicUser, sessionUserId, verifyPassword,
 } from './auth.js'
 import { addClient } from './events.js'
 import { broadcast } from './events.js'
@@ -51,6 +51,7 @@ function auth(req: AuthRequest, res: Response, next: NextFunction): void {
   }
   req.user = user
   req.token = token
+  merkeAktivitaet(token)
   next()
 }
 
@@ -73,6 +74,34 @@ function staffOnly(req: AuthRequest, res: Response, next: NextFunction): void {
 }
 
 const FALSCHE_ANMELDUNG = 'E-Mail-Adresse oder Passwort ist falsch.'
+
+/**
+ * Schutz gegen Durchprobieren von Passwörtern.
+ *
+ * Bis hierher war die Anmeldung ungebremst und ein Fehlversuch hinterliess
+ * keine Spur: Im Ereignisprotokoll stand nur die gelungene Anmeldung, und man
+ * konnte nicht erkennen, ob ihr hundert Versuche vorausgingen. Beides ist bei
+ * einem System, das aus dem Internet erreichbar ist, zu wenig.
+ */
+const SPERRE_VERSUCHE = 5
+const SPERRE_FENSTER_MS = 15 * 60 * 1000
+
+function merkeFehlversuch(email: string, ip: string | undefined, grund: string): number {
+  db.prepare('INSERT INTO login_versuche (ts, email, ip, grund) VALUES (?, ?, ?, ?)').run(Date.now(), email, ip ?? null, grund)
+  db.prepare('DELETE FROM login_versuche WHERE ts < ?').run(Date.now() - 30 * 24 * 3600_000)
+  const { anzahl } = db
+    .prepare('SELECT COUNT(*) AS anzahl FROM login_versuche WHERE email = ? AND ts > ?')
+    .get(email, Date.now() - SPERRE_FENSTER_MS) as { anzahl: number }
+  return anzahl
+}
+
+/** Fehlversuche dieser Adresse im laufenden Zeitfenster */
+function fehlversuche(email: string): number {
+  const { anzahl } = db
+    .prepare('SELECT COUNT(*) AS anzahl FROM login_versuche WHERE email = ? AND ts > ?')
+    .get(email, Date.now() - SPERRE_FENSTER_MS) as { anzahl: number }
+  return anzahl
+}
 
 /**
  * Öffentliche Auskunft für die Anmeldemaske: Ist der Server frisch eingerichtet?
@@ -247,8 +276,14 @@ router.get('/auth/sso/callback', async (req, res) => {
     upsertUser(user)
   }
 
-  const { token } = createSession(user.id)
-  addAudit('anmeldung', `Anmeldung über Microsoft: ${user.firstName} ${user.lastName} (${user.email})`, user.id)
+  const ssoHerkunft = herkunftAus(req)
+  const { token } = createSession(user.id, ssoHerkunft)
+  addAudit(
+    'anmeldung',
+    `Anmeldung über Microsoft: ${user.firstName} ${user.lastName} (${user.email})` +
+      (ssoHerkunft.ip ? ` von ${ssoHerkunft.ip}` : ''),
+    user.id,
+  )
   zurueck(ergebnis.target, undefined, token)
 })
 
@@ -269,28 +304,59 @@ router.post('/integrations/sso/test', auth, adminOnly, async (_req, res) => {
 
 router.post('/auth/login', (req, res) => {
   const { email, password } = req.body ?? {}
+  const herkunft = herkunftAus(req)
+  const woher = herkunft.ip ? ` von ${herkunft.ip}` : ''
   if (!email || !password) {
     res.status(400).json({ error: 'Bitte E-Mail-Adresse und Passwort eingeben.' })
     return
   }
-  const user = findStoredUserByEmail(normalizeEmail(String(email)))
+  const adresse = normalizeEmail(String(email))
+
+  // Gesperrt wird pro Adresse, nicht pro Absender: Wer Passwörter durchprobiert,
+  // wechselt die Herkunft leichter als die Zieladresse.
+  if (fehlversuche(adresse) >= SPERRE_VERSUCHE) {
+    merkeFehlversuch(adresse, herkunft.ip, 'gesperrt')
+    res.status(429).json({
+      error: `Zu viele Fehlversuche. Die Anmeldung für diese Adresse ist für ${SPERRE_FENSTER_MS / 60000} Minuten gesperrt.`,
+    })
+    return
+  }
+
+  const user = findStoredUserByEmail(adresse)
   // Bewusst dieselbe Meldung für unbekannte Adresse und falsches Passwort
   if (!user) {
+    const anzahl = merkeFehlversuch(adresse, herkunft.ip, 'unbekannte Adresse')
+    if (anzahl === SPERRE_VERSUCHE) {
+      addAudit('anmeldung', `Anmeldung gesperrt: ${SPERRE_VERSUCHE} Fehlversuche für «${adresse}»${woher} – Adresse ist unbekannt.`)
+    }
     res.status(401).json({ error: FALSCHE_ANMELDUNG })
     return
   }
   if (!user.passwordHash || !user.passwordSalt) {
+    merkeFehlversuch(adresse, herkunft.ip, 'kein Passwort gesetzt')
     res.status(401).json({ error: 'Für dieses Konto ist noch kein Passwort gesetzt. Bitte an die Administration wenden.' })
     return
   }
   if (!verifyPassword(user, String(password))) {
+    const anzahl = merkeFehlversuch(adresse, herkunft.ip, 'falsches Passwort')
+    addAudit('anmeldung', `Fehlgeschlagene Anmeldung: ${user.firstName} ${user.lastName} (${user.email})${woher} – Versuch ${anzahl} von ${SPERRE_VERSUCHE}.`, user.id)
     res.status(401).json({ error: FALSCHE_ANMELDUNG })
     return
   }
 
-  const { token, expiresAt } = createSession(user.id)
+  const vorausgegangen = fehlversuche(adresse)
+  const { token, expiresAt } = createSession(user.id, herkunft)
   upsertUser({ ...user, lastLoginAt: Date.now() })
-  addAudit('anmeldung', `Anmeldung: ${user.firstName} ${user.lastName} (${user.email})`, user.id)
+  addAudit(
+    'anmeldung',
+    `Anmeldung: ${user.firstName} ${user.lastName} (${user.email})${woher}` +
+      (herkunft.geraet ? ` · ${herkunft.geraet}` : '') +
+      (vorausgegangen > 0 ? ` – Achtung: ${vorausgegangen} Fehlversuch(e) in den letzten 15 Minuten.` : ''),
+    user.id,
+  )
+  // Fehlversuche nach der gelungenen Anmeldung zurücksetzen, damit die Sperre
+  // nicht am Tippfehler von vorhin hängen bleibt
+  db.prepare('DELETE FROM login_versuche WHERE email = ?').run(adresse)
   res.json({ token, expiresAt, user: publicUser({ ...user, lastLoginAt: Date.now() }) })
 })
 

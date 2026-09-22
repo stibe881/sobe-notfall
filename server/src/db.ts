@@ -132,6 +132,26 @@ ensureColumn('push_tokens', 'criticalAlerts', 'INTEGER NOT NULL DEFAULT 0')
 // Letzte Anmeldung über Microsoft (SSO) – kennzeichnet SSO-Konten
 ensureColumn('users', 'ssoLoginAt', 'INTEGER')
 
+// Herkunft einer Sitzung: Wer sich anmeldet, hinterlässt Adresse und Gerät.
+// Ohne das lässt sich eine unerwartete Anmeldung im Protokoll nicht von der
+// eigenen unterscheiden – und genau danach fragt man im Verdachtsfall.
+ensureColumn('sessions', 'ip', 'TEXT')
+ensureColumn('sessions', 'geraet', 'TEXT')
+ensureColumn('sessions', 'letzteAktivitaet', 'INTEGER')
+
+// Fehlgeschlagene Anmeldeversuche – Grundlage für die Sperre und für die
+// Frage, ob einer erfolgreichen Anmeldung Rateversuche vorausgingen
+db.exec(`
+  CREATE TABLE IF NOT EXISTS login_versuche (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ts INTEGER NOT NULL,
+    email TEXT NOT NULL,
+    ip TEXT,
+    grund TEXT NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_login_versuche ON login_versuche(email, ts DESC);
+`)
+
 // Geofencing: aktueller Aufenthaltsort pro Person – nur der Standort-Name,
 // nie GPS-Koordinaten. locationId NULL heisst: an keinem erfassten Standort.
 db.exec(`

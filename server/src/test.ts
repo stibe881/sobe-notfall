@@ -590,6 +590,22 @@ async function main(): Promise<void> {
   pruefe('Abmeldung möglich', (await ruf('/auth/logout', { method: 'POST', token: peterToken })).status === 200)
   pruefe('Token nach Abmeldung ungültig', (await ruf('/state', { token: peterToken })).status === 401)
 
+
+  // --- Schutz gegen Durchprobieren von Passwörtern ---
+  const rateMail = `rate-${Date.now()}@sobe-notfall.local`
+  for (let n = 1; n <= 5; n++) {
+    const r = await ruf('/auth/login', { method: 'POST', body: JSON.stringify({ email: rateMail, password: 'falsch' }) })
+    pruefe(`Fehlversuch ${n} wird abgewiesen`, r.status === 401)
+  }
+  const gesperrt = await ruf('/auth/login', { method: 'POST', body: JSON.stringify({ email: rateMail, password: 'falsch' }) })
+  pruefe('nach fünf Fehlversuchen gesperrt', gesperrt.status === 429, `Status ${gesperrt.status}`)
+
+  const fehlversuchProtokoll = (await ruf('/state', { token: adminToken })).body.audit as { type: string; message: string }[]
+  pruefe(
+    'fehlgeschlagene Anmeldung steht im Ereignisprotokoll',
+    fehlversuchProtokoll.some((e) => e.type === 'anmeldung' && e.message.startsWith('Anmeldung gesperrt')),
+  )
+
   console.log(`\n${bestanden} bestanden, ${gescheitert} fehlgeschlagen`)
   process.exit(gescheitert === 0 ? 0 : 1)
 }

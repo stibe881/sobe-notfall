@@ -899,6 +899,43 @@ footer .adressfuss { margin-top: 22px; }
 <section id="a13">
   <h2 class="abschnitt"><span class="zahl">13</span> Wenn etwas nicht geht</h2>
 
+  <h4>Im Protokoll steht eine Anmeldung, die niemand erklären kann</h4>
+  <p>
+    Der Eintrag <em>«Anmeldung: &lt;Name&gt;»</em> entsteht nur, wenn E-Mail-Adresse
+    und Passwort richtig übermittelt wurden. Die App meldet sich nicht von selbst neu
+    an: Sie speichert ein Sitzungs-Token, nie das Passwort, und das Token gilt
+    30&nbsp;Tage. Eine Anmeldung im Protokoll heisst also: Jemand hat das Passwort
+    eingegeben.
+  </p>
+  <p>
+    Wer das war, zeigt seit Version&nbsp;12 der Eintrag selbst &ndash; er nennt
+    IP-Adresse und Gerät. Für ältere Einträge fehlt diese Angabe. Den aktuellen Stand
+    zeigt:
+  </p>
+  <pre><code>cd ~/public_html/ihre-domain.ch/server
+npm run sitzungen</code></pre>
+  <p>
+    Der Befehl listet jede offene Anmeldung mit Zeitpunkt, letzter Aktivität, Adresse
+    und Gerät, dazu die fehlgeschlagenen Versuche der letzten sieben Tage.
+  </p>
+  <div class="hinweis hinweis--warnung">
+    <p class="marke-klein">Im Verdachtsfall</p>
+    <p>
+      In dieser Reihenfolge: <b>Passwort des betroffenen Kontos ändern</b> &ndash; das
+      beendet zugleich alle seine Anmeldungen. Dann
+      <code>npm run sitzungen -- beenden</code>, womit alle übrigen Anmeldungen
+      erlöschen und sich jede Person neu anmelden muss. Danach das Ereignisprotokoll
+      auf weitere Einträge derselben Adresse durchsuchen. Alarme, Szenarien und
+      Konten bleiben dabei unberührt.
+    </p>
+  </div>
+  <p>
+    Vorbeugend: Nach <b>fünf</b> Fehlversuchen je E-Mail-Adresse ist die Anmeldung für
+    <b>15&nbsp;Minuten</b> gesperrt, auch mit dem richtigen Passwort. Jeder Fehlversuch
+    steht im Protokoll. Ein Konto, dessen Passwort erraten werden könnte, fällt damit
+    auf, bevor es gelingt.
+  </p>
+
   <h4>Der Server startet nicht</h4>
   <p>
     Meldet der Start einen Fehler zu <code>better-sqlite3</code>, passt die

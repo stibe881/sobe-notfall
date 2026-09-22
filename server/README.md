@@ -138,6 +138,33 @@ offen ist und wann die letzte Anmeldung war. `reset-admin` setzt ein neues
 Passwort, beendet alle bestehenden Anmeldungen des Kontos und erzwingt den
 Wechsel bei der nächsten Anmeldung.
 
+## Anmeldungen prüfen
+
+Steht im Ereignisprotokoll eine Anmeldung, die niemand erklären kann:
+
+```bash
+npm run sitzungen              # offene Anmeldungen und Fehlversuche
+npm run sitzungen -- beenden   # alle Anmeldungen beenden
+```
+
+Der Befehl zeigt zu jeder offenen Anmeldung Zeitpunkt, letzte Aktivität,
+IP-Adresse und Geräteangabe, dazu die fehlgeschlagenen Versuche der letzten
+sieben Tage. Adresse und Gerät fehlen bei Anmeldungen, die vor dieser Version
+entstanden sind.
+
+**Was der Server festhält.** Jede erfolgreiche Anmeldung steht mit Adresse und
+Gerät im Ereignisprotokoll; ging ihr ein Fehlversuch voraus, steht das dabei.
+Fehlversuche werden einzeln protokolliert. Nach **fünf** Fehlversuchen je
+E-Mail-Adresse ist die Anmeldung für **15 Minuten** gesperrt – auch mit dem
+richtigen Passwort; eine gelungene Anmeldung setzt den Zähler zurück. Gesperrt
+wird pro Adresse und nicht pro Absender, weil sich die Herkunft leichter
+wechseln lässt als die Zieladresse.
+
+> IP-Adressen sind Personendaten. Sie werden ausschliesslich zur Abwehr
+> unberechtigter Zugriffe erhoben und stehen im Ereignisprotokoll, das der
+> Server auf die letzten 300 Einträge begrenzt; die Tabelle der Fehlversuche
+> wird nach 30 Tagen geleert.
+
 ## Datenbank prüfen
 
 Wirkt das Ereignisprotokoll zurückgesetzt oder fehlen Einträge, klärt das ein

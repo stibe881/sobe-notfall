@@ -49,12 +49,49 @@ export function publicUser(user: StoredUser): User {
   return { ...rest, hasPassword: Boolean(user.passwordHash && user.passwordSalt) }
 }
 
-export function createSession(userId: string): { token: string; expiresAt: number } {
+/** Woher eine Anmeldung kam – Adresse und Geräteangabe des Browsers bzw. der App */
+export interface Herkunft { ip?: string; geraet?: string }
+
+/**
+ * Herkunft aus der Anfrage lesen.
+ *
+ * Der Server steht hinter dem Proxy des Hosters, deshalb `trust proxy` in
+ * index.ts: req.ip liefert damit die Adresse des Geräts, nicht die des Proxys.
+ * Die Geräteangabe wird gekürzt – sie dient der Wiedererkennung («iPhone,
+ * SOBE-App»), nicht der Auswertung.
+ */
+export function herkunftAus(req: { ip?: string; get?: (n: string) => string | undefined }): Herkunft {
+  return {
+    ip: req.ip ?? undefined,
+    geraet: req.get?.('user-agent')?.slice(0, 180) ?? undefined,
+  }
+}
+
+export function createSession(userId: string, herkunft: Herkunft = {}): { token: string; expiresAt: number } {
   const token = randomBytes(32).toString('hex')
   const now = Date.now()
   const expiresAt = now + SESSION_TTL_MS
-  db.prepare('INSERT INTO sessions (token, userId, createdAt, expiresAt) VALUES (?, ?, ?, ?)').run(token, userId, now, expiresAt)
+  db.prepare(
+    'INSERT INTO sessions (token, userId, createdAt, expiresAt, ip, geraet, letzteAktivitaet) VALUES (?, ?, ?, ?, ?, ?, ?)',
+  ).run(token, userId, now, expiresAt, herkunft.ip ?? null, herkunft.geraet ?? null, now)
   return { token, expiresAt }
+}
+
+export interface OffeneSitzung {
+  token: string
+  userId: string
+  createdAt: number
+  expiresAt: number
+  ip: string | null
+  geraet: string | null
+  letzteAktivitaet: number | null
+}
+
+/** Alle gültigen Anmeldungen – für «wer ist gerade angemeldet?» */
+export function offeneSitzungen(): OffeneSitzung[] {
+  return db
+    .prepare('SELECT token, userId, createdAt, expiresAt, ip, geraet, letzteAktivitaet FROM sessions WHERE expiresAt > ? ORDER BY createdAt DESC')
+    .all(Date.now()) as OffeneSitzung[]
 }
 
 export function sessionUserId(token: string): string | null {
@@ -67,6 +104,15 @@ export function sessionUserId(token: string): string | null {
     return null
   }
   return row.userId
+}
+
+/**
+ * Letzte Aktivität einer Sitzung festhalten – höchstens minütlich, damit nicht
+ * jeder Fünf-Sekunden-Abruf der App eine Schreiboperation auslöst.
+ */
+export function merkeAktivitaet(token: string): void {
+  db.prepare('UPDATE sessions SET letzteAktivitaet = ? WHERE token = ? AND (letzteAktivitaet IS NULL OR letzteAktivitaet < ?)')
+    .run(Date.now(), token, Date.now() - 60_000)
 }
 
 export function destroySession(token: string): void {
