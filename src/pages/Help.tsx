@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { BookOpen, ExternalLink } from 'lucide-react'
 import { api, serverUrl } from '../lib/api'
 import { useStore } from '../store'
-import type { Role } from '../types'
+import { HANDBUCH_NACH_DATEI, HANDBUECHER } from '../lib/handbuecher'
 import { Badge, Card } from '../components/ui'
 
 /**
@@ -12,37 +12,6 @@ import { Badge, Card } from '../components/ui'
  * mit. Die Liste kommt vom Server, künftige Handbücher erscheinen also ohne
  * Portal-Anpassung; für die bekannten gibt es Zielgruppe und Kurzbeschrieb.
  */
-
-const BEKANNT: Record<string, { nr: number; titel: string; fuer: string; beschreibung: string; rollen: Role[] }> = {
-  'handbuch-1-administration.html': {
-    nr: 1,
-    titel: 'Administration',
-    fuer: 'Schulleitung und Systemverantwortliche',
-    rollen: ['admin'],
-    beschreibung: 'Das System einrichten und aktuell halten: Szenarien, Konten, Gruppen, Alarmpläne, Integrationen, Aktualisierung.',
-  },
-  'handbuch-2-krisenstab.html': {
-    nr: 2,
-    titel: 'Krisenstab',
-    fuer: 'Krisenstabsmitglieder',
-    rollen: ['admin', 'krisenstab'],
-    beschreibung: 'Führen im Ereignis: Alarm auslösen, Alarmzentrale, Lagemeldungen, Entwarnung, Krisenteam aufbieten.',
-  },
-  'handbuch-3-mitarbeitende.html': {
-    nr: 3,
-    titel: 'Mitarbeitende',
-    fuer: 'alle Mitarbeitenden',
-    rollen: ['admin', 'krisenstab', 'mitarbeiter'],
-    beschreibung: 'Die App im Alltag und im Ernstfall: Alarme empfangen und quittieren, Szenarien, SOS, Alleinarbeits-Timer, Notruf.',
-  },
-  'handbuch-4-installation.html': {
-    nr: 4,
-    titel: 'Installation & Konfiguration',
-    fuer: 'Systemverantwortliche und technischen Betrieb',
-    rollen: ['admin'],
-    beschreibung: 'Vom leeren Server zum geprobten Failover: Installation, Einrichtung, Integrationen, App-Verteilung, Redundanz, Sicherung.',
-  },
-}
 
 export default function Help() {
   const { state } = useStore()
@@ -58,8 +27,8 @@ export default function Help() {
   // Nur die Handbücher der eigenen Rolle – wie in der App. Ein unbekanntes
   // Handbuch (künftige Ergänzung) bleibt sichtbar, statt stillschweigend zu fehlen.
   const eigeneRolle = state.users.find((u) => u.id === state.session?.userId)?.role ?? 'mitarbeiter'
-  const liste = (dateien && dateien.length > 0 ? dateien : Object.keys(BEKANNT).map((datei) => ({ datei, titel: BEKANNT[datei].titel })))
-    .map((h) => ({ ...h, info: BEKANNT[h.datei] as (typeof BEKANNT)[string] | undefined }))
+  const liste = (dateien && dateien.length > 0 ? dateien : HANDBUECHER.map((h) => ({ datei: h.datei, titel: h.titel })))
+    .map((h) => ({ ...h, info: HANDBUCH_NACH_DATEI[h.datei] as (typeof HANDBUECHER)[number] | undefined }))
     .filter((h) => !h.info || h.info.rollen.includes(eigeneRolle))
     .sort((a, b) => (a.info?.nr ?? 99) - (b.info?.nr ?? 99) || a.datei.localeCompare(b.datei))
 

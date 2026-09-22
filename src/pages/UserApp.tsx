@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  ArrowRight, BellRing, BookOpen, Check, CheckCircle2, ChevronLeft, ClipboardCheck, Clock, KeyRound, LayoutDashboard,
+  ArrowRight, BellRing, BookOpen, Check, CheckCircle2, ChevronLeft, ClipboardCheck, Clock, ExternalLink, KeyRound, LayoutDashboard,
   ListChecks, LogOut, MapPin, Megaphone, Phone, PhoneCall, Play, Scale, Search, ShieldAlert, ShieldCheck, Siren, Timer, User, Users, Volume2, X,
 } from 'lucide-react'
 import { alleinarbeitEmpfaenger, createAlarm, resolveRecipients, uid, useStore } from '../store'
 import { LONE_WORK_DEFAULT_GROUPS, ROLE_LABELS, type Alarm, type Channel, type LoneWorkSession, type Scenario, type User as AppUser } from '../types'
+import { handbuecherFuer } from '../lib/handbuecher'
+import { serverUrl } from '../lib/api'
 import { Badge, HoldButton, Toggle, formatDuration, formatRelative, inputClass, kanalName, useConfirm, usePrompt } from '../components/ui'
 import { ScenarioIcon } from '../components/ScenarioIcon'
 import { MIN_PASSWORD_LENGTH, passwordProblem } from '../lib/auth'
@@ -1525,6 +1527,8 @@ function ProfileTab() {
         </div>
       </div>
 
+      <HandbuchKarte rolle={me.role} />
+
       <PasswordCard />
 
       <button
@@ -1533,6 +1537,39 @@ function ProfileTab() {
       >
         <LogOut size={16} /> Abmelden
       </button>
+    </div>
+  )
+}
+
+/**
+ * Handbücher zur eigenen Rolle – wie in der App auf dem Telefon. In der
+ * Vorschau zählt die Rolle der gewählten Person, damit sichtbar wird, was
+ * diese Person tatsächlich vor sich hat.
+ */
+function HandbuchKarte({ rolle }: { rolle: AppUser['role'] }) {
+  const passend = handbuecherFuer(rolle)
+  if (passend.length === 0) return null
+  return (
+    <div className="rounded-2xl bg-white border border-slate-200 p-4">
+      <div className="flex items-center gap-2 mb-2">
+        <BookOpen size={15} className="text-slate-400" />
+        <span className="text-sm font-semibold text-slate-700">Handbücher</span>
+      </div>
+      {passend.map((h) => (
+        <a
+          key={h.datei}
+          href={`${serverUrl()}/handbuecher/${h.datei}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 py-2 text-sm text-slate-700 hover:text-brand-600 transition"
+        >
+          <span className="flex-1">{h.titel}</span>
+          <ExternalLink size={13} className="text-slate-400" />
+        </a>
+      ))}
+      <div className="text-xs text-slate-400 mt-1">
+        Öffnet im Browser – von dort auch druck- und speicherbar.
+      </div>
     </div>
   )
 }
