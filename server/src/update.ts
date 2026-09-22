@@ -349,6 +349,18 @@ function schrittPlan(scope: UpdateScope, branch: string | null, remoteVorhanden:
       id: 'fetch', titel: 'Änderungen vom Repository holen',
       befehl: 'git', argumente: gitMitToken(['fetch', '--all', '--prune']), verzeichnis: (r) => r,
     },
+    {
+      // npm install kann Lock-Dateien geringfügig verändern (z. B. plattformabhängige
+      // optionale Pakete), ohne dass jemand das committet – das bleibt als nicht
+      // committete Änderung im Arbeitsverzeichnis stehen und lässt den nächsten Pull
+      // mit «local changes would be overwritten by merge» scheitern. Der Schritt hier
+      // verwirft nur solche Änderungen an bereits versionierten Dateien; eigene
+      // Commits sind davon nicht betroffen und bleiben bei einem echten Konflikt
+      // weiterhin über den Hinweis beim Pull-Schritt erkennbar.
+      id: 'clean', titel: 'Nicht committete Änderungen verwerfen (z. B. von einer vorherigen Installation)',
+      befehl: 'git', argumente: ['checkout', '--', '.'], verzeichnis: (r) => r,
+      optional: true,
+    },
     pull,
     {
       id: 'deps-web', titel: 'Abhängigkeiten des Portals aktualisieren',
