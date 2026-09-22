@@ -16,7 +16,17 @@ import { repoRoot } from './pfade.js'
  * wählt nur den Umfang, nie den Befehl.
  */
 
-export type UpdateScope = 'server' | 'server+ios'
+export type UpdateScope = 'server' | 'server+ios' | 'server+android' | 'server+app'
+
+/** Kurzbeschriftung eines Umfangs – für Protokoll und Statusanzeige */
+export function scopeLabel(scope: UpdateScope): string {
+  switch (scope) {
+    case 'server+ios': return 'Server und iOS-App'
+    case 'server+android': return 'Server und Android-App'
+    case 'server+app': return 'Server und App (iOS und Android)'
+    default: return 'Nur Server'
+  }
+}
 export type SchrittStatus = 'offen' | 'laufend' | 'erfolgreich' | 'fehlgeschlagen' | 'übersprungen'
 
 export interface UpdateSchritt {
@@ -202,6 +212,9 @@ export interface VersionsInfo {
   /** Ob der iOS-Build möglich ist (Zugangstoken hinterlegt) */
   iosMoeglich: boolean
   iosHinweis?: string
+  /** Ob der Android-Build möglich ist (dieselbe Voraussetzung wie iOS: EAS braucht nur das Zugangstoken) */
+  androidMoeglich: boolean
+  androidHinweis?: string
   /** Ob ein Neustart nach dem Update möglich ist */
   neustartMoeglich: boolean
 }
@@ -250,6 +263,17 @@ export async function versionsInfo(pruefeRemote = true): Promise<VersionsInfo> {
 
   const expoToken = Boolean(process.env.EXPO_TOKEN)
   const mobileDa = existsSync(resolve(root, 'mobile', 'package.json'))
+  // EAS braucht für beide Plattformen dasselbe: das Zugangstoken und den mobile/-Ordner.
+  // Was danach fehlt (google-services.json für Android, ascAppId für iOS), betrifft nur
+  // die automatische Übermittlung an Play/TestFlight, nicht den Build selbst – siehe die
+  // entsprechenden Hinweise, die abarbeiten() nach einem Build ohne Übermittlung anhängt.
+  const appMoeglich = expoToken && mobileDa
+  const appHinweis = (plattform: string) =>
+    !mobileDa
+      ? 'Der Ordner mobile/ fehlt auf dem Server.'
+      : !expoToken
+        ? `Für den ${plattform}-Build fehlt die Umgebungsvariable EXPO_TOKEN (Zugangstoken von expo.dev).`
+        : undefined
 
   return {
     branch: branch ?? 'unbekannt',
@@ -260,27 +284,27 @@ export async function versionsInfo(pruefeRemote = true): Promise<VersionsInfo> {
     hinterher,
     neueAenderungen,
     remoteVorhanden,
-    iosMoeglich: expoToken && mobileDa,
-    iosHinweis: !mobileDa
-      ? 'Der Ordner mobile/ fehlt auf dem Server.'
-      : !expoToken
-        ? 'Für den iOS-Build fehlt die Umgebungsvariable EXPO_TOKEN (Zugangstoken von expo.dev).'
-        : undefined,
+    iosMoeglich: appMoeglich,
+    iosHinweis: appHinweis('iOS'),
+    androidMoeglich: appMoeglich,
+    androidHinweis: appHinweis('Android'),
     neustartMoeglich: process.env.SOBE_AUTO_RESTART !== 'false',
   }
 }
 
 /**
- * Für welche Plattformen der Update-Knopf App-Builds anstösst.
- * Ohne Vorgabe wird Android automatisch mitgebaut, sobald der Play-Store-Schlüssel
- * (mobile/play-service-account.json, siehe eas.json submit.production.android)
- * auf dem Server liegt – vorher nur ios, damit der Build nicht an der fehlenden
- * Übermittlung scheitert. SOBE_EAS_PLATFORMS=ios|android|all übersteuert das.
+ * Für welche Plattform(en) der gewählte Umfang einen App-Build anstösst.
+ * Ergibt sich direkt aus der Wahl im Portal (iOS, Android oder beide).
+ * SOBE_EAS_PLATFORMS=ios|android|all übersteuert das serverweit – etwa wenn
+ * auf diesem Server nur eine Plattform eingerichtet ist und ein versehentlicher
+ * Build der anderen vermieden werden soll.
  */
-function easPlattformen(): 'ios' | 'android' | 'all' {
+function easPlattformen(scope: UpdateScope): 'ios' | 'android' | 'all' {
   const wert = process.env.SOBE_EAS_PLATFORMS
   if (wert === 'ios' || wert === 'android' || wert === 'all') return wert
-  return existsSync(resolve(repoRoot(), 'mobile', 'play-service-account.json')) ? 'all' : 'ios'
+  if (scope === 'server+android') return 'android'
+  if (scope === 'server+ios') return 'ios'
+  return 'all'
 }
 
 // ---------- Ablauf ----------
@@ -347,18 +371,19 @@ function schrittPlan(scope: UpdateScope, branch: string | null, remoteVorhanden:
     },
   ]
 
-  if (scope === 'server+ios') {
+  if (scope !== 'server') {
+    const plattform = easPlattformen(scope)
     schritte.push(
       {
         id: 'deps-app', titel: 'Abhängigkeiten der App aktualisieren',
         befehl: 'npm', argumente: ['install', '--no-audit', '--no-fund', '--foreground-scripts'], verzeichnis: (r) => resolve(r, 'mobile'),
       },
       {
-        id: 'ios-build', titel: `App-Build anstossen (${easPlattformen()}, läuft bei Expo weiter)`,
+        id: 'ios-build', titel: `App-Build anstossen (${plattform}, läuft bei Expo weiter)`,
         befehl: 'npx',
         argumente: [
           '--yes', 'eas-cli', 'build',
-          '--platform', easPlattformen(),
+          '--platform', plattform,
           '--profile', 'production',
           '--non-interactive',
           '--auto-submit',
@@ -506,11 +531,15 @@ async function abarbeiten(job: UpdateJob, plan: SchrittDefinition[]): Promise<vo
     }
     if (definition.id === 'ios-build') {
       job.buildUrl = findeBuildUrl(ausgabe)
+      // Für Android gibt es (noch) keine der iOS-Übermittlung entsprechende
+      // Fehlerbehandlung unten (ascAppId-Prüfung, Zweitversuch ohne Übermittlung) –
+      // ein reiner Android-Build läuft deshalb ohne diese Zusatzschritte durch.
+      const plattform = easPlattformen(job.scope)
 
       // Übermittlungs-Zugangsdaten fehlen bei Expo: Der Abbruch kommt vor dem
       // Build. Zweiter Versuch ohne --auto-submit, damit der Build wenigstens
       // läuft; die Übermittlung braucht die einmalige interaktive Einrichtung.
-      if (fehlgeschlagen && istCredentialsAbbruch(ausgabe, job.buildUrl)) {
+      if (plattform !== 'android' && fehlgeschlagen && istCredentialsAbbruch(ausgabe, job.buildUrl)) {
         schritt.ausgabe = (schritt.ausgabe +
           '\n\n[Die App-Store-Connect-Zugangsdaten sind bei Expo nicht hinterlegt – zweiter Versuch ohne Übermittlung an TestFlight …]\n'
         ).slice(-MAX_AUSGABE)
@@ -547,7 +576,7 @@ async function abarbeiten(job: UpdateJob, plan: SchrittDefinition[]): Promise<vo
       // Übermittlung an TestFlight, nicht den Build. Der Auftrag darf deshalb
       // nicht als gescheitert gelten - sonst bliebe der frisch gebaute Server
       // auf dem alten Stand, weil der Neustart ausbliebe.
-      if (fehlgeschlagen && job.buildUrl) {
+      if (plattform !== 'android' && fehlgeschlagen && job.buildUrl) {
         fehlgeschlagen = false
         schritt.status = 'erfolgreich'
         const grund = fehltAscAppId(repoRoot())
@@ -557,12 +586,18 @@ async function abarbeiten(job: UpdateJob, plan: SchrittDefinition[]): Promise<vo
           'Der iOS-Build läuft bei Expo, die Übermittlung an TestFlight ist aber nicht angelaufen. ' +
           grund + ' Siehe mobile/CRITICAL-ALERTS.md, Abschnitt «Übermittlung an TestFlight».'
         schritt.ausgabe += `\n\n[${job.hinweis}]`
-      } else if (!fehlgeschlagen && fehltAscAppId(repoRoot())) {
+      } else if (plattform !== 'android' && !fehlgeschlagen && fehltAscAppId(repoRoot())) {
         // Der Build wurde angenommen, aber ohne ascAppId legt Expo keine Übermittlung an
         job.hinweis =
           'Der iOS-Build läuft bei Expo. Die Übermittlung an TestFlight wird nicht anlaufen: ' +
           'In mobile/eas.json fehlt submit.production.ios.ascAppId (die Apple-ID der App aus App Store Connect). ' +
           'Siehe mobile/CRITICAL-ALERTS.md, Abschnitt «Übermittlung an TestFlight».'
+        schritt.ausgabe += `\n\n[${job.hinweis}]`
+      } else if (plattform === 'android' && !fehlgeschlagen && !existsSync(resolve(repoRoot(), 'mobile', 'play-service-account.json'))) {
+        // Der Build wurde angenommen, aber ohne den Play-Store-Schlüssel legt Expo keine Übermittlung an
+        job.hinweis =
+          'Der Android-Build läuft bei Expo. Die Übermittlung an den Play Store wird nicht anlaufen: ' +
+          'Auf dem Server fehlt mobile/play-service-account.json. Siehe mobile/README.md, Abschnitt «Play Store».'
         schritt.ausgabe += `\n\n[${job.hinweis}]`
       }
     }
@@ -584,7 +619,7 @@ async function abarbeiten(job: UpdateJob, plan: SchrittDefinition[]): Promise<vo
   const neustart = process.env.SOBE_AUTO_RESTART !== 'false'
   job.status = neustart ? 'neustart' : 'erfolgreich'
   speichereJob(job)
-  addAudit('system', `Aktualisierung abgeschlossen (${job.scope === 'server+ios' ? 'Server und iOS-App' : 'Server'})`)
+  addAudit('system', `Aktualisierung abgeschlossen (${scopeLabel(job.scope)})`)
   laufenderJob = null
 
   if (neustart) {

@@ -18,7 +18,7 @@ import { geraeteProPerson, letzterTestpush, pushDienstStatus, registerPushToken,
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join, resolve } from 'node:path'
-import { aktuellerJob, starteUpdate, updateLaeuft, versionsInfo, type UpdateScope } from './update.js'
+import { aktuellerJob, scopeLabel, starteUpdate, updateLaeuft, versionsInfo, type UpdateScope } from './update.js'
 import { einrichtungAbschliessen, einrichtungOffen, ensureAdmin } from './setup.js'
 import {
   erzeugeAbzug, neuesRedundanzGeheimnis, peerErreichbar, redundanzConfig, redundanzStatus,
@@ -1247,22 +1247,31 @@ router.get('/update/job', auth, adminOnly, (_req, res) => {
   res.json({ job: aktuellerJob() })
 })
 
+const UPDATE_SCOPES: UpdateScope[] = ['server', 'server+ios', 'server+android', 'server+app']
+
 router.post('/update', auth, adminOnly, async (req: AuthRequest, res) => {
   if (updateLaeuft()) {
     res.status(409).json({ error: 'Es läuft bereits eine Aktualisierung.' })
     return
   }
-  const scope: UpdateScope = req.body?.scope === 'server+ios' ? 'server+ios' : 'server'
-  if (scope === 'server+ios') {
+  const angefragt = req.body?.scope
+  const scope: UpdateScope = UPDATE_SCOPES.includes(angefragt) ? angefragt : 'server'
+  if (scope !== 'server') {
     const info = await versionsInfo(false)
-    if (!info.iosMoeglich) {
+    const brauchtIos = scope === 'server+ios' || scope === 'server+app'
+    const brauchtAndroid = scope === 'server+android' || scope === 'server+app'
+    if (brauchtIos && !info.iosMoeglich) {
       res.status(400).json({ error: info.iosHinweis ?? 'Der iOS-Build ist auf diesem Server nicht eingerichtet.' })
+      return
+    }
+    if (brauchtAndroid && !info.androidMoeglich) {
+      res.status(400).json({ error: info.androidHinweis ?? 'Der Android-Build ist auf diesem Server nicht eingerichtet.' })
       return
     }
   }
   const person = req.user!
   const job = await starteUpdate(scope, `${person.firstName} ${person.lastName}`)
-  addAudit('system', `Aktualisierung gestartet (${scope === 'server+ios' ? 'Server und iOS-App' : 'Server'})`, person.id)
+  addAudit('system', `Aktualisierung gestartet (${scopeLabel(scope)})`, person.id)
   res.json({ job })
 })
 

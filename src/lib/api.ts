@@ -63,7 +63,7 @@ export function setAuthToken(token: string | null): void {
 
 // ---------- Aktualisierung ----------
 
-export type UpdateScope = 'server' | 'server+ios'
+export type UpdateScope = 'server' | 'server+ios' | 'server+android' | 'server+app'
 
 export interface UpdateSchritt {
   id: string
@@ -101,6 +101,8 @@ export interface VersionsInfo {
   remoteVorhanden?: boolean
   iosMoeglich: boolean
   iosHinweis?: string
+  androidMoeglich: boolean
+  androidHinweis?: string
   neustartMoeglich: boolean
 }
 

@@ -7,6 +7,23 @@ import {
 import { ApiError, api, type UpdateJob, type UpdateScope, type VersionsInfo } from '../lib/api'
 import { formatRelative } from './ui'
 
+/** Kurzbeschriftung eines Umfangs – für Protokoll und Statusanzeige */
+function scopeLabel(scope: UpdateScope): string {
+  switch (scope) {
+    case 'server+ios': return 'Server und iOS-App'
+    case 'server+android': return 'Server und Android-App'
+    case 'server+app': return 'Server und App (iOS und Android)'
+    default: return 'Nur Server'
+  }
+}
+
+/** Wohin der Build nach dem Anstoss automatisch übermittelt wird */
+function storeName(scope: UpdateScope): string {
+  if (scope === 'server+android') return 'den Play Store'
+  if (scope === 'server+app') return 'TestFlight bzw. den Play Store'
+  return 'TestFlight'
+}
+
 /**
  * Aktualisierung per Knopfdruck.
  *
@@ -116,14 +133,38 @@ export default function UpdateDialog({ onClose }: { onClose: () => void }) {
 
               <Auswahl
                 icon={Smartphone}
-                titel="Server und App"
+                titel="Server und iOS"
                 beschreibung={
                   version.iosMoeglich
-                    ? 'Zusätzlich einen App-Build anstossen. iOS immer; Android automatisch mit, sobald der Play-Store-Schlüssel (mobile/play-service-account.json) auf dem Server liegt. Der Build läuft danach bei Expo weiter und geht von dort an TestFlight bzw. Play – der Lauf hier wartet nicht darauf.'
+                    ? 'Zusätzlich einen iOS-Build anstossen. Der Build läuft bei Expo weiter und geht von dort automatisch an TestFlight – der Lauf hier wartet nicht darauf.'
                     : (version.iosHinweis ?? 'Auf diesem Server nicht eingerichtet.')
                 }
                 gesperrt={!version.iosMoeglich}
                 onClick={() => starten('server+ios')}
+              />
+
+              <Auswahl
+                icon={Smartphone}
+                titel="Server und Android"
+                beschreibung={
+                  version.androidMoeglich
+                    ? 'Zusätzlich einen Android-Build anstossen. Der Build läuft bei Expo weiter und geht von dort automatisch an den Play Store, sobald der Play-Store-Schlüssel (mobile/play-service-account.json) auf dem Server liegt – sonst nur der Build ohne Übermittlung.'
+                    : (version.androidHinweis ?? 'Auf diesem Server nicht eingerichtet.')
+                }
+                gesperrt={!version.androidMoeglich}
+                onClick={() => starten('server+android')}
+              />
+
+              <Auswahl
+                icon={Smartphone}
+                titel="Server und App (iOS und Android)"
+                beschreibung={
+                  version.iosMoeglich && version.androidMoeglich
+                    ? 'Beide App-Builds gleichzeitig anstossen – sonst wie oben.'
+                    : ((!version.iosMoeglich ? version.iosHinweis : version.androidHinweis) ?? 'Auf diesem Server nicht eingerichtet.')
+                }
+                gesperrt={!version.iosMoeglich || !version.androidMoeglich}
+                onClick={() => starten('server+app')}
               />
             </div>
           )}
@@ -304,7 +345,7 @@ function JobFortschritt({
           {job.status === 'fehlgeschlagen' && 'Aktualisierung fehlgeschlagen'}
         </span>
         <span className="ml-auto text-xs text-slate-500">
-          {job.scope === 'server+ios' ? 'Server und iOS-App' : 'Nur Server'} · {job.gestartetVon}
+          {scopeLabel(job.scope)} · {job.gestartetVon}
         </span>
       </div>
 
@@ -363,8 +404,8 @@ function JobFortschritt({
           </a>
           <p className="text-xs text-slate-500 mt-1">
             {job.hinweis
-              ? 'Der Build läuft dort 20 bis 45 Minuten. Danach lässt er sich von Hand an TestFlight übermitteln.'
-              : 'Der Build läuft dort 20 bis 45 Minuten und geht anschliessend automatisch an TestFlight, das nochmals 5 bis 15 Minuten für die Verarbeitung braucht.'}
+              ? `Der Build läuft dort 20 bis 45 Minuten. Danach lässt er sich von Hand an ${storeName(job.scope)} übermitteln.`
+              : `Der Build läuft dort 20 bis 45 Minuten und geht anschliessend automatisch an ${storeName(job.scope)}, das nochmals 5 bis 15 Minuten für die Verarbeitung braucht.`}
           </p>
         </div>
       )}
