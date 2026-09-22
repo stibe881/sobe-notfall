@@ -1,5 +1,6 @@
 import * as Location from 'expo-location'
 import * as TaskManager from 'expo-task-manager'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { api, authToken, loadApiSettings } from './api'
 
 /**
@@ -20,10 +21,71 @@ export interface GeofenceRegion {
   lat: number
   lng: number
   radiusM: number
+  /** Umriss des Standorts; ohne ihn gilt der Kreis */
+  punkte?: { lat: number; lng: number }[]
 }
 
 /** Regionen, in denen sich das Gerät laut den letzten Ereignissen befindet */
 const innerhalb = new Set<string>()
+
+/**
+ * Zuletzt bekannte Umrisse.
+ *
+ * Weckt das Betriebssystem die App für ein Geofence-Ereignis, war sie
+ * womöglich beendet: Der Task läuft dann in einem frischen Kontext, in dem
+ * syncGeofencing nie lief. Deshalb liegen die Umrisse auf dem Gerät und werden
+ * bei Bedarf nachgeladen – genauso wie die Serveradresse.
+ */
+const UMRISS_KEY = 'sonnenberg-geofence-umrisse-v1'
+let umrisse: GeofenceRegion[] = []
+
+async function ladeUmrisse(): Promise<void> {
+  if (umrisse.length > 0) return
+  try {
+    const roh = await AsyncStorage.getItem(UMRISS_KEY)
+    if (roh) umrisse = JSON.parse(roh) as GeofenceRegion[]
+  } catch {
+    // Ohne gespeicherte Umrisse gilt der überwachte Kreis
+  }
+}
+
+/**
+ * Liegt der Punkt im Umriss? Strahlenverfahren.
+ *
+ * Für ein Schulareal ist die Rechnung in Grad genau genug; die Verzerrung über
+ * wenige hundert Meter liegt weit unter der Genauigkeit der Ortung.
+ */
+function imUmriss(lat: number, lng: number, umriss: { lat: number; lng: number }[]): boolean {
+  let drin = false
+  for (let i = 0, j = umriss.length - 1; i < umriss.length; j = i++) {
+    const a = umriss[i]
+    const b = umriss[j]
+    if (a.lat > lat !== b.lat > lat && lng < ((b.lng - a.lng) * (lat - a.lat)) / (b.lat - a.lat) + a.lng) drin = !drin
+  }
+  return drin
+}
+
+/**
+ * Beim Betreten des überwachten Kreises prüfen, ob die Position auch im Umriss
+ * liegt.
+ *
+ * Betriebssysteme überwachen nur Kreise. Der Kreis um einen Umriss ist
+ * absichtlich etwas grösser – er weckt die App, und erst hier entscheidet sich,
+ * ob jemand wirklich am Standort ist. Lässt sich die Position nicht bestimmen,
+ * gilt das Kreisergebnis: Lieber jemanden mitalarmieren, der zwanzig Meter
+ * daneben steht, als jemanden übersehen, der drinnen ist.
+ */
+async function wirklichDrin(id: string): Promise<boolean> {
+  await ladeUmrisse()
+  const region = umrisse.find((r) => r.id === id)
+  if (!region?.punkte || region.punkte.length < 3) return true
+  try {
+    const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced })
+    return imUmriss(position.coords.latitude, position.coords.longitude, region.punkte)
+  } catch {
+    return true
+  }
+}
 
 // Läuft auch, wenn iOS die App nur für das Geofence-Ereignis im Hintergrund weckt
 TaskManager.defineTask(GEOFENCE_TASK, async ({ data, error }) => {
@@ -31,8 +93,10 @@ TaskManager.defineTask(GEOFENCE_TASK, async ({ data, error }) => {
   const { eventType, region } = data as { eventType: Location.GeofencingEventType; region: Location.LocationRegion }
   const id = region.identifier
   if (!id) return
-  if (eventType === Location.GeofencingEventType.Enter) innerhalb.add(id)
-  else innerhalb.delete(id)
+  if (eventType === Location.GeofencingEventType.Enter) {
+    if (await wirklichDrin(id)) innerhalb.add(id)
+    else innerhalb.delete(id)
+  } else innerhalb.delete(id)
   // Beim Hintergrund-Start ist der Gerätespeicher noch nicht geladen
   if (!authToken()) await loadApiSettings()
   if (!authToken()) return
@@ -63,6 +127,8 @@ export async function syncGeofencing(aktiv: boolean, regionen: GeofenceRegion[])
   const konfig = aktiv && regionen.length > 0 ? JSON.stringify(regionen) : ''
   if (konfig === letzteKonfig) return
   letzteKonfig = konfig
+  umrisse = aktiv ? regionen : []
+  AsyncStorage.setItem(UMRISS_KEY, JSON.stringify(umrisse)).catch(() => {})
   try {
     if (!konfig) {
       if (await TaskManager.isTaskRegisteredAsync(GEOFENCE_TASK)) {
@@ -97,9 +163,12 @@ export async function syncGeofencing(aktiv: boolean, regionen: GeofenceRegion[])
     // Aktuellen Aufenthalt sofort bestimmen und melden – die Geofence-Ereignisse
     // greifen erst bei der nächsten Grenzüberschreitung
     const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced })
-    const dort = regionen.find(
-      (r) => distanzM(position.coords.latitude, position.coords.longitude, r.lat, r.lng) <= r.radiusM,
-    )
+    const { latitude, longitude } = position.coords
+    // Erst der Kreis, dann – sofern vorhanden – der Umriss
+    const dort = regionen.find((r) => {
+      if (distanzM(latitude, longitude, r.lat, r.lng) > r.radiusM) return false
+      return !r.punkte || r.punkte.length < 3 || imUmriss(latitude, longitude, r.punkte)
+    })
     innerhalb.clear()
     if (dort) innerhalb.add(dort.id)
     if (authToken()) await api.geoReport(dort?.id ?? null)
@@ -113,6 +182,8 @@ export async function syncGeofencing(aktiv: boolean, regionen: GeofenceRegion[])
 export async function stopGeofencing(): Promise<void> {
   letzteKonfig = ''
   innerhalb.clear()
+  umrisse = []
+  AsyncStorage.removeItem(UMRISS_KEY).catch(() => {})
   try {
     if (await TaskManager.isTaskRegisteredAsync(GEOFENCE_TASK)) {
       await Location.stopGeofencingAsync(GEOFENCE_TASK)

@@ -7,6 +7,7 @@ import { Badge, Button, Card, Field, Modal, inputClass, useConfirm } from '../co
 // hält das Bündel für alle anderen Seiten klein
 const StandortKarte = lazy(() => import('../components/StandortKarte').then((m) => ({ default: m.StandortKarte })))
 import { sucheAdresse, type Fundstelle } from '../lib/geokodierung'
+import { MAX_PUNKTE, MIN_PUNKTE, flaecheM2, startViereck, umschliessenderKreis, type Punkt } from '../lib/umriss'
 
 export default function Locations() {
   const { state, dispatch } = useStore()
@@ -48,7 +49,15 @@ export default function Locations() {
                   </div>
                   <div className="mt-2">
                     {l.geofence
-                      ? <Badge color={state.integrations.geofencing ? 'green' : 'slate'}><MapPin size={12} /> Geofence {l.geofence.radiusM} m{state.integrations.geofencing ? ' · aktiv' : ' · Geofencing unter Integrationen ausgeschaltet'}</Badge>
+                      ? (
+                        <Badge color={state.integrations.geofencing ? 'green' : 'slate'}>
+                          <MapPin size={12} /> Geofence{' '}
+                          {l.geofence.punkte?.length
+                            ? `Umriss mit ${l.geofence.punkte.length} Punkten`
+                            : `Umkreis ${l.geofence.radiusM} m`}
+                          {state.integrations.geofencing ? ' · aktiv' : ' · Geofencing unter Integrationen ausgeschaltet'}
+                        </Badge>
+                      )
                       : <Badge>kein Geofence</Badge>}
                   </div>
                 </div>
@@ -89,14 +98,31 @@ function LocationEditor({ location, onClose }: { location: Location; onClose: ()
     },
   }))
   const [geoEnabled, setGeoEnabled] = useState(!!location.geofence)
-  const [geo, setGeo] = useState(location.geofence ?? { lat: 47.3769, lng: 8.5417, radiusM: 300 })
+  /**
+   * Eckpunkte des Umrisses. Ein früher als Kreis erfasster Standort wird beim
+   * Öffnen in ein Viereck umgewandelt, das sich zurechtziehen lässt – sonst
+   * müsste er ganz neu erfasst werden.
+   */
+  const [punkte, setPunkte] = useState<Punkt[]>(() => {
+    const g = location.geofence
+    if (!g) return []
+    if (g.punkte && g.punkte.length >= MIN_PUNKTE) return g.punkte
+    return startViereck({ lat: g.lat, lng: g.lng }, Math.min(g.radiusM * 1.4, 400))
+  })
   const [suchLauft, setSuchLauft] = useState(false)
   const [treffer, setTreffer] = useState<Fundstelle[] | null>(null)
   const [suchFehler, setSuchFehler] = useState<string | null>(null)
   const [zahlenOffen, setZahlenOffen] = useState(false)
 
+  const genugPunkte = punkte.length >= MIN_PUNKTE
+  const kreis = genugPunkte ? umschliessenderKreis(punkte) : null
+  const flaeche = genugPunkte ? flaecheM2(punkte) : 0
+
   function save() {
-    dispatch({ type: 'UPSERT_LOCATION', location: { ...draft, geofence: geoEnabled ? geo : undefined } })
+    // Kreis und Mittelpunkt werden aus dem Umriss gerechnet: Sie sind das,
+    // was die Betriebssysteme überwachen können.
+    const geofence = geoEnabled && kreis ? { ...kreis, punkte } : undefined
+    dispatch({ type: 'UPSERT_LOCATION', location: { ...draft, geofence } })
     onClose()
   }
 
@@ -113,7 +139,7 @@ function LocationEditor({ location, onClose }: { location: Location; onClose: ()
     try {
       const gefunden = await sucheAdresse(`${draft.address} ${draft.name}`.trim() || draft.address)
       if (gefunden.length === 0) {
-        setSuchFehler('Zu dieser Adresse wurde nichts gefunden. Punkt in der Karte selbst setzen.')
+        setSuchFehler('Zu dieser Adresse wurde nichts gefunden. Umriss in der Karte selbst zeichnen.')
       } else if (gefunden.length === 1) {
         uebernehmen(gefunden[0])
       } else {
@@ -133,11 +159,16 @@ function LocationEditor({ location, onClose }: { location: Location; onClose: ()
    */
   function geofenceUmschalten(an: boolean) {
     setGeoEnabled(an)
-    if (an && !location.geofence && draft.address.trim().length >= 3) void adresseSuchen()
+    if (an && punkte.length < MIN_PUNKTE && draft.address.trim().length >= 3) void adresseSuchen()
   }
 
+  /**
+   * Treffer übernehmen. Ist noch kein Umriss gezeichnet, wird ein Viereck um
+   * die Adresse gelegt – es lässt sich an den Ecken zurechtziehen, statt bei
+   * null anzufangen. Ein bestehender Umriss bleibt unangetastet.
+   */
   function uebernehmen(f: Fundstelle) {
-    setGeo((g) => ({ ...g, lat: f.lat, lng: f.lng }))
+    if (punkte.length < MIN_PUNKTE) setPunkte(startViereck({ lat: f.lat, lng: f.lng }))
     setGeoEnabled(true)
     setTreffer(null)
   }
@@ -200,26 +231,36 @@ function LocationEditor({ location, onClose }: { location: Location; onClose: ()
 
       {geoEnabled && (
         <div className="space-y-3">
-          <Suspense fallback={<div className="rounded-xl border border-slate-200 bg-slate-50 animate-pulse" style={{ height: 300 }} />}>
-            <StandortKarte
-              punkt={{ lat: geo.lat, lng: geo.lng }}
-              radiusM={geo.radiusM}
-              onPunkt={(p) => setGeo((g) => ({ ...g, ...p }))}
-            />
+          <Suspense fallback={<div className="rounded-xl border border-slate-200 bg-slate-50 animate-pulse" style={{ height: 320 }} />}>
+            <StandortKarte punkte={punkte} onPunkte={setPunkte} />
           </Suspense>
-          <div className="flex flex-wrap items-end gap-4">
-            <Field label="Radius (m)" className="w-40 mb-0">
-              <input
-                type="number" min={50} max={5000} step={10} className={inputClass}
-                value={geo.radiusM}
-                onChange={(e) => setGeo({ ...geo, radiusM: Math.max(50, Number(e.target.value) || 0) })}
-              />
-            </Field>
-            <p className="text-xs text-slate-500 flex-1 min-w-[14rem]">
-              Marker ziehen oder in die Karte tippen, um den Mittelpunkt zu setzen. Der Kreis zeigt
-              den Radius im Massstab der Karte.
-            </p>
+
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs">
+            <span className={genugPunkte ? 'text-slate-600' : 'text-alarm-600 font-medium'}>
+              <b>{punkte.length}</b> von {MAX_PUNKTE} Eckpunkten
+              {genugPunkte
+                ? ` · rund ${flaeche < 10000 ? `${Math.round(flaeche)} m²` : `${(flaeche / 10000).toFixed(2)} ha`}`
+                : ` · mindestens ${MIN_PUNKTE} nötig`}
+            </span>
+            {punkte.length > 0 && (
+              <button onClick={() => setPunkte([])} className="text-slate-500 hover:text-slate-800 underline underline-offset-2">
+                Umriss verwerfen
+              </button>
+            )}
+            {punkte.length > 0 && punkte.length < MAX_PUNKTE && (
+              <span className="text-slate-400">In die Karte tippen setzt weitere Punkte.</span>
+            )}
+            {punkte.length >= MAX_PUNKTE && (
+              <span className="text-slate-400">Mehr als {MAX_PUNKTE} Punkte sind nicht vorgesehen.</span>
+            )}
           </div>
+
+          <p className="text-xs text-slate-500">
+            In die Karte tippen setzt einen Eckpunkt, Ziehen verschiebt ihn, Doppeltippen entfernt ihn.
+            Der gestrichelte Kreis zeigt, was das Telefon überwacht: iOS und Android kennen nur
+            kreisförmige Bereiche. Er weckt die App an der Grenze &ndash; ob jemand am Standort ist,
+            entscheidet danach der Umriss.
+          </p>
 
           {/* Für den Fall, dass die Karte nicht lädt, oder wenn Koordinaten aus einer
               anderen Quelle übernommen werden sollen */}
@@ -228,25 +269,54 @@ function LocationEditor({ location, onClose }: { location: Location; onClose: ()
               onClick={() => setZahlenOffen(!zahlenOffen)}
               className="text-xs text-slate-500 hover:text-slate-800 underline underline-offset-2"
             >
-              {zahlenOffen ? 'Koordinaten ausblenden' : 'Koordinaten von Hand eingeben'}
+              {zahlenOffen ? 'Eckpunkte ausblenden' : 'Eckpunkte als Zahlen bearbeiten'}
             </button>
             {zahlenOffen && (
-              <div className="grid grid-cols-2 gap-4 mt-2">
-                <Field label="Breitengrad">
-                  <input type="number" step="0.000001" className={inputClass} value={geo.lat} onChange={(e) => setGeo({ ...geo, lat: Number(e.target.value) })} />
-                </Field>
-                <Field label="Längengrad">
-                  <input type="number" step="0.000001" className={inputClass} value={geo.lng} onChange={(e) => setGeo({ ...geo, lng: Number(e.target.value) })} />
-                </Field>
+              <div className="mt-2 space-y-2">
+                {punkte.map((p, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <span className="w-5 h-5 rounded-full bg-alarm-600 text-white text-[10px] font-bold flex items-center justify-center shrink-0">
+                      {i + 1}
+                    </span>
+                    <input
+                      type="number" step="0.000001" aria-label={`Breitengrad Punkt ${i + 1}`}
+                      className={inputClass} value={p.lat}
+                      onChange={(e) => setPunkte(punkte.map((q, j) => (j === i ? { ...q, lat: Number(e.target.value) } : q)))}
+                    />
+                    <input
+                      type="number" step="0.000001" aria-label={`Längengrad Punkt ${i + 1}`}
+                      className={inputClass} value={p.lng}
+                      onChange={(e) => setPunkte(punkte.map((q, j) => (j === i ? { ...q, lng: Number(e.target.value) } : q)))}
+                    />
+                    <Button variant="ghost" onClick={() => setPunkte(punkte.filter((_, j) => j !== i))} title="Punkt entfernen">
+                      <Trash2 size={14} />
+                    </Button>
+                  </div>
+                ))}
+                {punkte.length < MAX_PUNKTE && (
+                  <Button
+                    variant="secondary"
+                    onClick={() => setPunkte([...punkte, punkte[punkte.length - 1] ?? { lat: 47.3769, lng: 8.5417 }])}
+                  >
+                    <Plus size={13} /> Punkt anfügen
+                  </Button>
+                )}
               </div>
             )}
           </div>
+
+          {!genugPunkte && (
+            <p className="text-xs text-amber-700 bg-amber-50 rounded-lg px-3 py-2">
+              Ohne mindestens {MIN_PUNKTE} Eckpunkte lässt sich kein Umriss speichern. Der Geofence
+              bleibt dann ausgeschaltet.
+            </p>
+          )}
         </div>
       )}
 
       <div className="flex justify-end gap-2 mt-5">
         <Button variant="secondary" onClick={onClose}>Abbrechen</Button>
-        <Button onClick={save} disabled={!draft.name.trim()}>Speichern</Button>
+        <Button onClick={save} disabled={!draft.name.trim() || (geoEnabled && !genugPunkte)}>Speichern</Button>
       </div>
     </Modal>
   )

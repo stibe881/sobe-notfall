@@ -520,29 +520,44 @@ KOERPER = r"""
 
   <h3>Geofence auf der Karte festlegen</h3>
   <p>
-    Ein Standort kann einen <b>Geofence</b> bekommen: einen Umkreis, dessen Betreten
+    Ein Standort kann einen <b>Geofence</b> bekommen: einen Umriss, dessen Betreten
     und Verlassen die App meldet &ndash; nur den Standort-Namen, nie eine
     GPS-Position. Wer sich gerade dort aufhält, wird bei einem Alarm für diesen
     Standort zusätzlich alarmiert.
   </p>
   <ol class="schritte">
-    <li>Adresse eintragen und auf <span class="ui">Suchen</span> tippen. Der Punkt
-      wird gesetzt; bei mehrdeutigen Adressen erscheint eine Auswahl. Wird der
-      Geofence bei einem neuen Standort eingeschaltet, sucht das Portal die Adresse
-      von sich aus.</li>
-    <li>Auf der Karte prüfen: Der Marker lässt sich ziehen, ein Tippen in die Karte
-      setzt ihn um. Ein bestehender Geofence wird nie von selbst verschoben.</li>
-    <li><span class="ui">Radius</span> eintragen. Der Kreis zeigt ihn im Massstab der
-      Karte &ndash; erst daran ist zu sehen, ob 300&nbsp;Meter das Schulhaus umfassen
-      oder das halbe Quartier.</li>
+    <li>Adresse eintragen und auf <span class="ui">Suchen</span> tippen. Bei
+      mehrdeutigen Adressen erscheint eine Auswahl. Um die gefundene Adresse legt das
+      Portal ein Viereck, das sich an den Ecken zurechtziehen lässt. Wird der Geofence
+      bei einem neuen Standort eingeschaltet, sucht es die Adresse von sich aus.</li>
+    <li>Umriss zeichnen: In die Karte tippen setzt einen Eckpunkt, Ziehen verschiebt
+      ihn, Doppeltippen entfernt ihn. Drei bis zehn Punkte sind möglich. Ein
+      bestehender Umriss wird nie von selbst verändert.</li>
+    <li>Prüfen, ob die Fläche stimmt &ndash; das Portal nennt sie in Quadratmetern
+      oder Hektaren unter der Karte.</li>
   </ol>
+  <div class="hinweis">
+    <p class="marke-klein">Warum ein Umriss und kein Kreis</p>
+    <p>
+      Ein Kreis um ein Schulhaus schliesst regelmässig die halbe Strasse mit ein oder
+      lässt den Hinterhof aus. Beides ist falsch: Im ersten Fall gilt jemand als am
+      Standort, der nur vorbeigeht, im zweiten wird jemand nicht mitalarmiert, der
+      dort arbeitet.
+    </p>
+    <p>
+      Der gestrichelte Kreis auf der Karte bleibt trotzdem sichtbar: iOS und Android
+      können nur kreisförmige Bereiche überwachen. Er weckt die App an der Grenze;
+      ob jemand wirklich am Standort ist, entscheidet danach der Umriss auf dem Gerät.
+      Deshalb ist er etwas grösser als der Umriss gezeichnet.
+    </p>
+  </div>
   <div class="hinweis">
     <p class="marke-klein">Wenn die Karte grau bleibt</p>
     <p>
       Kartenbilder und Adresssuche kommen von OpenStreetMap und werden vom
       <b>Browser</b> geladen, nicht vom Alarmserver. In einem Netz ohne Internetzugang
-      bleibt die Karte leer; über <span class="ui">Koordinaten von Hand eingeben</span>
-      lassen sich Breiten- und Längengrad dann wie bisher eintippen. Gesucht wird nur
+      bleibt die Karte leer; über <span class="ui">Eckpunkte als Zahlen bearbeiten</span>
+      lassen sich Breiten- und Längengrad jedes Punktes dann von Hand eintippen. Gesucht wird nur
       die eingegebene Adresse &ndash; nie Personendaten und nie im Hintergrund.
     </p>
   </div>

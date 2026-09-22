@@ -47,7 +47,16 @@ export interface Location {
   id: string
   name: string
   address: string
-  geofence?: { lat: number; lng: number; radiusM: number }
+  /**
+   * Umkreis oder Umriss des Standorts.
+   *
+   * `lat`, `lng` und `radiusM` beschreiben immer einen Kreis: Betriebssysteme
+   * überwachen ausschliesslich kreisförmige Regionen, iOS wie Android. Sind
+   * `punkte` gesetzt (drei bis zehn Eckpunkte), dient der Kreis nur noch als
+   * Auslöser – ob jemand wirklich am Standort ist, entscheidet dann der Umriss.
+   * Ohne `punkte` gilt der Kreis selbst.
+   */
+  geofence?: { lat: number; lng: number; radiusM: number; punkte?: { lat: number; lng: number }[] }
   operatingHours: { days: string; open: string; close: string }
 }
 
