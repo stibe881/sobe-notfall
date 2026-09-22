@@ -28,6 +28,7 @@ export interface PushZiel {
   userId: string
   /** Gerät darf Alarme auch bei stummem Telefon hörbar machen */
   criticalAlerts: boolean
+  platform: string
 }
 
 /** Geräte pro Person – für die Bereitschaftsübersicht */
@@ -72,9 +73,9 @@ export function tokensForUsers(userIds: string[]): PushZiel[] {
   if (userIds.length === 0) return []
   const platzhalter = userIds.map(() => '?').join(',')
   const zeilen = db
-    .prepare(`SELECT token, userId, criticalAlerts FROM push_tokens WHERE userId IN (${platzhalter})`)
-    .all(...userIds) as { token: string; userId: string; criticalAlerts: number }[]
-  return zeilen.map((r) => ({ token: r.token, userId: r.userId, criticalAlerts: Boolean(r.criticalAlerts) }))
+    .prepare(`SELECT token, userId, criticalAlerts, platform FROM push_tokens WHERE userId IN (${platzhalter})`)
+    .all(...userIds) as { token: string; userId: string; criticalAlerts: number; platform: string }[]
+  return zeilen.map((r) => ({ token: r.token, userId: r.userId, criticalAlerts: Boolean(r.criticalAlerts), platform: r.platform }))
 }
 
 export interface PushNachricht {
@@ -134,33 +135,45 @@ export async function sendPush(userIds: string[], nachricht: PushNachricht): Pro
   if (ziele.length === 0) return 0
 
   const abzeichen = offeneAlarmeProPerson(userIds)
-  const nachrichten = ziele.map((ziel) => ({
-    to: ziel.token,
-    title: nachricht.title,
-    body: nachricht.body,
-    data: nachricht.data ?? {},
-    // Stiller Alarm: kein Ton – auf iOS entfällt damit auch die Vibration.
-    // Echter Critical Alert braucht bei Apple das Sound-Objekt mit critical:
-    // interruptionLevel allein durchbricht nur Fokus-Modi, nicht die
-    // Stummschaltung. Nur an Geräte, deren Berechtigung gemeldet ist.
-    sound: nachricht.silent
-      ? null
-      : nachricht.critical && ziel.criticalAlerts
-        ? { name: 'default', critical: true, volume: 1 }
-        : 'default',
-    priority: 'high',
-    channelId: nachricht.silent ? KANAL_STILL : KANAL_ALARM,
-    // Zahl auf dem App-Symbol (iOS; Android zeigt je nach Launcher Punkt oder Zahl)
-    badge: abzeichen.get(ziel.userId) ?? 0,
-    // Critical Alert nur an Geräte, die ihn tatsächlich dürfen – sonst lehnt
-    // Apple die Nachricht ab. Ohne Bewilligung bleibt «time-sensitive».
-    // Ein stiller Alarm bleibt «time-sensitive»: sichtbar trotz Fokus, aber lautlos.
-    interruptionLevel: nachricht.critical && !nachricht.silent
-      ? (ziel.criticalAlerts ? 'critical' : 'time-sensitive')
-      : nachricht.silent || nachricht.wichtig ? 'time-sensitive' : 'active',
-    // Ein Alarm, der eine Stunde später eintrifft, hilft niemandem mehr
-    ttl: nachricht.critical || nachricht.silent ? 3600 : undefined,
-  }))
+  const nachrichten = ziele.map((ziel) => {
+    // sound als Objekt ({critical, name, volume}) und interruptionLevel sind APNs-/
+    // iOS-Eigenheiten. An ein Android-Gerät geschickt, kam das Sound-Objekt nicht als
+    // gültiger Ton an – die Meldung blieb aus, obwohl der Versand bei Expo als
+    // erfolgreich galt. Auf Android sorgt allein der Kanal (channelId, siehe
+    // notifications.ts) für Lautstärke und «Nicht stören»-Umgehung; hier braucht es
+    // nur einen simplen Ton oder gar keinen.
+    const ios = ziel.platform === 'ios'
+    return {
+      to: ziel.token,
+      title: nachricht.title,
+      body: nachricht.body,
+      data: nachricht.data ?? {},
+      // Stiller Alarm: kein Ton – auf iOS entfällt damit auch die Vibration.
+      // Echter Critical Alert braucht bei Apple das Sound-Objekt mit critical:
+      // interruptionLevel allein durchbricht nur Fokus-Modi, nicht die
+      // Stummschaltung. Nur an Geräte, deren Berechtigung gemeldet ist.
+      sound: nachricht.silent
+        ? null
+        : ios && nachricht.critical && ziel.criticalAlerts
+          ? { name: 'default', critical: true, volume: 1 }
+          : 'default',
+      priority: 'high',
+      channelId: nachricht.silent ? KANAL_STILL : KANAL_ALARM,
+      // Zahl auf dem App-Symbol (iOS; Android zeigt je nach Launcher Punkt oder Zahl)
+      badge: abzeichen.get(ziel.userId) ?? 0,
+      // Critical Alert nur an Geräte, die ihn tatsächlich dürfen – sonst lehnt
+      // Apple die Nachricht ab. Ohne Bewilligung bleibt «time-sensitive».
+      // Ein stiller Alarm bleibt «time-sensitive»: sichtbar trotz Fokus, aber lautlos.
+      // Nur für iOS gesetzt – auf Android ohne Bedeutung (dort zählt der Kanal).
+      interruptionLevel: !ios
+        ? undefined
+        : nachricht.critical && !nachricht.silent
+          ? (ziel.criticalAlerts ? 'critical' : 'time-sensitive')
+          : nachricht.silent || nachricht.wichtig ? 'time-sensitive' : 'active',
+      // Ein Alarm, der eine Stunde später eintrifft, hilft niemandem mehr
+      ttl: nachricht.critical || nachricht.silent ? 3600 : undefined,
+    }
+  })
 
   try {
     const antwort = await fetch(EXPO_PUSH_URL, {
