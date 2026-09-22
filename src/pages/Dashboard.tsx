@@ -5,12 +5,14 @@ import { useStore } from '../store'
 import { Badge, Button, Card, VORBEREITET, formatRelative } from '../components/ui'
 import { ScenarioIcon } from '../components/ScenarioIcon'
 import { api, type Bereitschaft } from '../lib/api'
+import { useSprungziel } from '../lib/sprungziel'
 
 /** Sicherung gilt als aktuell, wenn sie jünger als zwei Tage ist */
 const SICHERUNG_FRIST_MS = 2 * 24 * 3600_000
 
 export default function Dashboard() {
   const { state } = useStore()
+  useSprungziel()
   const activeAlarms = state.alarms.filter((a) => a.status === 'active')
   const runningLoneWork = state.loneWorkSessions.filter((s) => s.status === 'running')
   const lowBattery = state.buttons.filter((b) => b.batteryPct < 20)
@@ -69,14 +71,14 @@ export default function Dashboard() {
 
       <div className="grid lg:grid-cols-2 gap-6">
         <Card title={<span className="flex items-center gap-2"><Server size={16} /> Alarmserver-Status</span>}>
-          <ul className="space-y-2.5 text-sm">
-            <StatusRow label="Alarmserver" ok detail="Alarmserver" />
-            <StatusRow label="Push-Dienst (Critical Alerts)" ok detail="iOS über Expo – Stand unter Bereitschaft" />
-            <StatusRow label="Interne Notfallnummer" ok={state.integrations.hotline.enabled} detail={state.integrations.hotline.number} />
-            <StatusRow label="SMS-Gateway" ok={state.integrations.smsGateway.enabled} detail={state.integrations.smsGateway.enabled ? state.integrations.smsGateway.provider : undefined} />
-            <StatusRow label="Sprachanrufe / Telefonkonferenz" ok={state.integrations.telephony.enabled} detail={state.integrations.telephony.enabled ? 'über Microsoft Teams' : undefined} />
-            <StatusRow label="Microsoft Teams" ok={state.integrations.teams.enabled} detail={state.integrations.teams.tenant || undefined} />
-            <StatusRow label="LoRaWAN-Netz / Alarmknöpfe" ok={state.integrations.lorawan.enabled} detail={`${state.buttons.length} Knöpfe erfasst`} />
+          <ul className="space-y-1 text-sm">
+            <StatusRow label="Alarmserver" ok detail="Alarmserver" to="/integrationen#int-redundanz" />
+            <StatusRow label="Push-Dienst (Critical Alerts)" ok detail="iOS über Expo – Stand unter Bereitschaft" to="/dashboard#bereitschaft" />
+            <StatusRow label="Interne Notfallnummer" ok={state.integrations.hotline.enabled} detail={state.integrations.hotline.number} to="/integrationen#int-organisation-auftritt" />
+            <StatusRow label="SMS-Gateway" ok={state.integrations.smsGateway.enabled} detail={state.integrations.smsGateway.enabled ? state.integrations.smsGateway.provider : undefined} to="/integrationen#int-sms" />
+            <StatusRow label="Sprachanrufe / Telefonkonferenz" ok={state.integrations.telephony.enabled} detail={state.integrations.telephony.enabled ? 'über Microsoft Teams' : undefined} to="/integrationen#int-telefonie" />
+            <StatusRow label="Microsoft Teams" ok={state.integrations.teams.enabled} detail={state.integrations.teams.tenant || undefined} to="/integrationen#int-teams" />
+            <StatusRow label="LoRaWAN-Netz / Alarmknöpfe" ok={state.integrations.lorawan.enabled} detail={`${state.buttons.length} Knöpfe erfasst`} to="/integrationen#int-lorawan" />
           </ul>
           {lowBattery.length > 0 && (
             <div className="mt-4 text-sm text-amber-700 bg-amber-50 rounded-lg p-3 flex items-center gap-2">
@@ -163,7 +165,7 @@ function BereitschaftKarte() {
   )
 
   return (
-    <Card title={titel} actions={<Button variant="secondary" onClick={testpush} disabled={sende}><Smartphone size={14} /> Testmeldung an mein Telefon</Button>}>
+    <Card id="bereitschaft" title={titel} actions={<Button variant="secondary" onClick={testpush} disabled={sende}><Smartphone size={14} /> Testmeldung an mein Telefon</Button>}>
       {fehler && <div className="text-sm text-alarm-600 mb-2">{fehler}</div>}
       {rueckmeldung && <div className="text-sm text-slate-700 bg-slate-50 rounded-lg p-2.5 mb-3">{rueckmeldung}</div>}
       {daten && (
@@ -195,7 +197,7 @@ function BereitschaftKarte() {
               )}
             </div>
           </div>
-          <ul className="space-y-2.5 text-sm">
+          <ul className="space-y-1 text-sm">
             <StatusRow
               label="Push-Dienst"
               ok={daten.pushDienst?.ok ?? false}
@@ -224,15 +226,33 @@ function BereitschaftKarte() {
   )
 }
 
-function StatusRow({ label, ok = false, vorbereitet = false, detail }: { label: string; ok?: boolean; vorbereitet?: boolean; detail?: string }) {
-  return (
-    <li className="flex items-center gap-2">
-      <span className={`w-2 h-2 rounded-full ${ok ? 'bg-emerald-500' : vorbereitet ? 'bg-slate-200' : 'bg-slate-300'}`} />
+/**
+ * Eine Zeile im Alarmserver-Status. Mit `to` wird sie anklickbar und führt
+ * direkt zu der Einstellung, die diesen Status bestimmt – sonst müsste man
+ * sie auf der langen Integrationsseite suchen.
+ */
+function StatusRow({ label, ok = false, vorbereitet = false, detail, to }: { label: string; ok?: boolean; vorbereitet?: boolean; detail?: string; to?: string }) {
+  const inhalt = (
+    <>
+      <span className={`w-2 h-2 rounded-full shrink-0 ${ok ? 'bg-emerald-500' : vorbereitet ? 'bg-slate-200' : 'bg-slate-300'}`} />
       <span className={`flex-1 ${vorbereitet ? 'text-slate-500' : 'text-slate-700'}`}>{label}</span>
-      <span className="text-xs text-slate-400">{detail}</span>
+      <span className="text-xs text-slate-400 truncate">{detail}</span>
       {vorbereitet
         ? <Badge color="slate">{VORBEREITET}</Badge>
         : <Badge color={ok ? 'green' : 'slate'}>{ok ? 'online' : 'inaktiv'}</Badge>}
+    </>
+  )
+  if (!to) return <li className="flex items-center gap-2 py-1">{inhalt}</li>
+  return (
+    <li>
+      <Link
+        to={to}
+        title={`Zur Einstellung: ${label}`}
+        className="group flex items-center gap-2 rounded-lg px-2 py-1 -mx-2 hover:bg-slate-50 transition"
+      >
+        {inhalt}
+        <ArrowRight size={13} className="shrink-0 text-slate-300 group-hover:text-slate-500 transition" />
+      </Link>
     </li>
   )
 }

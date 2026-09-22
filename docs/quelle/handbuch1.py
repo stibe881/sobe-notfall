@@ -88,6 +88,13 @@ KOERPER = r"""
     <figcaption><b>Abb.</b> &nbsp; Das Dashboard. Vier Kennzahlen oben, links der Zustand der Kanäle, rechts die jüngsten Ereignisse. Was nur vorbereitet ist, steht grau als «vorbereitet, noch nicht aktiv».</figcaption>
   </figure>
   <p>
+    Die Zeilen im <b>Alarmserver-Status</b> sind anklickbar: Ein Klick auf
+    <span class="ui">SMS-Gateway</span>, <span class="ui">Microsoft Teams</span>,
+    <span class="ui">LoRaWAN-Netz</span> und die übrigen Zeilen führt direkt zu der
+    Einstellung, die diesen Zustand bestimmt &ndash; die betreffende Karte wird kurz
+    hervorgehoben. So muss niemand auf der langen Integrationsseite suchen.
+  </p>
+  <p>
     Darunter die Kachel <b>Bereitschaft</b> &ndash; die Antwort auf die Frage, ob ein
     Alarm die Leute überhaupt erreicht: pro Standort, wie viele Personen ein Gerät mit
     der App registriert haben und wie viele Critical Alerts erlauben; ob der Push-Dienst
@@ -541,6 +548,33 @@ KOERPER = r"""
     <img src="bilder/web-14-protokoll.webp" alt="Ereignisprotokoll mit Einträgen nach Zeit sortiert">
     <figcaption><b>Abb.</b> &nbsp; Das Ereignisprotokoll. Erste Anlaufstelle, wenn zu klären ist, wer wann was ausgelöst hat.</figcaption>
   </figure>
+
+  <h3>Suchen und eingrenzen</h3>
+  <p>
+    Das Suchfeld durchsucht drei Dinge zugleich: den <b>Text</b> des Eintrags, die
+    <b>Kategorie</b> (Alarm, Anmeldung, Alleinarbeit, Verwaltung, System) und die
+    <b>Person</b>, die gehandelt hat &ndash; Name wie E-Mail-Adresse. Mehrere Wörter
+    werden mit UND verknüpft: <span class="ui">müller alarm</span> zeigt die
+    Alarmeinträge von Frau oder Herrn Müller.
+  </p>
+  <p>
+    Daneben lässt sich eine einzelne Kategorie wählen, zwischen Ernstfällen und
+    Übungen unterscheiden und ein <b>Zeitraum</b> angeben &ndash; entweder über die
+    Schaltflächen <span class="ui">Heute</span>, <span class="ui">7&nbsp;Tage</span>
+    und <span class="ui">30&nbsp;Tage</span> oder über die beiden Datumsfelder. Der
+    gewählte Bis-Tag zählt vollständig mit. Über der Liste steht, wie viele Einträge
+    die Suche trifft; <span class="ui">Filter zurücksetzen</span> stellt die volle
+    Ansicht wieder her.
+  </p>
+  <div class="hinweis">
+    <p class="marke-klein">Umfang</p>
+    <p>
+      Der Alarmserver führt die letzten 300 Einträge. Wird ein älterer Vorgang
+      gebraucht &ndash; etwa für eine Untersuchung &ndash;, steht er in der
+      Datensicherung des Servers (Handbuch&nbsp;4, Abschnitt
+      «Aktualisierung und Sicherung»).
+    </p>
+  </div>
 </section>
 
 <section id="a12">

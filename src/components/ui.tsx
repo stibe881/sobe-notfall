@@ -3,9 +3,14 @@ import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 import { CHANNEL_LABELS, type Channel } from '../types'
 
-export function Card({ title, actions, children, className = '' }: { title?: React.ReactNode; actions?: React.ReactNode; children: React.ReactNode; className?: string }) {
+/**
+ * `id` setzt einen Sprungpunkt: Andere Seiten verlinken einzelne Karten
+ * (etwa der Alarmserver-Status auf dem Dashboard). `scroll-mt-4` sorgt dafür,
+ * dass die Kartenüberschrift beim Anspringen nicht am Rand klebt.
+ */
+export function Card({ id, title, actions, children, className = '' }: { id?: string; title?: React.ReactNode; actions?: React.ReactNode; children: React.ReactNode; className?: string }) {
   return (
-    <div className={`bg-white rounded-xl border border-slate-200 shadow-sm ${className}`}>
+    <div id={id} className={`bg-white rounded-xl border border-slate-200 shadow-sm scroll-mt-4 ${className}`}>
       {(title || actions) && (
         <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100">
           <h3 className="font-semibold text-slate-800">{title}</h3>

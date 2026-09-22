@@ -5,6 +5,7 @@ import { api, logoUrl, serverUrl, type RedundanzConfig, type RedundanzStatus } f
 import { uid, useStore } from '../store'
 import type { IntegrationSettings, Webhook } from '../types'
 import { Badge, Button, Card, Field, Modal, Toggle, VORBEREITET, Vorbereitet, formatDateTime, inputClass } from '../components/ui'
+import { useSprungziel } from '../lib/sprungziel'
 
 /**
  * Die Themenbereiche der Seite – in der Reihenfolge, in der man einen neuen
@@ -39,6 +40,8 @@ export default function Integrations() {
   const { state, dispatch } = useStore()
   const integ = state.integrations
   const [editingWebhook, setEditingWebhook] = useState<Webhook | null>(null)
+  // Verlinkung aus dem Alarmserver-Status des Dashboards: direkt zur Karte
+  useSprungziel()
 
   return (
     <div className="space-y-8">
@@ -63,13 +66,13 @@ export default function Integrations() {
       </div>
 
       <Bereich id="int-organisation">
-        <Card title={<span className="flex items-center gap-2"><Building2 size={16} /> Organisation &amp; Auftritt</span>}>
+        <Card id="int-organisation-auftritt" title={<span className="flex items-center gap-2"><Building2 size={16} /> Organisation &amp; Auftritt</span>}>
           <OrganisationEinstellungen />
         </Card>
       </Bereich>
 
       <Bereich id="int-app">
-        <Card title={<span className="flex items-center gap-2"><Smartphone size={16} /> App-Verbindung</span>}>
+        <Card id="int-app-verbindung" title={<span className="flex items-center gap-2"><Smartphone size={16} /> App-Verbindung</span>}>
           <AppVerbindung />
         </Card>
 
@@ -104,15 +107,15 @@ export default function Integrations() {
       </Bereich>
 
       <Bereich id="int-kanaele">
-        <Card title={<span className="flex items-center gap-2"><MessageSquare size={16} /> SMS-Gateway</span>}>
+        <Card id="int-sms" title={<span className="flex items-center gap-2"><MessageSquare size={16} /> SMS-Gateway</span>}>
           <SmsEinstellungen />
         </Card>
 
-        <Card title={<span className="flex items-center gap-2"><MessageSquare size={16} /> Microsoft Teams: Kanalmeldungen</span>}>
+        <Card id="int-teams" title={<span className="flex items-center gap-2"><MessageSquare size={16} /> Microsoft Teams: Kanalmeldungen</span>}>
           <TeamsEinstellungen />
         </Card>
 
-        <Card title={<span className="flex items-center gap-2"><PhoneCall size={16} /> Sprachanruf &amp; Telefonkonferenz (Microsoft Teams)</span>}>
+        <Card id="int-telefonie" title={<span className="flex items-center gap-2"><PhoneCall size={16} /> Sprachanruf &amp; Telefonkonferenz (Microsoft Teams)</span>}>
           <TelefonieEinstellungen />
         </Card>
       </Bereich>
@@ -128,7 +131,7 @@ export default function Integrations() {
       </Bereich>
 
       <Bereich id="int-systeme">
-        <Card title={<span className="flex items-center gap-2"><Radio size={16} /> LoRaWAN-Netz / Alarmknöpfe</span>}>
+        <Card id="int-lorawan" title={<span className="flex items-center gap-2"><Radio size={16} /> LoRaWAN-Netz / Alarmknöpfe</span>}>
           <LorawanEinstellungen />
         </Card>
 
@@ -161,7 +164,7 @@ export default function Integrations() {
       </Bereich>
 
       <Bereich id="int-betrieb">
-        <Card title={<span className="flex items-center gap-2"><ServerCog size={16} /> Redundanz – zweiter Alarmserver</span>}>
+        <Card id="int-redundanz" title={<span className="flex items-center gap-2"><ServerCog size={16} /> Redundanz – zweiter Alarmserver</span>}>
           <RedundanzEinstellungen />
         </Card>
       </Bereich>
