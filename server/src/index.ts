@@ -19,9 +19,11 @@ const HOST = process.env.HOST ?? '0.0.0.0'
  * Verzeichnis mit dem gebauten Webportal.
  * Liegt es vor, liefert der Server Portal und Schnittstelle unter derselben
  * Adresse aus – im Hosting die einfachste Variante: ein Zertifikat, keine
- * CORS-Fragen, kein Mixed-Content.
+ * CORS-Fragen, kein Mixed-Content. Der Pfad zählt ab der Repository-Wurzel,
+ * nicht ab dem Arbeitsverzeichnis: Sonst lieferte ein von woanders gestarteter
+ * Server ein fremdes, womöglich veraltetes Portal aus.
  */
-const WEB_ROOT = resolve(process.env.SOBE_WEB_ROOT ?? resolve(process.cwd(), '..', 'dist'))
+const WEB_ROOT = resolve(process.env.SOBE_WEB_ROOT ?? resolve(repoRoot(), 'dist'))
 const webVorhanden = existsSync(resolve(WEB_ROOT, 'index.html'))
 
 const app = express()
@@ -73,4 +75,5 @@ app.listen(PORT, HOST, () => {
       : `Kein Webportal unter ${WEB_ROOT} – nur die Schnittstelle unter /api`,
   )
   console.log(`Administrator: ${INITIAL_ADMIN_EMAIL}`)
+  console.log(`Arbeitsverzeichnis: ${process.cwd()}`)
 })

@@ -13,11 +13,11 @@ import Database from 'better-sqlite3'
 import { existsSync, mkdirSync, readdirSync, rmSync, statSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join, resolve } from 'node:path'
+import { datenbankPfad, ladeEnv } from './pfade.mjs'
 
-const envDatei = resolve(process.env.SOBE_ENV_FILE ?? '.env')
-if (existsSync(envDatei)) process.loadEnvFile(envDatei)
+ladeEnv()
 
-const quelle = resolve(process.env.SOBE_DB_PATH ?? 'data/sobe-notfall.sqlite')
+const quelle = datenbankPfad()
 const ziel = resolve(process.argv[2] ?? process.env.SOBE_BACKUP_DIR ?? join(homedir(), 'sicherung'))
 const tage = Number(process.argv[3] ?? process.env.SOBE_BACKUP_TAGE ?? 30)
 
@@ -38,7 +38,42 @@ db.prepare('VACUUM INTO ?').run(datei)
 db.close()
 
 const groesse = (statSync(datei).size / 1024).toFixed(0)
+console.log(`Quelle:    ${quelle}`)
 console.log(`Gesichert: ${datei} (${groesse} KB)`)
+
+/**
+ * Die Sicherung gegenprüfen, statt sie nur zu schreiben.
+ *
+ * Eine Kopie, die niemand liest, ist keine Sicherung. Kommt hier eine
+ * Datenbank ohne Ereignisprotokoll heraus oder endet das Protokoll lange vor
+ * heute, dann wurde die falsche Datei kopiert – das fällt sonst erst im
+ * Ernstfall auf, wenn wiederhergestellt werden soll.
+ */
+const pruef = new Database(datei, { readonly: true })
+try {
+  const { anzahl, juengster } = pruef
+    .prepare('SELECT COUNT(*) AS anzahl, MAX(ts) AS juengster FROM audit')
+    .get()
+  const alter = juengster ? Date.now() - juengster : null
+  console.log(
+    `Inhalt:    ${anzahl} Protokolleinträge, jüngster vom ` +
+      (juengster ? new Date(juengster).toLocaleString('de-CH') : '–'),
+  )
+  if (alter === null || alter > 3 * 86_400_000) {
+    console.error('')
+    console.error('WARNUNG: Das Ereignisprotokoll dieser Sicherung endet vor mehr als drei Tagen.')
+    console.error('Vermutlich wurde die falsche Datenbankdatei kopiert. Prüfen Sie den Pfad oben')
+    console.error('und setzen Sie SOBE_DB_PATH in server/.env auf den absoluten Pfad.')
+    process.exitCode = 2
+  }
+} catch (fehler) {
+  console.error('')
+  console.error(`WARNUNG: Die Sicherung enthält kein lesbares Ereignisprotokoll (${fehler.message}).`)
+  console.error('Vermutlich wurde die falsche Datenbankdatei kopiert – Pfad oben prüfen.')
+  process.exitCode = 2
+} finally {
+  pruef.close()
+}
 
 // Alte Sicherungen entfernen
 const grenze = Date.now() - tage * 86_400_000

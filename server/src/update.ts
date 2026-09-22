@@ -4,6 +4,7 @@ import { resolve } from 'node:path'
 import { broadcast } from './events.js'
 import { getSetting, setSetting } from './db.js'
 import { addAudit } from './store.js'
+import { repoRoot } from './pfade.js'
 
 /**
  * Aktualisierung per Knopfdruck.
@@ -49,9 +50,7 @@ const MAX_AUSGABE = 20_000
 let laufenderJob: UpdateJob | null = null
 
 /** Wurzel des Arbeitsverzeichnisses – der Server liegt in server/ darunter */
-export function repoRoot(): string {
-  return resolve(process.env.SOBE_REPO_ROOT ?? resolve(process.cwd(), '..'))
-}
+export { repoRoot }
 
 /**
  * Git-Aufrufe mit Zugangstoken, falls eines hinterlegt ist (GITHUB_TOKEN oder

@@ -665,17 +665,37 @@ npm run pruefe-datenbank</code></pre>
     nichts und klären erst die Ursache.
   </p>
   <div class="hinweis">
-    <p class="marke-klein">Dauerhaft abstellen</p>
+    <p class="marke-klein">Seit Version 12 kann das nicht mehr passieren</p>
     <p>
-      Tragen Sie den <b>absoluten</b> Pfad der Datenbank als
-      <code>SOBE_DB_PATH</code> in <code>server/.env</code> ein. Dann spielt das
-      Arbeitsverzeichnis keine Rolle mehr, und der Server öffnet immer dieselbe Datei.
-      Ein <code>find</code> über das Benutzerverzeichnis hilft dabei nur bedingt: Auf
-      Shared Hosting ist <code>public_html</code> oft eine symbolische Verknüpfung, und
-      <code>find</code> folgt ihr ohne <code>-L</code> nicht &ndash; die laufende
-      Datenbank fehlt dann in der Liste, obwohl sie existiert.
+      Datenbank, Portal-Verzeichnis und Repository-Wurzel zählen jetzt ab dem Ordner
+      <code>server/</code>, in dem der Programmcode liegt &ndash; nicht mehr ab dem
+      Arbeitsverzeichnis. Von wo aus der Server gestartet wird, spielt damit keine
+      Rolle mehr. <code>SOBE_DB_PATH</code>, <code>SOBE_WEB_ROOT</code> und
+      <code>SOBE_REPO_ROOT</code> gehen weiterhin vor, wenn sie gesetzt sind.
+    </p>
+    <p>
+      Ein <code>find</code> über das Benutzerverzeichnis taugt übrigens nicht zur
+      Suche: Auf Shared Hosting ist <code>public_html</code> meist eine symbolische
+      Verknüpfung, der <code>find</code> ohne <code>-L</code> nicht folgt &ndash; die
+      laufende Datenbank fehlt dann in der Liste, obwohl es sie gibt.
     </p>
   </div>
+
+  <h4>Die Sicherungen sind alle gleich gross und enden am selben Tag</h4>
+  <p>
+    Dann kopiert der Sicherungslauf eine andere Datei als die, mit der der Server
+    arbeitet &ndash; typischerweise, weil der Cron-Eintrag in einem anderen Verzeichnis
+    startet. Für den betroffenen Zeitraum gibt es dann <b>keine</b> brauchbare
+    Sicherung, obwohl der Ordner voller Dateien ist.
+  </p>
+  <p>
+    <code>npm run pruefe-datenbank</code> erkennt das und benennt es getrennt vom
+    Ereignisprotokoll. <code>npm run sicherung</code> prüft seit Version 12 jede frisch
+    geschriebene Sicherung nach und meldet eine Warnung, wenn deren Protokoll mehr als
+    drei Tage zurückliegt oder ganz fehlt. Auch hier zählen die Pfade ab
+    <code>server/</code>, das Arbeitsverzeichnis des Cron-Eintrags spielt keine Rolle
+    mehr.
+  </p>
 
   <h4>Portal erreichbar, aber «Alarmserver nicht erreichbar»</h4>
   <p>
