@@ -47,6 +47,13 @@ export default function UsersPage() {
     `${u.firstName} ${u.lastName} ${u.email}`.toLowerCase().includes(filter.toLowerCase()),
   )
 
+  /**
+   * Wen ein Alarm nicht erreicht. Bewusst über allen Konten und nicht nur über
+   * der gefilterten Liste: Ein ungenutztes Konto fällt sonst nie auf, weil
+   * niemand danach sucht.
+   */
+  const ohneGeraet = state.users.filter((u) => (u.geraete ?? 0) === 0)
+
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4 flex-wrap">
@@ -54,7 +61,8 @@ export default function UsersPage() {
           <h1 className="text-2xl font-bold text-slate-800">Benutzerverwaltung</h1>
           <p className="text-sm text-slate-500">
             Manuelle Erfassung, CSV-Upload oder automatische Synchronisation mit dem Personalsystem (siehe Integrationen) ·
-            Anmeldung mit E-Mail und Passwort oder mit Microsoft (SSO, siehe Integrationen)
+            Anmeldung mit E-Mail und Passwort oder mit Microsoft (SSO, siehe Integrationen) ·
+            <b>Erreichbarkeit</b> sagt, ob ein Alarm tatsächlich ankommt – dafür braucht es ein angemeldetes Gerät
           </p>
         </div>
         <div className="flex gap-2">
@@ -67,6 +75,15 @@ export default function UsersPage() {
         </div>
       </div>
 
+      {ohneGeraet.length > 0 && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <b>{ohneGeraet.length} {ohneGeraet.length === 1 ? 'Person hat' : 'Personen haben'} die App auf keinem Gerät angemeldet</b> –
+          ein Alarm erreicht {ohneGeraet.length === 1 ? 'sie' : 'sie'} nicht:{' '}
+          {ohneGeraet.slice(0, 8).map((u) => `${u.firstName} ${u.lastName}`).join(', ')}
+          {ohneGeraet.length > 8 ? ` und ${ohneGeraet.length - 8} weitere` : ''}.
+        </div>
+      )}
+
       <Card>
         <input className={inputClass + ' mb-4 max-w-xs'} placeholder="Suchen…" value={filter} onChange={(e) => setFilter(e.target.value)} />
         <div className="overflow-x-auto">
@@ -78,7 +95,9 @@ export default function UsersPage() {
                 <th className="py-2 pr-4">Rolle</th>
                 <th className="py-2 pr-4">Gruppen</th>
                 <th className="py-2 pr-4">Standort</th>
-                <th className="py-2 pr-4">Status</th>
+                <th className="py-2 pr-4" title="Erreicht ein Alarm diese Person? Nötig sind ein angemeldetes Gerät und keine eingetragene Abwesenheit.">
+                  Erreichbarkeit
+                </th>
                 <th className="py-2 pr-4">Anmeldung</th>
                 <th className="py-2" />
               </tr>
@@ -109,9 +128,35 @@ export default function UsersPage() {
                     </td>
                     <td className="py-2.5 pr-4 text-slate-600">{state.locations.find((l) => l.id === u.locationId)?.name ?? '–'}</td>
                     <td className="py-2.5 pr-4">
-                      {absent && <Badge color="amber">abwesend bis {u.absence!.to}</Badge>}
-                      {u.partTimeNote && <Badge color="blue">{u.partTimeNote}</Badge>}
-                      {!absent && !u.partTimeNote && <Badge color="green">erreichbar</Badge>}
+                      <div className="flex flex-wrap gap-1">
+                        {/*
+                          «erreichbar» heisst: Ein Alarm kommt tatsächlich an.
+                          Dafür braucht es ein angemeldetes Gerät – ohne eines
+                          nützt das schönste Konto nichts. Abwesende werden von
+                          der Alarmierung ohnehin ausgenommen.
+                        */}
+                        {absent ? (
+                          <Badge color="amber">abwesend bis {u.absence!.to}</Badge>
+                        ) : (u.geraete ?? 0) === 0 ? (
+                          <span title="Diese Person hat die App auf keinem Gerät angemeldet – ein Alarm erreicht sie nicht.">
+                            <Badge color="red">kein Gerät</Badge>
+                          </span>
+                        ) : (
+                          <span
+                            title={
+                              `${u.geraete} Gerät${u.geraete === 1 ? '' : 'e'} angemeldet · ` +
+                              (u.criticalAlerts
+                                ? 'Alarme werden auch bei stummem Telefon hörbar'
+                                : 'Critical Alerts nicht erlaubt – bei stummem Telefon bleibt der Alarm lautlos')
+                            }
+                          >
+                            <Badge color={u.criticalAlerts ? 'green' : 'amber'}>
+                              {u.criticalAlerts ? 'erreichbar' : 'erreichbar · stumm möglich'}
+                            </Badge>
+                          </span>
+                        )}
+                        {u.partTimeNote && <Badge color="blue">{u.partTimeNote}</Badge>}
+                      </div>
                     </td>
                     <td className="py-2.5 pr-4">
                       <span className="inline-flex items-center gap-1.5 flex-wrap">

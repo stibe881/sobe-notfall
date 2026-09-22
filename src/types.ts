@@ -39,6 +39,14 @@ export interface User {
   passwordHash?: string
   /** Vom Alarmserver gesetzt: Ist für dieses Konto ein Passwort hinterlegt? */
   hasPassword?: boolean
+  /**
+   * Vom Alarmserver gesetzt: Zahl der Geräte, auf denen diese Person die App
+   * angemeldet hat. Null bedeutet, dass sie kein Push erreicht – der
+   * wichtigste Zustand in einem Alarmsystem und deshalb Teil des Bestands.
+   */
+  geraete?: number
+  /** Vom Alarmserver gesetzt: Erlaubt mindestens ein Gerät Critical Alerts? */
+  criticalAlerts?: boolean
   /** Erzwingt eine Passwortänderung bei der nächsten Anmeldung */
   mustChangePassword?: boolean
   lastLoginAt?: number

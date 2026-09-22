@@ -34,7 +34,17 @@ export interface StoredUser {
 }
 
 /** Benutzer, wie ihn die Clients erhalten – ohne Passwortdaten */
-export type User = Omit<StoredUser, 'passwordHash' | 'passwordSalt'> & { hasPassword: boolean }
+/**
+ * Konto, wie es die Clients sehen. Passwortfelder verlassen den Server nie;
+ * `geraete` und `criticalAlerts` rechnet der Server aus den registrierten
+ * Push-Geräten – ohne sie liesse sich nicht sagen, ob ein Alarm die Person
+ * überhaupt erreicht.
+ */
+export type User = Omit<StoredUser, 'passwordHash' | 'passwordSalt'> & {
+  hasPassword: boolean
+  geraete?: number
+  criticalAlerts?: boolean
+}
 
 export interface Group {
   id: string

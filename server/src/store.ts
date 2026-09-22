@@ -96,9 +96,29 @@ export function saveIntegrations(value: IntegrationSettings): void {
   speichereIntegrationen(value)
 }
 
+/**
+ * Registrierte Push-Geräte je Person.
+ *
+ * Bewusst hier und nicht aus push.ts: Jenes Modul liest bereits aus store.ts,
+ * ein Import zurück ergäbe einen Zirkelbezug.
+ */
+function geraeteProPerson(): Map<string, { geraete: number; critical: boolean }> {
+  const zeilen = db
+    .prepare('SELECT userId, COUNT(*) AS geraete, MAX(criticalAlerts) AS critical FROM push_tokens GROUP BY userId')
+    .all() as { userId: string; geraete: number; critical: number }[]
+  return new Map(zeilen.map((z) => [z.userId, { geraete: z.geraete, critical: Boolean(z.critical) }]))
+}
+
 export function fullState(): ServerState {
+  // Geräte je Person mitliefern: Ob jemand überhaupt ein Push empfängt,
+  // gehört in die Benutzerliste – «erreichbar» ohne Gerät wäre eine
+  // Falschaussage, und sie fiele erst im Ernstfall auf.
+  const geraete = geraeteProPerson()
   return {
-    users: allStoredUsers().map(publicUser),
+    users: allStoredUsers().map((u) => {
+      const g = geraete.get(u.id)
+      return { ...publicUser(u), geraete: g?.geraete ?? 0, criticalAlerts: g?.critical ?? false }
+    }),
     groups: allGroups(),
     locations: allLocations(),
     scenarios: allScenarios(),

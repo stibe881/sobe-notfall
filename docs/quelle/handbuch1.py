@@ -465,13 +465,38 @@ KOERPER = r"""
     an, vergeben Rollen und setzen Passwörter zurück.
   </p>
   <figure class="bild-breit">
-    <img src="bilder/web-09-benutzer.webp" alt="Benutzerverwaltung mit Liste aller Konten, Standort, Status und Anmeldezustand">
+    <img src="bilder/web-09-benutzer.webp" alt="Benutzerverwaltung mit Liste aller Konten, Standort, Erreichbarkeit und Anmeldezustand">
     <figcaption><b>Abb.</b> &nbsp; Die Benutzerliste. Die Spalte <span class="ui">Anmeldung</span> zeigt, ob für ein Konto ein Passwort hinterlegt ist.</figcaption>
   </figure>
   <figure class="bild-breit">
     <img src="bilder/web-20-benutzer-editor.webp" alt="Dialog zum Anlegen eines neuen Benutzers mit Rolle, Standort, Gruppen und Anmeldedaten">
     <figcaption><b>Abb.</b> &nbsp; Ein neues Konto. Ohne Passwort kann sich die Person weder im Portal noch in der App anmelden &ndash; das Feld gehört ausgefüllt.</figcaption>
   </figure>
+  <h4>Erreichbarkeit &ndash; kommt ein Alarm überhaupt an?</h4>
+  <p>
+    Die Spalte beantwortet genau eine Frage: Erreicht ein Alarm diese Person?
+    Ein Konto allein genügt dafür nicht &ndash; es braucht ein Gerät, auf dem die
+    App angemeldet ist.
+  </p>
+  <div class="tabelle-huelle">
+    <table>
+      <caption>Was in der Spalte steht</caption>
+      <thead><tr><th>Anzeige</th><th>Bedeutung</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">erreichbar</th><td>Mindestens ein Gerät ist angemeldet und darf Critical Alerts &ndash; der Alarm klingelt auch bei stummem Telefon</td></tr>
+        <tr><th scope="row">erreichbar &middot; stumm möglich</th><td>Ein Gerät ist angemeldet, hat aber keine Critical Alerts erlaubt. Bei stummem Telefon bleibt der Alarm lautlos</td></tr>
+        <tr><th scope="row">kein Gerät</th><td>Die App ist auf keinem Gerät angemeldet. <b>Ein Alarm erreicht diese Person nicht</b> &ndash; weder per Push noch in der App</td></tr>
+        <tr><th scope="row">abwesend bis &hellip;</th><td>Eine Abwesenheit ist eingetragen; die Person wird von der Alarmierung ausgenommen</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>
+    Gibt es Konten ohne Gerät, steht über der Liste ein Hinweis mit den Namen.
+    Er zählt alle Konten, nicht nur die gefilterten: Ein ungenutztes Konto fällt
+    sonst nie auf, weil niemand danach sucht. Die Zahl je Standort steht
+    ausserdem auf dem Dashboard in der Kachel <span class="ui">Bereitschaft</span>.
+  </p>
+
   <h4>Rolle</h4>
   <p>
     <b>Mitarbeitende</b> nutzen ausschliesslich die App. Der <b>Krisenstab</b> nutzt App und
