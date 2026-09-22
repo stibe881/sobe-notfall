@@ -105,7 +105,10 @@ export function seedDatabase(): void {
     if (!db.prepare('SELECT 1 FROM groups WHERE id = ?').get(g.id)) upsertGroup(g)
   }
   for (const p of profil === 'sonnenberg' ? SEED_PLANS : neutralePlaene()) {
-    if (!db.prepare('SELECT 1 FROM plans WHERE id = ?').get(p.id)) upsertDoc('plans', p.id, p)
+    if (!db.prepare('SELECT 1 FROM plans WHERE id = ?').get(p.id)) {
+      upsertDoc('plans', p.id, p)
+      if (!erstinstallation) addAudit('system', `Neuer Standard-Alarmplan ergänzt: ${p.name}`)
+    }
   }
   for (const c of SEED_CONTACTS) {
     if (!db.prepare('SELECT 1 FROM contacts WHERE id = ?').get(c.id)) upsertDoc('contacts', c.id, c)

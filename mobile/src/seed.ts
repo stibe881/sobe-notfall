@@ -998,6 +998,14 @@ export const SEED_PLANS: AlarmPlan[] = [
       { afterMinutes: 15, channels: ['voice'], groupIds: ['gr-krisenstab'], notifyEmergencyServices: false },
     ],
   },
+  {
+    id: 'pl-sos', name: 'SOS-Hilferuf (Soforthilfe-Knopf)', scenarioId: 'sc-sos',
+    locationIds: [], groupIds: ['gr-ersthelfer', 'gr-sicherheit'],
+    channels: ['push', 'sms', 'voice'], requireAck: true, respectOperatingHours: false,
+    escalation: [
+      { afterMinutes: 3, channels: ['voice'], groupIds: ['gr-krisenstab'], notifyEmergencyServices: true },
+    ],
+  },
 ]
 
 export const SEED_BUTTONS: AlarmButton[] = [

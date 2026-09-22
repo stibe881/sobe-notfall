@@ -246,17 +246,21 @@ function StartTab({ onOpenScenario }: { onOpenScenario: (s: Scenario, alarm: Ala
 
   function sos() {
     navigator.vibrate?.([120, 60, 120])
+    // Der im Admin-Portal beim Szenario «SOS – Hilferuf» hinterlegte Alarmplan
+    // bestimmt Empfänger:innen, Kanäle und Eskalation; ohne Plan gelten die
+    // bisherigen Standardwerte.
+    const plan = state.plans.find((p) => p.scenarioId === 'sc-sos')
     const alarm = createAlarm(state, {
       scenarioId: 'sc-sos',
       message: `SOS-Alarm von ${me.firstName} ${me.lastName} (App) – Standort: ${state.locations.find((l) => l.id === me.locationId)?.name ?? 'unbekannt'}`,
       silent: false,
-      requireAck: true,
-      channels: ['push', 'sms', 'voice'],
-      groupIds: ['gr-ersthelfer', 'gr-sicherheit'],
+      requireAck: plan?.requireAck ?? true,
+      channels: plan?.channels ?? ['push', 'sms', 'voice'],
+      groupIds: plan?.groupIds ?? ['gr-ersthelfer', 'gr-sicherheit'],
       locationIds: [me.locationId],
       triggeredByUserId: me.id,
       triggeredVia: 'app',
-      escalation: [{ afterMinutes: 3, channels: ['voice'], groupIds: ['gr-krisenstab'], notifyEmergencyServices: true }],
+      escalation: plan?.escalation ?? [{ afterMinutes: 3, channels: ['voice'], groupIds: ['gr-krisenstab'], notifyEmergencyServices: true }],
     })
     dispatch({ type: 'TRIGGER_ALARM', alarm, audit: `SOS-Alarm via App: ${me.firstName} ${me.lastName}` })
   }

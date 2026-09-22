@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useReducer, useRef, useState } from 'react'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import type { Alarm, Channel, Delivery, EmergencyContact, EscalationLevel, Group, IntegrationSettings, Location, LoneWorkSession, Scenario, Session, User } from './types'
+import type { Alarm, AlarmPlan, Channel, Delivery, EmergencyContact, EscalationLevel, Group, IntegrationSettings, Location, LoneWorkSession, Scenario, Session, User } from './types'
 import { CHANNEL_LABELS, LONE_WORK_DEFAULT_GROUPS } from './types'
 import { LIVE_INITIAL_PASSWORD, SCENARIO_CONTENT_VERSION, SEED_SCENARIOS, SEED_USERS } from './seed'
 import { hashPassword, randomSalt } from './auth'
@@ -31,6 +31,7 @@ export interface MobileState {
   locations: Location[]
   scenarios: Scenario[]
   contacts: EmergencyContact[]
+  plans: AlarmPlan[]
   /** Einstellungen wie die interne Notfallnummer – vom Server */
   integrations?: IntegrationSettings
   currentUserId: string
@@ -47,6 +48,7 @@ function initialState(): MobileState {
     locations: [],
     scenarios: [],
     contacts: [],
+    plans: [],
     integrations: undefined,
     currentUserId: '',
     alarms: [],
@@ -268,6 +270,7 @@ function reducer(state: MobileState, action: Action): MobileState {
         locations: action.data.locations ?? state.locations,
         scenarios: action.data.scenarios ?? state.scenarios,
         contacts: action.data.contacts ?? state.contacts,
+        plans: action.data.plans ?? state.plans,
         integrations: action.data.integrations ?? state.integrations,
         alarms: action.data.alarms ?? [],
         loneWorkSessions: action.data.loneWorkSessions ?? [],
@@ -360,6 +363,7 @@ export function fuelleFehlendeFelder(parsed: Partial<MobileState>): MobileState 
     locations: parsed.locations ?? fallback.locations,
     scenarios: parsed.scenarios ?? fallback.scenarios,
     contacts: parsed.contacts ?? fallback.contacts,
+    plans: parsed.plans ?? fallback.plans,
     alarms: parsed.alarms ?? [],
     loneWorkSessions: parsed.loneWorkSessions ?? [],
   }

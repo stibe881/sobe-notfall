@@ -113,19 +113,23 @@ export function StartScreen({ onOpenScenario }: { onOpenScenario: (s: Scenario, 
 
   function sos() {
     const location = state.locations.find((l) => l.id === me.locationId)
+    // Der im Admin-Portal beim Szenario «SOS – Hilferuf» hinterlegte Alarmplan
+    // bestimmt Empfänger:innen, Kanäle und Eskalation; ohne Plan gelten die
+    // bisherigen Standardwerte.
+    const plan = state.plans.find((p) => p.scenarioId === 'sc-sos')
     dispatch({
       type: 'TRIGGER_ALARM',
       alarm: createAlarm(state.users, {
         scenarioId: 'sc-sos',
         message: `SOS-Alarm von ${me.firstName} ${me.lastName} (App) – Standort: ${location?.name ?? 'unbekannt'}`,
         silent: false,
-        requireAck: true,
-        channels: ['push', 'sms', 'voice'],
-        groupIds: ['gr-ersthelfer', 'gr-sicherheit'],
+        requireAck: plan?.requireAck ?? true,
+        channels: plan?.channels ?? ['push', 'sms', 'voice'],
+        groupIds: plan?.groupIds ?? ['gr-ersthelfer', 'gr-sicherheit'],
         locationIds: [me.locationId],
         triggeredByUserId: me.id,
         triggeredVia: 'app',
-        escalation: [{ afterMinutes: 3, channels: ['voice'], groupIds: ['gr-krisenstab'], notifyEmergencyServices: true }],
+        escalation: plan?.escalation ?? [{ afterMinutes: 3, channels: ['voice'], groupIds: ['gr-krisenstab'], notifyEmergencyServices: true }],
       }),
     })
   }
