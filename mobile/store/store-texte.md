@@ -2,7 +2,7 @@
 
 ## Kurzbeschreibung (Google Play, max. 80 Zeichen)
 
-> Alarmierung, Szenarien und Alleinarbeiterschutz – für den Ernstfall bereit.
+> Alarmierung, Szenarien und Alleinarbeitsschutz – für den Ernstfall bereit.
 
 *(75 Zeichen)*
 

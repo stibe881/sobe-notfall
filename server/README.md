@@ -1,7 +1,7 @@
 # SOBE Notfall – Alarmserver
 
 Gemeinsamer Datenbestand für Webportal und iOS-App. Ohne diesen Server sind beide
-getrennte Welten: Ein im Portal angelegter Benutzer existiert auf dem Telefon nicht,
+getrennte Welten: Ein im Portal angelegtes Konto existiert auf dem Telefon nicht,
 und ein Alarm erreicht nur das Gerät, auf dem er ausgelöst wurde.
 
 ## Was der Server übernimmt
@@ -9,7 +9,7 @@ und ein Alarm erreicht nur das Gerät, auf dem er ausgelöst wurde.
 - **Konten und Anmeldung** – E-Mail und Passwort, Sitzungs-Token, Rollenprüfung.
   Passwörter liegen als PBKDF2-SHA256-Hash (210 000 Runden, Zufalls-Salt) in der
   Datenbank und verlassen den Server nie.
-- **Gemeinsamer Datenbestand** – Benutzer, Gruppen, Standorte, Szenarien,
+- **Gemeinsamer Datenbestand** – Konten, Gruppen, Standorte, Szenarien,
   Alarmpläne, Notrufnummern, Alarme, Alleinarbeits-Timer, Ereignisprotokoll.
 - **Alarmverarbeitung** – Eskalationsstufen und abgelaufene Alleinarbeits-Timer
   werden serverseitig ausgewertet, auch wenn kein Gerät eingeschaltet ist.
@@ -81,7 +81,7 @@ von bekannten Geheimnissen bereinigt.
 
 Beim ersten Start werden Standorte, Gruppen, Szenarien, Alarmplan-Vorlagen und
 Notrufnummern angelegt sowie ein Administratorkonto mit erzwungenem
-Passwortwechsel. Beispiel-Benutzer gibt es bewusst keine – der Server ist der
+Passwortwechsel. Beispielkonten gibt es bewusst keine – der Server ist der
 Live-Betrieb.
 
 Es existiert immer mindestens ein anmeldefähiger Administrator: Der letzte lässt
@@ -298,7 +298,7 @@ Administrationsportal unter **Integrationen** konfiguriert:
 - **SMS-Gateway** – eCall oder ASPSMS (Schweizer Anbieter) mit Zugangsdaten und
   Absenderkennung, alternativ ein eigenes HTTP-Gateway über eine URL-Vorlage
   mit `{to}`, `{text}`, `{from}`. Versand bei Alarm, Lagemeldung und Entwarnung
-  an alle Empfänger mit Kanal «SMS»; Zustellstatus je Person in der
+  an alle Empfänger:innen mit Kanal «SMS»; Zustellstatus je Person in der
   Alarmzentrale, Kostenzähler im Portal, Test-SMS an die eigene Nummer.
 - **Microsoft Teams** – Karte in einen Kanal des Krisenstabs über eine
   Workflows-/Incoming-Webhook-URL. Alarm (rot), Lagemeldung und Entwarnung
@@ -306,7 +306,7 @@ Administrationsportal unter **Integrationen** konfiguriert:
 - **Sprachanruf & Telefonkonferenz über Teams** – App-Registrierung in
   Microsoft Entra ID (Mandant, Anwendungs-ID, Geheimnis) mit den
   Anwendungsberechtigungen `OnlineMeetings.ReadWrite.All` und
-  `Calls.Initiate.All`. Kanal «Sprachanruf» lässt die Empfänger in Teams
+  `Calls.Initiate.All`. Kanal «Sprachanruf» lässt die Empfänger:innen in Teams
   klingeln; Kanal «Telefonkonferenz» eröffnet eine Teams-Besprechung im Namen
   des hinterlegten Organisators und verteilt den Beitrittslink per Push und in
   den Teams-Kanal.

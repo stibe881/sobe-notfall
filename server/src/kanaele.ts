@@ -87,7 +87,7 @@ export async function sendeAlarmKanaele(alarm: Alarm, nurUserIds?: string[]): Pr
     protokolliere(
       alarm.id,
       ok.size > 0
-        ? `SMS an ${ok.size} Empfänger übergeben${fehl.size ? `, ${fehl.size} fehlgeschlagen` : ''}${ohneNummer.length ? ` (${ohneNummer.length} ohne Telefonnummer)` : ''}`
+        ? `SMS an ${ok.size} Empfänger:innen übergeben${fehl.size ? `, ${fehl.size} fehlgeschlagen` : ''}${ohneNummer.length ? ` (${ohneNummer.length} ohne Telefonnummer)` : ''}`
         : `SMS-Versand fehlgeschlagen${fehlerText ? `: ${fehlerText}` : ''}`,
     )
     veraendert = true
@@ -107,7 +107,7 @@ export async function sendeAlarmKanaele(alarm: Alarm, nurUserIds?: string[]): Pr
         farbe: 'attention',
         fakten: [
           { name: 'Ausgelöst', wert: new Date(alarm.triggeredAt).toLocaleString('de-CH') },
-          { name: 'Empfänger', wert: String(new Set(alarm.deliveries.map((d) => d.userId)).size) },
+          { name: 'Empfänger:innen', wert: String(new Set(alarm.deliveries.map((d) => d.userId)).size) },
           ...(alarm.silent ? [{ name: 'Hinweis', wert: 'Stiller Alarm – kein Ton, keine Rückrufe' }] : []),
         ],
       })
@@ -216,7 +216,7 @@ export async function sendeInfoKanaele(
         aktuell.smsGateway.sentCount = (aktuell.smsGateway.sentCount ?? 0) + erfolgreich
         speichereIntegrationen(aktuell)
       }
-      protokolliere(alarm.id, `${titelArt} per SMS an ${erfolgreich} von ${empfaenger.length} Empfängern übergeben`)
+      protokolliere(alarm.id, `${titelArt} per SMS an ${erfolgreich} von ${empfaenger.length} Empfänger:innen übergeben`)
       broadcast('state')
     }
   }

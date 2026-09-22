@@ -91,7 +91,7 @@ async function main(): Promise<void> {
 
   // Wer einen Alarm erhält, hat ihn nicht entdeckt: Für ihn gilt ein eigener
   // Ablauf ohne Notruf und ohne erneute Auslösung.
-  pruefe('jedes freigegebene Szenario hat Schritte für Empfänger',
+  pruefe('jedes freigegebene Szenario hat Schritte für Empfänger:innen',
     aktive.every((s: any) => Array.isArray(s.responseSteps) && s.responseSteps.length >= 3),
     aktive.filter((s: any) => (s.responseSteps?.length ?? 0) < 3).map((s: any) => s.id).join(', '))
   const empfaengerLoest = aktive.flatMap((s: any) =>
@@ -99,7 +99,7 @@ async function main(): Promise<void> {
       .filter((st: any) => /Alarm in der App auslösen|Aufgebot in der App|(118|144) (anrufen|alarmieren)/i.test(st.text))
       .map((st: any) => `${s.id}: ${st.text.slice(0, 60)}`),
   )
-  pruefe('Empfänger werden nicht zum erneuten Alarmieren angehalten', empfaengerLoest.length === 0, empfaengerLoest.join(' | '))
+  pruefe('Empfänger:innen werden nicht zum erneuten Alarmieren angehalten', empfaengerLoest.length === 0, empfaengerLoest.join(' | '))
 
   // Gruppenzuordnung: Jede genannte Gruppe muss existieren, und jedes Szenario
   // braucht mindestens einen Schritt, der für alle gilt - sonst stünde jemand
@@ -110,7 +110,7 @@ async function main(): Promise<void> {
   )
   pruefe('Empfängerschritte verweisen nur auf vorhandene Gruppen', fremdeGruppen.length === 0, fremdeGruppen.join(', '))
   const ohneAllgemein = aktive.filter((s: any) => !(s.responseSteps ?? []).some((st: any) => !st.groupIds?.length)).map((s: any) => s.id)
-  pruefe('jedes Szenario hat mindestens einen Schritt für alle Empfänger', ohneAllgemein.length === 0, ohneAllgemein.join(', '))
+  pruefe('jedes Szenario hat mindestens einen Schritt für alle Empfänger:innen', ohneAllgemein.length === 0, ohneAllgemein.join(', '))
 
   // Mit der Entwarnung kommt eine zweite Mitteilung – sie braucht Inhalt
   pruefe('jedes freigegebene Szenario hat Schritte nach der Entwarnung',
@@ -152,7 +152,7 @@ async function main(): Promise<void> {
       password: 'Muster2026', mustChangePassword: false,
     }),
   })
-  pruefe('Benutzer angelegt', angelegt.status === 200)
+  pruefe('Konto angelegt', angelegt.status === 200)
   const peterId: string = angelegt.body.user.id
 
   const doppelt = await ruf('/users', {
@@ -162,14 +162,14 @@ async function main(): Promise<void> {
   pruefe('doppelte E-Mail-Adresse abgelehnt', doppelt.status === 400)
 
   const peterAn = await ruf('/auth/login', { method: 'POST', body: JSON.stringify({ email: 'peter.muster@sonnenberg-baar.ch', password: 'Muster2026' }) })
-  pruefe('neu angelegter Benutzer kann sich anmelden', peterAn.status === 200)
+  pruefe('neu angelegtes Konto kann sich anmelden', peterAn.status === 200)
   const peterToken: string = peterAn.body.token
 
   const ohnePasswort = await ruf('/users', {
     method: 'POST', token: adminToken,
     body: JSON.stringify({ firstName: 'Ohne', lastName: 'Passwort', email: 'ohne@sonnenberg-baar.ch', role: 'mitarbeiter' }),
   })
-  pruefe('Benutzer ohne Passwort anlegbar', ohnePasswort.status === 200 && ohnePasswort.body.user.hasPassword === false)
+  pruefe('Konto ohne Passwort anlegbar', ohnePasswort.status === 200 && ohnePasswort.body.user.hasPassword === false)
   pruefe('ohne Passwort keine Anmeldung',
     (await ruf('/auth/login', { method: 'POST', body: JSON.stringify({ email: 'ohne@sonnenberg-baar.ch', password: 'egal1234' }) })).status === 401)
 
@@ -178,7 +178,7 @@ async function main(): Promise<void> {
     method: 'POST', token: peterToken,
     body: JSON.stringify({ firstName: 'Heimlich', lastName: 'Admin', email: 'heimlich@x.ch', role: 'admin' }),
   })
-  pruefe('Mitarbeitende dürfen keine Benutzer anlegen', fremdAnlage.status === 403)
+  pruefe('Mitarbeitende dürfen keine Konten anlegen', fremdAnlage.status === 403)
   pruefe('Mitarbeitende dürfen keine Szenarien ändern',
     (await ruf('/scenarios', { method: 'POST', token: peterToken, body: JSON.stringify({ id: 'sc-brand', title: 'Manipuliert' }) })).status === 403)
   pruefe('Mitarbeitende sehen den Datenbestand', (await ruf('/state', { token: peterToken })).status === 200)
@@ -186,9 +186,9 @@ async function main(): Promise<void> {
   // --- Letzter Administrator ---
   const admins = (await ruf('/state', { token: adminToken })).body.users.filter((u: any) => u.role === 'admin')
   pruefe('genau ein Administrator vorhanden', admins.length === 1)
-  pruefe('letzter Administrator nicht löschbar',
+  pruefe('letztes Administrationskonto nicht löschbar',
     (await ruf(`/users/${admins[0].id}`, { method: 'DELETE', token: adminToken })).status === 400)
-  pruefe('letzter Administrator nicht herabstufbar',
+  pruefe('letztes Administrationskonto nicht herabstufbar',
     (await ruf('/users', { method: 'POST', token: adminToken, body: JSON.stringify({ ...admins[0], role: 'mitarbeiter' }) })).status === 400)
 
   // --- Alarm ---
@@ -201,7 +201,7 @@ async function main(): Promise<void> {
   })
   pruefe('Alarm ausgelöst', alarm.status === 200 && alarm.body.alarm.status === 'active')
   const alarmId: string = alarm.body.alarm.id
-  pruefe('Empfänger wurden aufgelöst', alarm.body.alarm.deliveries.length > 0)
+  pruefe('Empfänger:innen wurden aufgelöst', alarm.body.alarm.deliveries.length > 0)
   pruefe('Antwort nennt, ob zusammengeführt wurde', alarm.body.merged === false)
 
   // --- Zweite Auslösung zum selben Ereignis wird zusammengeführt ---
@@ -283,7 +283,7 @@ async function main(): Promise<void> {
 
   // --- Gemeinsamer Datenbestand: das eigentliche Ziel ---
   const standPeter = await ruf('/state', { token: peterToken })
-  pruefe('App sieht die im Portal angelegten Benutzer',
+  pruefe('App sieht die im Portal angelegten Konten',
     standPeter.body.users.some((u: any) => u.email === 'peter.muster@sonnenberg-baar.ch'))
   pruefe('App sieht den beendeten Alarm', standPeter.body.alarms.some((a: any) => a.id === alarmId && a.status === 'ended'))
 
@@ -293,7 +293,7 @@ async function main(): Promise<void> {
     body: JSON.stringify({ activity: 'Kontrollgang', durationMin: 30, locationId: 'loc-baar', alertGroupIds: ['gr-krisenstab'], alertUserIds: [peterId] }),
   })
   pruefe('Alleinarbeits-Timer gestartet', timer.status === 200 && timer.body.session.status === 'running')
-  pruefe('Empfänger bei Ablauf werden gespeichert',
+  pruefe('Empfänger:innen bei Ablauf werden gespeichert',
     JSON.stringify(timer.body.session.alertGroupIds) === '["gr-krisenstab"]' && JSON.stringify(timer.body.session.alertUserIds) === JSON.stringify([peterId]))
   const verlaengert = await ruf(`/lone-work/${timer.body.session.id}/extend`, { method: 'POST', token: peterToken, body: JSON.stringify({ minutes: 20 }) })
   pruefe('Timer verlängert', verlaengert.body.session.expiresAt > timer.body.session.expiresAt)
@@ -456,7 +456,7 @@ async function main(): Promise<void> {
       channels: ['push'], groupIds: ['gr-ersthelfer'], locationIds: ['loc-menzingen'], triggeredVia: 'web',
     }),
   })
-  pruefe('Aufenthalt am Standort macht die Person zum Empfänger',
+  pruefe('Aufenthalt am Standort macht die Person zum Empfänger:innen',
     mitGeo.body.alarm.deliveries.some((d: any) => d.userId === peterId))
   await ruf(`/alarms/${mitGeo.body.alarm.id}/end`, { method: 'POST', token: adminToken })
 

@@ -5,7 +5,7 @@ import {
   ListChecks, LogOut, MapPin, Megaphone, Phone, PhoneCall, Play, Scale, Search, ShieldAlert, ShieldCheck, Siren, Timer, User, Users, Volume2, X,
 } from 'lucide-react'
 import { alleinarbeitEmpfaenger, createAlarm, resolveRecipients, uid, useStore } from '../store'
-import { LONE_WORK_DEFAULT_GROUPS, type Alarm, type Channel, type LoneWorkSession, type Scenario, type User as AppUser } from '../types'
+import { LONE_WORK_DEFAULT_GROUPS, ROLE_LABELS, type Alarm, type Channel, type LoneWorkSession, type Scenario, type User as AppUser } from '../types'
 import { Badge, HoldButton, Toggle, formatDuration, formatRelative, inputClass, kanalName, useConfirm, usePrompt } from '../components/ui'
 import { ScenarioIcon } from '../components/ScenarioIcon'
 import { MIN_PASSWORD_LENGTH, passwordProblem } from '../lib/auth'
@@ -216,8 +216,8 @@ function Rueckmeldestand({ alarm }: { alarm: Alarm }) {
   )
 }
 
-const FEHLALARM_TEXT = 'Alle Empfänger und der Krisenstab erhalten Ihre Meldung; die Entwarnung gibt der Krisenstab. Kurze Begründung (optional):'
-const ENTWARNUNG_TEXT = 'Der Alarm wird beendet und alle Empfänger erhalten die Entwarnung. Hinweis für die Empfänger (optional):'
+const FEHLALARM_TEXT = 'Alle Empfänger:innen und der Krisenstab erhalten Ihre Meldung; die Entwarnung gibt der Krisenstab. Kurze Begründung (optional):'
+const ENTWARNUNG_TEXT = 'Der Alarm wird beendet und alle Empfänger:innen erhalten die Entwarnung. Hinweis für die Empfänger:innen (optional):'
 
 function StartTab({ onOpenScenario }: { onOpenScenario: (s: Scenario, alarm: Alarm, modus?: 'empfaenger' | 'entwarnung') => void }) {
   const { state, dispatch } = useStore()
@@ -1498,7 +1498,7 @@ function ProfileTab() {
         <div className="mt-3 space-y-1.5 text-sm text-slate-600">
           <div className="flex items-center gap-2"><MapPin size={13} className="text-slate-400" /> {myLocation?.name}</div>
           <div className="flex flex-wrap gap-1.5 pt-1">
-            <Badge color={me.role === 'admin' ? 'red' : me.role === 'krisenstab' ? 'violet' : 'slate'}>{me.role}</Badge>
+            <Badge color={me.role === 'admin' ? 'red' : me.role === 'krisenstab' ? 'violet' : 'slate'}>{ROLE_LABELS[me.role]}</Badge>
             {myGroups.map((g) => <Badge key={g.id}>{g.name}</Badge>)}
           </div>
         </div>

@@ -71,7 +71,7 @@ function AlarmCard({ alarm, collapsed = false }: { alarm: Alarm; collapsed?: boo
   function beenden() {
     frage(
       'Entwarnung geben',
-      'Der Alarm wird beendet und alle Empfänger erhalten die Entwarnung als Mitteilung. Hinweis für die Empfänger (optional):',
+      'Der Alarm wird beendet und alle Empfänger:innen erhalten die Entwarnung als Mitteilung. Hinweis für die Empfänger:innen (optional):',
       (text) => dispatch({ type: 'END_ALARM', alarmId: alarm.id, byUserId: state.currentUserId, note: text }),
       'Entwarnung senden',
       'z. B. Rückkehr ab 10:30 über den Haupteingang',
@@ -154,7 +154,7 @@ function AlarmCard({ alarm, collapsed = false }: { alarm: Alarm; collapsed?: boo
               <Megaphone size={16} className="text-violet-600 mt-2.5 shrink-0" />
               <input
                 className={inputClass}
-                placeholder="Lagemeldung an alle Empfänger – z. B. «Sammelplatz Ost gesperrt, bitte Nord»"
+                placeholder="Lagemeldung an alle Empfänger:innen – z. B. «Sammelplatz Ost gesperrt, bitte Nord»"
                 value={lage}
                 onChange={(e) => setLage(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') lagemeldung() }}
@@ -168,7 +168,7 @@ function AlarmCard({ alarm, collapsed = false }: { alarm: Alarm; collapsed?: boo
       {open && (
         <div className="border-t border-slate-100 px-5 py-4 grid lg:grid-cols-2 gap-6">
           <div>
-            <h4 className="text-sm font-semibold text-slate-600 mb-2">Empfänger &amp; Zustellstatus</h4>
+            <h4 className="text-sm font-semibold text-slate-600 mb-2">Empfänger:innen &amp; Zustellstatus</h4>
             <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
               {userIds.map((userId) => {
                 const user = state.users.find((u) => u.id === userId)

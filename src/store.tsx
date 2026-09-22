@@ -159,7 +159,7 @@ export function createAlarm(state: AppState, opts: TriggerOptions): Alarm {
     escalation: opts.escalation ?? [],
     deliveries: buildDeliveries(recipients, opts.channels),
     log: [
-      { ts: now, message: `Alarm ausgelöst (${opts.triggeredVia}) – ${recipients.length} Empfänger über ${opts.channels.map((c) => CHANNEL_LABELS[c]).join(', ')}` },
+      { ts: now, message: `Alarm ausgelöst (${opts.triggeredVia}) – ${recipients.length} Empfänger:innen über ${opts.channels.map((c) => CHANNEL_LABELS[c]).join(', ')}` },
       ...(opts.silent ? [{ ts: now, message: 'Stiller Alarm – keine Signaltöne auf Empfängergeräten.' }] : []),
     ],
   }
@@ -224,7 +224,7 @@ function reducer(state: AppState, action: Action): AppState {
       return {
         ...state,
         users: exists ? state.users.map((u) => (u.id === user.id ? user : u)) : [...state.users, user],
-        audit: audit(state, 'admin', `${exists ? 'Benutzer aktualisiert' : 'Benutzer erstellt'}: ${user.firstName} ${user.lastName}`),
+        audit: audit(state, 'admin', `${exists ? 'Konto aktualisiert' : 'Konto erstellt'}: ${user.firstName} ${user.lastName}`),
       }
     }
     case 'DELETE_USER':
@@ -235,10 +235,10 @@ function reducer(state: AppState, action: Action): AppState {
         users: state.users.filter((u) => u.id !== action.userId),
         // Wer sich selbst löscht, wird abgemeldet
         session: state.session?.userId === action.userId ? null : state.session,
-        audit: audit(state, 'admin', 'Benutzer gelöscht'),
+        audit: audit(state, 'admin', 'Konto gelöscht'),
       }
     case 'IMPORT_USERS':
-      return { ...state, users: [...state.users, ...action.users], audit: audit(state, 'admin', `CSV-Import: ${action.users.length} Benutzer importiert`) }
+      return { ...state, users: [...state.users, ...action.users], audit: audit(state, 'admin', `CSV-Import: ${action.users.length} Konten importiert`) }
     case 'UPSERT_GROUP': {
       const exists = state.groups.some((g) => g.id === action.group.id)
       return {
@@ -320,7 +320,7 @@ function reducer(state: AppState, action: Action): AppState {
           a.id === action.alarmId
             ? {
                 ...a, status: 'ended' as const, endedAt: Date.now(), endNote: note,
-                log: [...a.log, { ts: Date.now(), message: `Alarm beendet – Entwarnung an alle Empfänger versendet.${note ? ` «${note}»` : ''}` }],
+                log: [...a.log, { ts: Date.now(), message: `Alarm beendet – Entwarnung an alle Empfänger:innen versendet.${note ? ` «${note}»` : ''}` }],
               }
             : a,
         ),
@@ -477,9 +477,9 @@ interface Toast {
 function toastForAction(action: Action): Toast['message'] | { message: string; kind: 'alarm' } | null {
   switch (action.type) {
     case 'TRIGGER_ALARM':
-      return { message: action.alarm.drill ? 'Übung gestartet – Empfänger werden als Übung benachrichtigt' : 'Alarm ausgelöst – Empfänger werden benachrichtigt', kind: 'alarm' }
+      return { message: action.alarm.drill ? 'Übung gestartet – Empfänger:innen werden als Übung benachrichtigt' : 'Alarm ausgelöst – Empfänger:innen werden benachrichtigt', kind: 'alarm' }
     case 'ALARM_UPDATE':
-      return action.kind === 'fehlalarm' ? 'Fehlalarm gemeldet – der Krisenstab gibt die Entwarnung' : 'Lagemeldung an alle Empfänger gesendet'
+      return action.kind === 'fehlalarm' ? 'Fehlalarm gemeldet – der Krisenstab gibt die Entwarnung' : 'Lagemeldung an alle Empfänger:innen gesendet'
     case 'END_ALARM':
       return 'Alarm beendet – Entwarnung versendet'
     case 'ACK_ALARM':
@@ -489,11 +489,11 @@ function toastForAction(action: Action): Toast['message'] | { message: string; k
     case 'SET_PASSWORD':
       return 'Passwort gespeichert'
     case 'UPSERT_USER':
-      return action.password ? 'Benutzer und Passwort gespeichert' : 'Benutzer gespeichert'
+      return action.password ? 'Konto und Passwort gespeichert' : 'Konto gespeichert'
     case 'DELETE_USER':
-      return 'Benutzer gelöscht'
+      return 'Konto gelöscht'
     case 'IMPORT_USERS':
-      return `${action.users.length} Benutzer importiert`
+      return `${action.users.length} Konten importiert`
     case 'UPSERT_GROUP':
       return 'Gruppe gespeichert'
     case 'DELETE_GROUP':

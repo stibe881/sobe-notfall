@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { BookOpen, ExternalLink } from 'lucide-react'
 import { api, serverUrl } from '../lib/api'
 import { useStore } from '../store'
+import type { Role } from '../types'
 import { Badge, Card } from '../components/ui'
 
 /**
@@ -12,29 +13,33 @@ import { Badge, Card } from '../components/ui'
  * Portal-Anpassung; für die bekannten gibt es Zielgruppe und Kurzbeschrieb.
  */
 
-const BEKANNT: Record<string, { nr: number; titel: string; fuer: string; beschreibung: string }> = {
+const BEKANNT: Record<string, { nr: number; titel: string; fuer: string; beschreibung: string; rollen: Role[] }> = {
   'handbuch-1-administration.html': {
     nr: 1,
     titel: 'Administration',
     fuer: 'Schulleitung und Systemverantwortliche',
-    beschreibung: 'Das System einrichten und aktuell halten: Szenarien, Benutzer, Gruppen, Alarmpläne, Integrationen, Aktualisierung.',
+    rollen: ['admin'],
+    beschreibung: 'Das System einrichten und aktuell halten: Szenarien, Konten, Gruppen, Alarmpläne, Integrationen, Aktualisierung.',
   },
   'handbuch-2-krisenstab.html': {
     nr: 2,
     titel: 'Krisenstab',
     fuer: 'Krisenstabsmitglieder',
+    rollen: ['admin', 'krisenstab'],
     beschreibung: 'Führen im Ereignis: Alarm auslösen, Alarmzentrale, Lagemeldungen, Entwarnung, Krisenteam aufbieten.',
   },
   'handbuch-3-mitarbeitende.html': {
     nr: 3,
     titel: 'Mitarbeitende',
     fuer: 'alle Mitarbeitenden',
+    rollen: ['admin', 'krisenstab', 'mitarbeiter'],
     beschreibung: 'Die App im Alltag und im Ernstfall: Alarme empfangen und quittieren, Szenarien, SOS, Alleinarbeits-Timer, Notruf.',
   },
   'handbuch-4-installation.html': {
     nr: 4,
     titel: 'Installation & Konfiguration',
     fuer: 'Systemverantwortliche und technischen Betrieb',
+    rollen: ['admin'],
     beschreibung: 'Vom leeren Server zum geprobten Failover: Installation, Einrichtung, Integrationen, App-Verteilung, Redundanz, Sicherung.',
   },
 }
@@ -50,9 +55,12 @@ export default function Help() {
       .catch((f: Error) => setFehler(f.message))
   }, [])
 
-  // Solange die Liste lädt, die bekannten Handbücher zeigen
+  // Nur die Handbücher der eigenen Rolle – wie in der App. Ein unbekanntes
+  // Handbuch (künftige Ergänzung) bleibt sichtbar, statt stillschweigend zu fehlen.
+  const eigeneRolle = state.users.find((u) => u.id === state.session?.userId)?.role ?? 'mitarbeiter'
   const liste = (dateien && dateien.length > 0 ? dateien : Object.keys(BEKANNT).map((datei) => ({ datei, titel: BEKANNT[datei].titel })))
     .map((h) => ({ ...h, info: BEKANNT[h.datei] as (typeof BEKANNT)[string] | undefined }))
+    .filter((h) => !h.info || h.info.rollen.includes(eigeneRolle))
     .sort((a, b) => (a.info?.nr ?? 99) - (b.info?.nr ?? 99) || a.datei.localeCompare(b.datei))
 
   return (
@@ -60,8 +68,8 @@ export default function Help() {
       <div>
         <h1 className="text-2xl font-bold text-slate-800">Handbücher</h1>
         <p className="text-sm text-slate-500">
-          Die Benutzerhandbücher zur installierten Version – je eines pro Rolle. Sie öffnen im Browser
-          und lassen sich von dort drucken oder als PDF sichern.
+          Die Handbücher zur installierten Version – gezeigt werden die, die für Ihre Rolle gelten.
+          Sie öffnen im Browser und lassen sich von dort drucken oder als PDF sichern.
         </p>
       </div>
 

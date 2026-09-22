@@ -73,10 +73,10 @@ export default function LoneWorker() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-800">Alleinarbeiterschutz</h1>
+        <h1 className="text-2xl font-bold text-slate-800">Alleinarbeitsschutz</h1>
         <p className="text-sm text-slate-500">
           Timer-Funktion mit automatischer Alarmauslösung: Meldet sich die Person nicht rechtzeitig zurück, alarmiert der Server
-          automatisch Ersthelfer und Sicherheitsdienst – auf Wunsch still und unauffällig.
+          automatisch Ersthelfende und Sicherheitsdienst – auf Wunsch still und unauffällig.
         </p>
       </div>
 

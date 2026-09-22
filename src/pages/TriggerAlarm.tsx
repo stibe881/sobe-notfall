@@ -79,7 +79,7 @@ export default function TriggerAlarm() {
       escalation: plan?.escalation ?? [],
       drill,
     })
-    dispatch({ type: 'TRIGGER_ALARM', alarm, audit: `${drill ? 'Übung' : 'Alarm'} ausgelöst: ${scenario.title} (${recipients.length} Empfänger)` })
+    dispatch({ type: 'TRIGGER_ALARM', alarm, audit: `${drill ? 'Übung' : 'Alarm'} ausgelöst: ${scenario.title} (${recipients.length} Empfänger:innen)` })
     navigate('/monitor')
   }
 
@@ -97,7 +97,7 @@ export default function TriggerAlarm() {
       <div className="space-y-4 max-w-4xl mx-auto">
         <div>
           <h1 className="text-2xl font-bold text-slate-800">Alarm auslösen</h1>
-          <p className="text-sm text-slate-500">Szenario antippen – Empfänger und Kanäle werden automatisch vorbereitet.</p>
+          <p className="text-sm text-slate-500">Szenario antippen – Empfänger:innen und Kanäle werden automatisch vorbereitet.</p>
         </div>
 
         <div className="relative">
@@ -185,7 +185,7 @@ export default function TriggerAlarm() {
         <div className="mt-4 rounded-xl bg-slate-50 p-3.5 space-y-2 text-sm">
           <div className="flex items-center gap-2 text-slate-800 font-semibold">
             <Users size={15} />
-            {recipients.length} Empfänger werden alarmiert
+            {recipients.length} Empfänger:innen werden alarmiert
           </div>
           <div className="text-slate-500">
             {groupIds.map((g) => state.groups.find((x) => x.id === g)?.name).filter(Boolean).join(', ') || 'Alle Gruppen'}
@@ -300,7 +300,7 @@ export default function TriggerAlarm() {
           </HoldButton>
           {(channels.length === 0 || recipients.length === 0) && (
             <div className="text-center text-xs text-alarm-600 mt-2">
-              {recipients.length === 0 ? 'Keine Empfänger in der aktuellen Auswahl.' : 'Mindestens einen Kanal wählen.'}
+              {recipients.length === 0 ? 'Keine Empfänger:innen in der aktuellen Auswahl.' : 'Mindestens einen Kanal wählen.'}
             </div>
           )}
         </div>

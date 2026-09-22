@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import { KeyRound, Pencil, Plus, Trash2, Upload } from 'lucide-react'
 import { isLastAdmin, uid, useStore } from '../store'
-import type { Role, User } from '../types'
+import { ROLE_LABELS, type Role, type User } from '../types'
 import { Badge, Button, Card, Field, Modal, inputClass, useConfirm } from '../components/ui'
 import { MIN_PASSWORD_LENGTH, hasPassword, passwordProblem } from '../lib/auth'
 
@@ -63,7 +63,7 @@ export default function UsersPage() {
             onChange={(e) => { const f = e.target.files?.[0]; if (f) importCsv(f); e.target.value = '' }}
           />
           <Button variant="secondary" onClick={() => fileInput.current?.click()}><Upload size={16} /> CSV-Import</Button>
-          <Button onClick={() => setEditing(newUser())}><Plus size={16} /> Neuer Benutzer</Button>
+          <Button onClick={() => setEditing(newUser())}><Plus size={16} /> Neues Konto</Button>
         </div>
       </div>
 
@@ -97,7 +97,7 @@ export default function UsersPage() {
                       <div className="text-xs">{u.phone}</div>
                     </td>
                     <td className="py-2.5 pr-4">
-                      <Badge color={u.role === 'admin' ? 'red' : u.role === 'krisenstab' ? 'violet' : 'slate'}>{u.role}</Badge>
+                      <Badge color={u.role === 'admin' ? 'red' : u.role === 'krisenstab' ? 'violet' : 'slate'}>{ROLE_LABELS[u.role]}</Badge>
                     </td>
                     <td className="py-2.5 pr-4">
                       <div className="flex flex-wrap gap-1">
@@ -135,7 +135,7 @@ export default function UsersPage() {
                       <Button
                         variant="ghost"
                         disabled={isLastAdmin(state, u.id)}
-                        title={isLastAdmin(state, u.id) ? 'Der letzte Administrator kann nicht gelöscht werden' : 'Benutzer löschen'}
+                        title={isLastAdmin(state, u.id) ? 'Das letzte Administrationskonto kann nicht gelöscht werden' : 'Benutzer löschen'}
                         onClick={() => ask(`${u.firstName} ${u.lastName} löschen?`, () => dispatch({ type: 'DELETE_USER', userId: u.id }))}
                       >
                         <Trash2 size={14} />
@@ -191,7 +191,7 @@ function UserEditor({ user, onClose }: { user: User; onClose: () => void }) {
   }
 
   return (
-    <Modal title={user.firstName ? `Benutzer: ${user.firstName} ${user.lastName}` : 'Neuer Benutzer'} onClose={onClose}>
+    <Modal title={user.firstName ? `Konto: ${user.firstName} ${user.lastName}` : 'Neues Konto'} onClose={onClose}>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Field label="Vorname">
           <input className={inputClass} value={draft.firstName} onChange={(e) => setDraft({ ...draft, firstName: e.target.value })} />
@@ -210,9 +210,7 @@ function UserEditor({ user, onClose }: { user: User; onClose: () => void }) {
             className={inputClass} value={draft.role} disabled={letzterAdmin}
             onChange={(e) => { setDraft({ ...draft, role: e.target.value as Role }); setPasswordError(null) }}
           >
-            <option value="mitarbeiter">Mitarbeiter</option>
-            <option value="krisenstab">Krisenstab</option>
-            <option value="admin">Administrator</option>
+            {(Object.keys(ROLE_LABELS) as Role[]).map((r) => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
           </select>
           {letzterAdmin && (
             <span className="block text-xs text-slate-400 mt-1">

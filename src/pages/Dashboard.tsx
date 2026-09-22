@@ -19,7 +19,7 @@ export default function Dashboard() {
 
   const stats = [
     { label: 'Aktive Alarme', value: activeAlarms.length, icon: Siren, to: '/monitor', highlight: activeAlarms.length > 0 },
-    { label: 'Benutzer', value: state.users.length, icon: Users, to: '/benutzer' },
+    { label: 'Benutzende', value: state.users.length, icon: Users, to: '/benutzer' },
     { label: 'Laufende Alleinarbeit', value: runningLoneWork.length, icon: Timer, to: '/alleinarbeit' },
     { label: 'Alarmknöpfe online', value: state.buttons.length, icon: Radio, to: '/alarmknoepfe' },
   ]

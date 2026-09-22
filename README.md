@@ -2,12 +2,12 @@
 
 Webapp für das Notfall- und Krisenmanagement des SONNENBERG Kompetenzzentrums (heilpädagogische Schule)
 mit den Standorten **Baar (Hauptsitz), Menzingen und Kloten** – inspiriert vom Funktionsumfang von e-mergency®:
-Alarmserver, Multikanal-Alarmierung, Notfallszenarien mit Handlungsanweisungen und Alleinarbeiterschutz.
+Alarmserver, Multikanal-Alarmierung, Notfallszenarien mit Handlungsanweisungen und Alleinarbeitsschutz.
 
 ## Funktionsübersicht
 
 ### 01 Vorbereitung (Admin-Web)
-- **Szenarien & Checklisten (CMS):** 22 vorkonfigurierte, heilpädagogisch-schulische Notfallszenarien (u. a. Brand, Evakuierung, vermisste Schüler:innen/Weglaufen, Krampfanfall/Epilepsie, allergische Reaktion, herausforderndes Verhalten/Eskalation, Medikamenten-Zwischenfall, Unfall Schülertransport, Todesfall, akute psychische Krise, Kindesschutz, Notfall im Therapiebad, Amok, Bombendrohung, IT-Ausfall u. v. m.). Jedes Szenario mit Priorität, Sofort- und Folgemassnahmen, Checkliste, zuständigen Gruppen, Standard-Alarmkanälen und verknüpften Notrufnummern – alles im Editor anpassbar, eigene Szenarien erstellbar.
+- **Szenarien (CMS):** 22 vorkonfigurierte, heilpädagogisch-schulische Notfallszenarien (u. a. Brand, Evakuierung, vermisste Schüler:innen/Weglaufen, Krampfanfall/Epilepsie, allergische Reaktion, herausforderndes Verhalten/Eskalation, Medikamenten-Zwischenfall, Unfall Schülertransport, Todesfall, akute psychische Krise, Kindesschutz, Notfall im Therapiebad, Amok, Bombendrohung, IT-Ausfall u. v. m.). Jedes Szenario mit Priorität, Sofort- und Folgemassnahmen, Checkliste, zuständigen Gruppen, Standard-Alarmkanälen und verknüpften Notrufnummern – alles im Editor anpassbar, eigene Szenarien erstellbar.
 - **Benutzerverwaltung:** manuelle Erfassung, CSV-Import (`Vorname;Nachname;E-Mail;Telefon;Rolle`), Rollen/Berechtigungen (Admin, Krisenstab, Mitarbeiter), Ferienabwesenheiten und Teilzeit, App-Sprache pro Nutzer (DE/EN/FR/IT).
 - **Gruppen & Krisenteams:** Nutzergruppen mit Mitgliederverwaltung, Kennzeichnung als Krisenteam.
 - **Standorte:** Baar (Hauptsitz, inkl. Wohngruppen rund um die Uhr), Menzingen und Kloten – mit Betriebszeiten und Geofencing (Koordinaten + Radius) zur automatischen Standortzuweisung.
@@ -18,14 +18,14 @@ Alarmserver, Multikanal-Alarmierung, Notfallszenarien mit Handlungsanweisungen u
 - **Alarm auslösen:** Szenariowahl, zielgruppenspezifische Alarmierung nach Standort/Gruppe, Kanalwahl.
 - **Alarmierungskanäle (simuliert):** Push mit Critical Alerts, SMS, E-Mail, Sprachanruf, Telefonkonferenz, Text-to-Speech-Durchsage, Microsoft Teams.
 - **Stiller Alarm** (z. B. Bedrohungslage) und **Aufgebot mit Quittierfunktion** («Ich komme» / «Nicht verfügbar»).
-- **Alarmzentrale:** Live-Monitoring mit Zustellstatus pro Empfänger und Kanal, Quittierungsübersicht, Alarmjournal, automatische Eskalationsstufen, Entwarnung.
+- **Alarmzentrale:** Live-Monitoring mit Zustellstatus pro Person und Kanal, Quittierungsübersicht, Alarmjournal, automatische Eskalationsstufen, Entwarnung.
 - **Alarmierung auf dem iPhone:** Nicht stille Alarme werden mit der höchsten Stufe verschickt, die das Gerät zulässt. Beide Stufen – zeitkritisch und Critical Alert – setzen eine Berechtigung voraus, die einmalig einzurichten ist; bis dahin kommen Alarme als normale Mitteilung an. Anleitung: [`mobile/CRITICAL-ALERTS.md`](mobile/CRITICAL-ALERTS.md). Stille Alarme bleiben lautlos.
 - **Notfallszenarien:** Neun Szenarien sind für Mitarbeitende freigeschaltet – Brand, Evakuierung, Medizinischer Notfall, Herausforderndes Verhalten, Verdächtige Person auf dem Areal, Todesfall, Notfall im Therapiebad, ICT-Ausfall und Krisenstab einberufen. Jedes führt Schritt für Schritt durch die Akutphase, die Nachbearbeitung und eine Checkliste und nennt die einschlägigen Schweizer Rechtsgrundlagen. Die übrigen Szenarien bleiben in der Verwaltung ausgegraut erhalten und lassen sich dort jederzeit wieder einblenden.
 - **Anmeldung:** E-Mail und Passwort, im Webportal wie in der App. Passwörter werden gesalzen und als SHA-256-Hash gespeichert; Administratoren vergeben und setzen Passwörter in der Benutzerverwaltung zurück, jede Person ändert ihr Passwort im Profil. Ein Erstpasswort kann mit erzwungenem Wechsel bei der nächsten Anmeldung vergeben werden. Die Prüfung der Anmeldedaten liegt vollständig in `src/lib/auth.ts` – für eine spätere SSO- oder Backend-Anbindung muss nur `authenticate()` ersetzt werden.
 - **Rollen & Portale:** Das Webportal (Verwaltung) ist Admin und Krisenstab vorbehalten – beide sehen alles und haben zusätzlich Zugriff auf die iOS-App (`mobile/`, plus Web-Vorschau über «App-Vorschau (iOS)»). Mitarbeitende haben ausschliesslich Zugriff auf die iOS-App; im Webportal sehen sie nur einen Hinweis-Bildschirm mit Verweis auf die App.
-- **App-Vorschau (iOS):** Web-Version der Mitarbeiter-App mit SOS-Taste (Halte-Geste), aktiven Alarmen mit Quittierung, offline verfügbaren Szenarien/Checklisten, eigenem Alleinarbeits-Timer und Notrufkontakten (direkt anrufbar) – öffnet in einem separaten Tab.
+- **App-Vorschau (iOS):** Web-Version der Mitarbeitenden-App mit SOS-Taste (Halte-Geste), aktiven Alarmen mit Quittierung, offline verfügbaren Szenarien/Checklisten, eigenem Alleinarbeits-Timer und Notrufkontakten (direkt anrufbar) – öffnet in einem separaten Tab.
 
-### 03 Alleinarbeiterschutz
+### 03 Alleinarbeitsschutz
 - **Timer-Funktion:** Überwachung mit Intervall, Lebenszeichen und automatischer Alarmauslösung bei Ablauf – wahlweise still.
 - **Physische Alarmknöpfe:** Verwaltung von LoRaWAN- (Batterie > 4 Jahre) und GSM-Knöpfen mit GPS, individuellen Alarmnachrichten, Zielgruppen und automatischer Eskalation an Blaulichtorganisationen.
 
@@ -42,7 +42,7 @@ Alarmserver, Multikanal-Alarmierung, Notfallszenarien mit Handlungsanweisungen u
 
 ## Native Mobile-App (Expo)
 
-Im Ordner **`mobile/`** liegt eine native React-Native-Version der Mitarbeiter-App (Expo SDK 54) –
+Im Ordner **`mobile/`** liegt eine native React-Native-Version der Mitarbeitenden-App (Expo SDK 54) –
 **für iOS und Android aus demselben Code**. iOS wird über TestFlight/App Store verteilt, Android
 über den Play Store oder als direkt installierbares APK; die Android-Einrichtung (Signatur-Schlüssel,
 Firebase für Push) steht in [`mobile/README.md`](mobile/README.md), Abschnitt «Android».
@@ -150,7 +150,7 @@ Alarmauslösung.
 | --- | --- |
 | `stefan.gross@sonnenberg-baar.ch` (einziges Konto beim ersten Start des Servers) | `SOBE-Start2026!`, muss bei der ersten Anmeldung geändert werden |
 
-Weitere Konten werden im Portal unter **Benutzer** angelegt; sie liegen auf
+Weitere Konten werden im Portal unter **Benutzende** angelegt; sie liegen auf
 dem Server und gelten damit sofort auch in der App auf dem Telefon.
 
 Der Datenbestand kann sich nicht dauerhaft aussperren: Der letzte verbliebene Administrator kann weder

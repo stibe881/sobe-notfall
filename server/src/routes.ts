@@ -57,7 +57,7 @@ function auth(req: AuthRequest, res: Response, next: NextFunction): void {
 /** Nur Administratoren dürfen die Konfiguration ändern */
 function adminOnly(req: AuthRequest, res: Response, next: NextFunction): void {
   if (req.user?.role !== 'admin') {
-    res.status(403).json({ error: 'Diese Aktion ist Administratoren vorbehalten.' })
+    res.status(403).json({ error: 'Diese Aktion ist der Administration vorbehalten.' })
     return
   }
   next()
@@ -414,7 +414,7 @@ router.post('/users', auth, adminOnly, (req, res) => {
   }
 
   upsertUser(user)
-  addAudit('admin', `${bestehend ? 'Benutzer aktualisiert' : 'Benutzer erstellt'}: ${user.firstName} ${user.lastName}`)
+  addAudit('admin', `${bestehend ? 'Konto aktualisiert' : 'Konto erstellt'}: ${user.firstName} ${user.lastName}`)
   broadcast('state')
   res.json({ user: publicUser(user) })
 })
@@ -423,7 +423,7 @@ router.post('/users', auth, adminOnly, (req, res) => {
 router.post('/users/:id/password', auth, adminOnly, (req, res) => {
   const ziel = findStoredUser(req.params.id)
   if (!ziel) {
-    res.status(404).json({ error: 'Benutzer nicht gefunden.' })
+    res.status(404).json({ error: 'Konto nicht gefunden.' })
     return
   }
   const problem = passwordProblem(String(req.body?.password ?? ''))
@@ -447,12 +447,12 @@ router.post('/users/:id/password', auth, adminOnly, (req, res) => {
 
 router.delete('/users/:id', auth, adminOnly, (req, res) => {
   if (istLetzterAdmin(req.params.id)) {
-    res.status(400).json({ error: 'Der letzte Administrator kann nicht gelöscht werden.' })
+    res.status(400).json({ error: 'Das letzte Administrationskonto kann nicht gelöscht werden.' })
     return
   }
   deleteUser(req.params.id)
   destroyUserSessions(req.params.id)
-  addAudit('admin', 'Benutzer gelöscht')
+  addAudit('admin', 'Konto gelöscht')
   ensureAdmin()
   broadcast('state')
   res.json({ ok: true })
@@ -955,7 +955,7 @@ router.post('/alarms', auth, async (req: AuthRequest, res) => {
         {
           ts: jetzt,
           message: `Zweite Auslösung von ${ausloeser.firstName} ${ausloeser.lastName} zusammengeführt${
-            neueEmpfaenger.length ? ` – ${neueEmpfaenger.length} zusätzliche Empfänger` : ''
+            neueEmpfaenger.length ? ` – ${neueEmpfaenger.length} zusätzliche Empfänger:innen` : ''
           }: ${alarm.message}`,
         },
       ],

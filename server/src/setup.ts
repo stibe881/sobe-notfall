@@ -60,8 +60,31 @@ export function einrichtungAbschliessen(): void {
  * wenn sie fehlen – bestehende Anpassungen bleiben erhalten. Standard-Szenarien
  * werden bei einer neuen Inhaltsversion aktualisiert, selbst erstellte nicht.
  */
+/**
+ * Namen, die nur sprachlich überarbeitet wurden – einmalig nachziehen.
+ *
+ * Die Grundkonfiguration wird bei einer bestehenden Installation nicht erneut
+ * eingespielt; eine reine Umbenennung käme dort sonst nie an. Geändert wird
+ * ausschliesslich, was unverändert aus der Grundkonfiguration stammt: Wer den
+ * Namen im Portal selbst angepasst hat, behält ihn.
+ */
+const UMBENANNTE_GRUPPEN: { id: string; alt: string; neu: string }[] = [
+  { id: 'gr-ersthelfer', alt: 'Schulsanität / Ersthelfer', neu: 'Schulsanität / Ersthelfende' },
+  { id: 'gr-evak', alt: 'Evakuationshelfer', neu: 'Evakuationshelfende' },
+]
+
+function ziehenGruppennamenNach(): void {
+  for (const { id, alt, neu } of UMBENANNTE_GRUPPEN) {
+    const zeile = db.prepare('SELECT name FROM groups WHERE id = ?').get(id) as { name: string } | undefined
+    if (zeile?.name !== alt) continue
+    db.prepare('UPDATE groups SET name = ? WHERE id = ?').run(neu, id)
+    addAudit('system', `Gruppe umbenannt: «${alt}» heisst neu «${neu}» (geschlechtsneutrale Bezeichnung).`)
+  }
+}
+
 export function seedDatabase(): void {
   const erstinstallation = getSetting('initialized') !== 'true'
+  ziehenGruppennamenNach()
 
   // Profil festlegen: Bestehende Installationen (vor Einführung der Profile)
   // sind Sonnenberg-Installationen und bleiben es. Neue starten neutral,

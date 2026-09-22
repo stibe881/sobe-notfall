@@ -288,7 +288,7 @@ export function createAlarm(opts: TriggerOptions): Alarm {
     log: [
       {
         ts: now,
-        message: `Alarm ausgelöst (${opts.triggeredVia}) – ${recipients.length} Empfänger über ${opts.channels
+        message: `Alarm ausgelöst (${opts.triggeredVia}) – ${recipients.length} Empfänger:innen über ${opts.channels
           .map((c) => CHANNEL_LABELS[c])
           .join(', ')}${!opts.recipientUserIds && ladeIntegrationen().geofencing ? ' (Aufenthaltsort berücksichtigt)' : ''}`,
       },

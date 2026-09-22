@@ -222,8 +222,8 @@ KOERPER = r"""
   </p>
   <ol class="schritte">
     <li><b>Standorte</b> vervollständigen: Adressen, Betriebszeiten, für das Geofencing Koordinaten und Radius.</li>
-    <li><b>Gruppen</b> prüfen: Die mitgelieferten Gruppen (Krisenstab, Ersthelfer, Evakuationshelfer &hellip;) an die Organisation anpassen.</li>
-    <li><b>Benutzer</b> anlegen &ndash; von Hand oder per CSV-Import (<code>Vorname;Nachname;E-Mail;Telefon;Rolle</code>) &ndash; und den Gruppen und Standorten zuordnen.</li>
+    <li><b>Gruppen</b> prüfen: Die mitgelieferten Gruppen (Krisenstab, Ersthelfende, Evakuationshelfende &hellip;) an die Organisation anpassen.</li>
+    <li><b>Benutzende</b> anlegen &ndash; von Hand oder per CSV-Import (<code>Vorname;Nachname;E-Mail;Telefon;Rolle</code>) &ndash; und den Gruppen und Standorten zuordnen.</li>
     <li><b>Szenarien</b> durchsehen: Texte anpassen, nicht benötigte deaktivieren, eigene ergänzen.</li>
     <li><b>Alarmpläne</b> auf die Standorte beziehen und die Eskalationsstufen prüfen.</li>
     <li>Einen <b>Testalarm als Übung</b> auslösen und die Zustellung in der Alarmzentrale beobachten.</li>
@@ -517,7 +517,7 @@ KOERPER = r"""
     <p class="marke-klein">Grenze</p>
     <p>
       Während eines Ausfalls auf dem Standby geänderte <b>Verwaltungsdaten</b>
-      (Benutzer, Szenarien, Einstellungen) werden beim nächsten Abgleich vom Stand
+      (Konten, Szenarien, Einstellungen) werden beim nächsten Abgleich vom Stand
       des Hauptservers überschrieben. Zurückgemeldet werden Alarme, Protokoll und
       Alleinarbeits-Timer. Verwaltungsarbeit deshalb immer auf dem Hauptserver
       erledigen.
@@ -547,7 +547,7 @@ KOERPER = r"""
       <tbody>
         <tr><td>1</td><td>Domain(s) und Zertifikat, Instanz(en) nach Abschnitt 3 mit eigener <code>.env</code> und Datenbank</td></tr>
         <tr><td>2</td><td>Erstanmeldung, Passwort gewechselt, Einrichtungsassistent abgeschlossen</td></tr>
-        <tr><td>3</td><td>Standorte, Benutzer, Gruppen, Alarmpläne erfasst (Abschnitt 6)</td></tr>
+        <tr><td>3</td><td>Standorte, Konten, Gruppen, Alarmpläne erfasst (Abschnitt 6)</td></tr>
         <tr><td>4</td><td>Integrationen mit den Zugangsdaten des Kunden eingetragen und getestet (Abschnitt 7)</td></tr>
         <tr><td>5</td><td>Redundanz eingerichtet und Failover einmal geprobt (Abschnitt 9)</td></tr>
         <tr><td>6</td><td>QR-Code verteilt, Testalarm als Übung mit Quittierung durchgeführt (Abschnitt 8)</td></tr>
@@ -569,7 +569,7 @@ KOERPER = r"""
   <h2 class="abschnitt"><span class="zahl">12</span> Aktualisierung und Sicherung</h2>
   <h3>Aktualisieren per Knopfdruck</h3>
   <p>
-    Administratoren aktualisieren den Server aus dem Portal: Der Knopf
+    Die Administration aktualisiert den Server aus dem Portal: Der Knopf
     <span class="ui">Aktualisierung</span> unten in der Seitenleiste holt den neuesten
     Stand aus der Versionsverwaltung, baut Portal und Server und startet neu &ndash;
     Schritt für Schritt nachvollziehbar, mit Protokoll. Auf Wunsch stösst derselbe

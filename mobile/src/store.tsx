@@ -128,7 +128,7 @@ export function createAlarm(users: User[], opts: TriggerOptions): Alarm {
     escalation: opts.escalation ?? [],
     deliveries: buildDeliveries(recipients, opts.channels),
     log: [
-      { ts: now, message: `Alarm ausgelöst (${opts.triggeredVia}) – ${recipients.length} Empfänger über ${opts.channels.map((c) => CHANNEL_LABELS[c]).join(', ')}` },
+      { ts: now, message: `Alarm ausgelöst (${opts.triggeredVia}) – ${recipients.length} Empfänger:innen über ${opts.channels.map((c) => CHANNEL_LABELS[c]).join(', ')}` },
     ],
   }
 }
@@ -312,7 +312,7 @@ export function laufenderAlarmZu(alarms: Alarm[], neu: Alarm): Alarm | null {
 function toastForAction(action: Action): Toast['message'] | { message: string; kind: 'alarm' } | null {
   switch (action.type) {
     case 'TRIGGER_ALARM':
-      return { message: 'Alarm ausgelöst – Empfänger werden benachrichtigt', kind: 'alarm' }
+      return { message: 'Alarm ausgelöst – Empfänger:innen werden benachrichtigt', kind: 'alarm' }
     case 'ALARM_UPDATE':
       return action.kind === 'fehlalarm' ? 'Fehlalarm gemeldet – der Krisenstab gibt die Entwarnung' : 'Lagemeldung gesendet'
     case 'END_ALARM':

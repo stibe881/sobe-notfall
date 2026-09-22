@@ -145,7 +145,7 @@ export async function tick(): Promise<void> {
       ...alarm.log,
       {
         ts: jetzt,
-        message: `Eskalationsstufe ${alarm.escalationStage + 1}: ${empfaenger.length} weitere Empfänger${
+        message: `Eskalationsstufe ${alarm.escalationStage + 1}: ${empfaenger.length} weitere Empfänger:innen${
           gruppen.length ? ` (${gruppen.join(', ')})` : ''
         }${kanaele ? ` über ${kanaele}` : ''}${
           stufe.notifyEmergencyServices ? ' – Blaulichtorganisationen werden nicht automatisch alarmiert, bei Bedarf selbst anrufen' : ''
@@ -159,7 +159,7 @@ export async function tick(): Promise<void> {
       log,
     }
     saveAlarm(aktualisiert)
-    addAudit('alarm', `Eskalation Stufe ${aktualisiert.escalationStage} für Alarm ${alarm.id}: ${empfaenger.length} weitere Empfänger${gruppen.length ? ` (${gruppen.join(', ')})` : ''}`)
+    addAudit('alarm', `Eskalation Stufe ${aktualisiert.escalationStage} für Alarm ${alarm.id}: ${empfaenger.length} weitere Empfänger:innen${gruppen.length ? ` (${gruppen.join(', ')})` : ''}`)
     await alarmPush(aktualisiert, empfaenger.map((e) => e.id))
     await sendeAlarmKanaele(aktualisiert, empfaenger.map((e) => e.id))
     veraendert = true
@@ -185,7 +185,7 @@ export async function tick(): Promise<void> {
       escalation: [{ afterMinutes: 5, channels: ['voice'], groupIds: ['gr-krisenstab'], notifyEmergencyServices: true }],
     })
     saveAlarm(alarm)
-    addAudit('alarm', `Automatischer Alleinarbeiter-Alarm: Timer abgelaufen (${person?.firstName} ${person?.lastName})`, sitzung.userId)
+    addAudit('alarm', `Automatischer Alleinarbeits-Alarm: Timer abgelaufen (${person?.firstName} ${person?.lastName})`, sitzung.userId)
     await alarmPush(alarm)
     await sendeAlarmKanaele(alarm)
     await ausgehendeWebhooks(alarm)

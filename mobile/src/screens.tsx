@@ -32,7 +32,7 @@ function frageText(titel: string, text: string, knopf: string, weiter: (eingabe:
 export function fehlalarmMelden(dispatch: Dispatch, alarmId: string) {
   frageText(
     'Fehlalarm melden',
-    'Alle Empfänger und der Krisenstab erhalten Ihre Meldung; die Entwarnung gibt der Krisenstab. Kurze Begründung (optional):',
+    'Alle Empfänger:innen und der Krisenstab erhalten Ihre Meldung; die Entwarnung gibt der Krisenstab. Kurze Begründung (optional):',
     'Melden',
     (text) => dispatch({ type: 'ALARM_UPDATE', alarmId, message: text, kind: 'fehlalarm' }),
   )
@@ -42,7 +42,7 @@ export function fehlalarmMelden(dispatch: Dispatch, alarmId: string) {
 export function entwarnungGeben(dispatch: Dispatch, alarmId: string) {
   frageText(
     'Entwarnung geben',
-    'Der Alarm wird beendet und alle Empfänger erhalten die Entwarnung. Hinweis für die Empfänger (optional), z. B. Rückkehr ab 10:30 über den Haupteingang:',
+    'Der Alarm wird beendet und alle Empfänger:innen erhalten die Entwarnung. Hinweis für die Empfänger:innen (optional), z. B. Rückkehr ab 10:30 über den Haupteingang:',
     'Entwarnung senden',
     (text) => dispatch({ type: 'END_ALARM', alarmId, note: text }),
   )

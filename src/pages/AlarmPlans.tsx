@@ -311,7 +311,7 @@ function PlanWizard({ onClose }: { onClose: () => void }) {
           ),
         },
         {
-          titel: 'Empfänger',
+          titel: 'Empfänger:innen',
           hinweis: 'Wen erreicht dieser Plan? Ohne Auswahl gilt er für alle Gruppen bzw. alle Standorte.',
           gueltig: true,
           inhalt: (
@@ -453,7 +453,7 @@ function PlanWizard({ onClose }: { onClose: () => void }) {
                 <div className="mt-3 space-y-1">
                   {draft.escalation.map((e, i) => (
                     <div key={i} className="text-xs text-slate-600 bg-white border border-brand-100 rounded px-2 py-1">
-                      Stufe {i + 1} nach {e.afterMinutes} Min.: {e.groupIds.map((g) => state.groups.find((x) => x.id === g)?.name).filter(Boolean).join(', ') || 'gleiche Empfänger'} via {e.channels.map(kanalName).join(', ')}
+                      Stufe {i + 1} nach {e.afterMinutes} Min.: {e.groupIds.map((g) => state.groups.find((x) => x.id === g)?.name).filter(Boolean).join(', ') || 'gleiche Empfänger:innen'} via {e.channels.map(kanalName).join(', ')}
                       {e.notifyEmergencyServices && ' + Blaulichtorganisationen (vorbereitet)'}
                     </div>
                   ))}

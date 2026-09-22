@@ -1,5 +1,12 @@
 export type Role = 'admin' | 'krisenstab' | 'mitarbeiter'
 
+/** Anzeigenamen der Rollen – geschlechtsneutral und ausgeschrieben */
+export const ROLE_LABELS: Record<Role, string> = {
+  admin: 'Administration',
+  krisenstab: 'Krisenstab',
+  mitarbeiter: 'Mitarbeitende',
+}
+
 export type Channel = 'push' | 'sms' | 'email' | 'voice' | 'conference' | 'tts' | 'teams'
 
 export const CHANNEL_LABELS: Record<Channel, string> = {

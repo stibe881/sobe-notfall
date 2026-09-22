@@ -131,7 +131,7 @@ KOERPER = r"""
       Den eigenen SOS-Alarm beenden Sie selbst: <span class="ui">Entwarnung &ndash; mir
       geht es gut</span>. Alle Alarmierten erhalten sofort die Entwarnung. Haben Sie
       dagegen ein Szenario irrtümlich ausgelöst, tippen Sie auf
-      <span class="ui">Fehlalarm melden</span>: Alle Empfänger und der Krisenstab sehen
+      <span class="ui">Fehlalarm melden</span>: Alle Empfänger:innen und der Krisenstab sehen
       Ihre Meldung, und der Krisenstab gibt die Entwarnung. Niemand nimmt Ihnen den
       Irrtum übel.
     </p>
@@ -155,7 +155,7 @@ KOERPER = r"""
       <figcaption><b>Abb.</b> &nbsp; Ein Alarm mit Rückmeldepflicht.</figcaption>
     </figure>
     <figure class="geraet">
-      <img src="bilder/app-03-empfaenger.webp" alt="Ansicht für Empfänger mit der Alarmmeldung, der Quittierung und den Schritten für Empfänger">
+      <img src="bilder/app-03-empfaenger.webp" alt="Ansicht für Empfänger:innen mit der Alarmmeldung, der Quittierung und den Schritten für Empfänger:innen">
       <figcaption><b>Abb.</b> &nbsp; Was Sie als Empfängerin oder Empfänger tun &ndash; hier für ein Mitglied der Schulsanität. Schritte anderer Gruppen sind ausgeblendet und lassen sich unten einblenden.</figcaption>
     </figure>
   </div>
@@ -170,7 +170,7 @@ KOERPER = r"""
     </li>
     <li>
       <b><span class="ui">Was jetzt zu tun ist</span> antippen.</b> Sie bekommen die Schritte
-      für <em>Empfänger</em> &ndash; nicht den Ablauf für die Person, die das Ereignis
+      für <em>Empfänger:innen</em> &ndash; nicht den Ablauf für die Person, die das Ereignis
       entdeckt hat.
     </li>
   </ol>
@@ -180,7 +180,7 @@ KOERPER = r"""
       Wer den Brand entdeckt, ruft die Feuerwehr und löst den Alarm aus. Wer den Alarm
       <em>erhält</em>, tut beides <b>nicht</b> &ndash; es ist bereits geschehen. Ein
       zweiter Notruf blockiert die Leitung, ein zweiter Alarm verwirrt alle. Für
-      Empfänger gilt darum ein eigener Ablauf: Klasse sammeln, Sammelplatz, zählen,
+      Empfänger:innen gilt darum ein eigener Ablauf: Klasse sammeln, Sammelplatz, zählen,
       melden. Die App zeigt Ihnen automatisch den richtigen.
     </p>
     <p>
@@ -268,14 +268,14 @@ KOERPER = r"""
       Entdecken zwei Personen denselben Brand, löst die erste aus &ndash; und die zweite
       sieht in Phase 1 den violetten Hinweis mit Name und Zeit. Meist genügt dann
       <span class="ui">Was jetzt zu tun ist</span>: Sie wechseln in die Schritte für
-      Empfänger. Halten Sie trotzdem den Knopf, entsteht kein zweiter Alarm: Ihre
+      Empfänger:innen. Halten Sie trotzdem den Knopf, entsteht kein zweiter Alarm: Ihre
       Meldung wird dem laufenden Alarm als «weitere Meldung» hinzugefügt, und ein neu
       gewählter Standort wird zusätzlich alarmiert. Niemand muss doppelt quittieren.
     </p>
   </div>
   <figure class="geraet">
     <img src="bilder/app-04-phasenuebersicht.webp" alt="Übersicht der vier Phasen eines Szenarios mit den Knöpfen Geführt starten – ich habe es entdeckt und Ich wurde alarmiert – was jetzt?">
-    <figcaption><b>Abb.</b> &nbsp; Die vier Phasen und darunter die beiden Einstiege: <span class="ui">Geführt starten &ndash; ich habe es entdeckt</span> beginnt bei Phase 1. <span class="ui">Ich wurde alarmiert &ndash; was jetzt?</span> zeigt stattdessen die Schritte für Empfänger.</figcaption>
+    <figcaption><b>Abb.</b> &nbsp; Die vier Phasen und darunter die beiden Einstiege: <span class="ui">Geführt starten &ndash; ich habe es entdeckt</span> beginnt bei Phase 1. <span class="ui">Ich wurde alarmiert &ndash; was jetzt?</span> zeigt stattdessen die Schritte für Empfänger:innen.</figcaption>
   </figure>
 
   <h3>Phase 1 &middot; Alarmieren</h3>
@@ -474,7 +474,7 @@ KOERPER = r"""
   <h4>Zwei Personen lösen dasselbe Ereignis aus. Was passiert?</h4>
   <p>
     Es bleibt bei einem Alarm. Die zweite Auslösung wird dem laufenden Alarm als
-    «weitere Meldung» hinzugefügt; alle Empfänger sehen sie als Lagemeldung, und ein
+    «weitere Meldung» hinzugefügt; alle Empfänger:innen sehen sie als Lagemeldung, und ein
     neu betroffener Standort wird zusätzlich alarmiert. Die App zeigt in Phase 1
     ausserdem einen Hinweis, sobald für dasselbe Ereignis schon ein Alarm läuft.
   </p>

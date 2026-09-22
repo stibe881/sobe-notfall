@@ -17,7 +17,7 @@ const BEREICHE = [
   { id: 'int-organisation', titel: 'Organisation', hinweis: 'Name, Auftritt und interne Notfallnummer – erscheint in Portal und App.' },
   { id: 'int-app', titel: 'App der Mitarbeitenden', hinweis: 'Wie die App (iOS und Android) zu den Mitarbeitenden kommt und was sie auf dem Gerät darf.' },
   { id: 'int-kanaele', titel: 'Alarmierungskanäle', hinweis: 'Push-Mitteilungen sind immer aktiv – hier kommen SMS, Teams und Telefonie dazu.' },
-  { id: 'int-anmeldung', titel: 'Anmeldung & Benutzer', hinweis: 'Woher die Konten kommen und wie sich alle anmelden.' },
+  { id: 'int-anmeldung', titel: 'Anmeldung & Konten', hinweis: 'Woher die Konten kommen und wie sich alle anmelden.' },
   { id: 'int-systeme', titel: 'Drittsysteme & Alarmknöpfe', hinweis: 'Physische Alarmknöpfe und Schnittstellen zu anderen Systemen.' },
   { id: 'int-betrieb', titel: 'Betrieb & Ausfallsicherheit', hinweis: 'Ein zweiter Alarmserver übernimmt, wenn dieser ausfällt.' },
 ] as const
@@ -401,7 +401,7 @@ function PersonalsystemEinstellungen() {
         </div>
       )}
       <p className="text-xs text-slate-400">
-        Bis dahin werden Benutzer von Hand oder per CSV-Import unter «Benutzer» gepflegt.
+        Bis dahin werden Konten von Hand oder per CSV-Import unter «Benutzende» gepflegt.
       </p>
     </div>
   )
@@ -751,7 +751,7 @@ function TelefonieEinstellungen() {
             <TestErgebnis status={test} />
           </div>
           <p className="text-xs text-slate-400">
-            Beim Kanal «Sprachanruf» klingeln die Empfänger in Teams (Handy, Desktop, Web); beim Kanal «Telefonkonferenz»
+            Beim Kanal «Sprachanruf» klingeln die Empfänger:innen in Teams (Handy, Desktop, Web); beim Kanal «Telefonkonferenz»
             wird eine Teams-Besprechung eröffnet und der Beitrittslink per Push und in den Teams-Kanal verteilt.
             Voraussetzung: App-Registrierung in Entra ID mit den Anwendungsberechtigungen
             «OnlineMeetings.ReadWrite.All» (Konferenz) und «Calls.Initiate.All» (Anruf).

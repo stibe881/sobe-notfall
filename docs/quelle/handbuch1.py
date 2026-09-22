@@ -22,7 +22,7 @@ KOERPER = r"""
     <li><a href="#a5"><span class="zahl">5</span> Szenarien und Checklisten</a></li>
     <li><a href="#a6"><span class="zahl">6</span> Alarmpläne und Notfallkontakte</a></li>
     <li><a href="#a7"><span class="zahl">7</span> Alleinarbeit und Alarmknöpfe</a></li>
-    <li><a href="#a8"><span class="zahl">8</span> Benutzer verwalten</a></li>
+    <li><a href="#a8"><span class="zahl">8</span> Benutzende verwalten</a></li>
     <li><a href="#a9"><span class="zahl">9</span> Gruppen und Standorte</a></li>
     <li><a href="#a10"><span class="zahl">10</span> Integrationen und Zugangscodes</a></li>
     <li><a href="#a11"><span class="zahl">11</span> Ereignisprotokoll</a></li>
@@ -78,7 +78,7 @@ KOERPER = r"""
   <h2 class="abschnitt"><span class="zahl">2</span> Das Portal im Überblick</h2>
   <p>
     Das Menü links ist nach dem zeitlichen Ablauf eines Ereignisses geordnet:
-    zuerst was im Ernstfall gebraucht wird, dann der Alleinarbeiterschutz, dann alles,
+    zuerst was im Ernstfall gebraucht wird, dann der Alleinarbeitsschutz, dann alles,
     was vorher vorbereitet sein muss, dann die Systemeinstellungen. Zuunterst steht
     die <span class="ui">Hilfe</span>: Unter <span class="ui">Handbücher</span> finden Sie
     alle vier Handbücher &ndash; immer in der Fassung, die zur laufenden Version gehört.
@@ -125,12 +125,12 @@ KOERPER = r"""
     Eskalationsstufen vor.
   </p>
   <figure class="bild-breit">
-    <img src="bilder/web-15-alarm-vorbereitet.webp" alt="Vorbereiteter Alarm mit gewähltem Szenario, Empfängern und Kanälen">
+    <img src="bilder/web-15-alarm-vorbereitet.webp" alt="Vorbereiteter Alarm mit gewähltem Szenario, Empfänger:innen und Kanälen">
     <figcaption><b>Abb.</b> &nbsp; Ein vorbereiteter Alarm. Unter <span class="ui">Anpassen</span> lassen sich Standort, Kanäle, stille Auslösung und die Quittierpflicht für diesen einen Fall ändern.</figcaption>
   </figure>
   <ol class="schritte">
     <li>Szenario oder Alarmplan anklicken.</li>
-    <li>Prüfen, wer als Empfänger angezeigt wird &ndash; die Zahl steht direkt über dem Auslöseknopf.</li>
+    <li>Prüfen, wer als Empfänger:in angezeigt wird &ndash; die Zahl steht direkt über dem Auslöseknopf.</li>
     <li>Bei Bedarf <span class="ui">Anpassen</span> öffnen: Standort eingrenzen, Kanäle ändern, stille Auslösung oder Quittierpflicht setzen.</li>
     <li><span class="ui">Alarm auslösen</span> gedrückt <em>halten</em>, bis der Balken durchgelaufen ist.</li>
   </ol>
@@ -143,7 +143,7 @@ KOERPER = r"""
   </div>
   <h3>Stiller Alarm</h3>
   <p>
-    Ein stiller Alarm erreicht die Empfänger als Mitteilung ohne Ton und ohne
+    Ein stiller Alarm erreicht die Empfänger:innen als Mitteilung ohne Ton und ohne
     Vibration &ndash; sie erscheint auf dem Sperrbildschirm und in der App violett
     gekennzeichnet, aber kein Telefon klingelt. Er ist für Lagen gedacht, in denen
     Aufsehen schadet: herausforderndes Verhalten, eine verdächtige Person auf dem
@@ -157,7 +157,7 @@ KOERPER = r"""
     Es bleibt bei einem Alarm. Läuft für ein Szenario am gewählten Standort bereits ein
     Alarm, führt der Server eine zweite Auslösung innerhalb von zwei Stunden mit ihm
     zusammen: Die neue Meldung erscheint als «weitere Meldung» im Journal und bei allen
-    Empfängern, neu gewählte Standorte werden zusätzlich alarmiert, Quittierung und
+    Empfänger:innen, neu gewählte Standorte werden zusätzlich alarmiert, Quittierung und
     Entwarnung gibt es nur einmal. Die App zeigt der zweiten Person vorher einen Hinweis
     mit Name und Zeit; ihr Auslöseknopf heisst dann <span class="ui">Meldung zum
     laufenden Alarm ergänzen</span>. Übungen und Ernstfälle werden nie zusammengeführt.
@@ -194,7 +194,7 @@ KOERPER = r"""
   <h3>Lagemeldung und Entwarnung</h3>
   <p>
     Unter jedem aktiven Alarm steht ein Eingabefeld für Lagemeldungen. Was Sie dort
-    senden, erreicht alle Empfänger als Mitteilung und steht in ihrer
+    senden, erreicht alle Empfänger:innen als Mitteilung und steht in ihrer
     Handlungsanweisung zuoberst. <span class="ui">Beenden</span> fragt nach einem
     Hinweis, der mit der Entwarnung mitgeht &ndash; etwa «Rückkehr ab 10:30 über den
     Haupteingang». Beides steht danach im Journal.
@@ -269,7 +269,7 @@ KOERPER = r"""
       <tbody>
         <tr><td><b>Alarmieren</b></td><td>Phase 1</td><td>Wann ein Notruf nötig ist und was am Telefon zu melden ist</td></tr>
         <tr><td><b>Sofortmassnahmen</b></td><td>Phase 2</td><td>Nur Handgriffe &ndash; keine Anweisungen zum Anrufen</td></tr>
-        <tr><td><b>Empfänger</b></td><td>eigener Weg «Ich wurde alarmiert»</td><td>Was jemand tut, der den Alarm erhält: kein Notruf, keine Auslösung, sondern die eigene Aufgabe &ndash; je Schritt wählbar, für welche Gruppen er gilt</td></tr>
+        <tr><td><b>Empfänger:innen</b></td><td>eigener Weg «Ich wurde alarmiert»</td><td>Was jemand tut, der den Alarm erhält: kein Notruf, keine Auslösung, sondern die eigene Aufgabe &ndash; je Schritt wählbar, für welche Gruppen er gilt</td></tr>
         <tr><td><b>Nach der Entwarnung</b></td><td>mit der Entwarnungs-Mitteilung</td><td>Was die Alarmierten tun, sobald der Alarm beendet ist: Rückkehr nach Freigabe, erneut zählen, festhalten, Nachsorge</td></tr>
         <tr><td><b>Weiterführende Massnahmen</b></td><td>Phase 4</td><td>Alles nach der Akutphase: informieren, dokumentieren, nachsorgen</td></tr>
         <tr><td><b>Checkliste</b></td><td>Phase 4</td><td>Punkte zum Abhaken für die Nachkontrolle</td></tr>
@@ -290,7 +290,7 @@ KOERPER = r"""
     <p>
       Ein Szenario hat zwei Leser: die Person, die das Ereignis entdeckt, und alle,
       die den Alarm erhalten. Die erste ruft an und löst aus; die zweiten tun genau das
-      nicht. Das Feld <b>Empfänger</b> gehört darum zu jedem Szenario, das alarmiert
+      nicht. Das Feld <b>Empfänger:innen</b> gehört darum zu jedem Szenario, das alarmiert
       wird &ndash; es beschreibt die eigene Aufgabe: Klasse sammeln, Führungsraum
       beziehen, Bereich sichern. Wer den Alarm in der App erhält, sieht automatisch
       diesen Weg, nicht den geführten Ablauf.
@@ -341,7 +341,7 @@ KOERPER = r"""
   <p>
     <span class="ui">Neuer Alarmplan</span> öffnet einen Assistenten mit fünf
     Schritten: <b>Grundlagen</b> (Name und Szenario &ndash; als Kartenauswahl mit
-    Symbol), <b>Empfänger</b> (Zielgruppen und Standorte, leer bedeutet alle),
+    Symbol), <b>Empfänger:innen</b> (Zielgruppen und Standorte, leer bedeutet alle),
     <b>Kanäle &amp; Optionen</b> (Erstaussand, Quittierfunktion, Betriebszeiten),
     <b>Eskalation</b> (Stufen mit Minuten, zusätzlichen Gruppen und Kanälen) und die
     <b>Zusammenfassung</b>. Wählen Sie ein Szenario, übernimmt der Assistent dessen
@@ -443,7 +443,7 @@ KOERPER = r"""
 </section>
 
 <section id="a8">
-  <h2 class="abschnitt"><span class="zahl">8</span> Benutzer verwalten</h2>
+  <h2 class="abschnitt"><span class="zahl">8</span> Benutzende verwalten</h2>
   <p>
     Diese Seite ist ausschliesslich der Administration vorbehalten. Sie legen Konten
     an, vergeben Rollen und setzen Passwörter zurück.
@@ -458,9 +458,10 @@ KOERPER = r"""
   </figure>
   <h4>Rolle</h4>
   <p>
-    <b>Mitarbeiter</b> nutzt ausschliesslich die App. <b>Krisenstab</b> nutzt App und
-    Portal und darf alarmieren, beenden und die Vorbereitung pflegen.
-    <b>Admin</b> darf zusätzlich Konten, Gruppen, Standorte und Systemeinstellungen ändern.
+    <b>Mitarbeitende</b> nutzen ausschliesslich die App. Der <b>Krisenstab</b> nutzt App und
+    Portal und darf alarmieren, beenden und die Vorbereitung pflegen. Die
+    <b>Administration</b> darf zusätzlich Konten, Gruppen, Standorte und
+    Systemeinstellungen ändern.
   </p>
   <h4>Gruppen</h4>
   <p>
@@ -488,7 +489,7 @@ KOERPER = r"""
   <h2 class="abschnitt"><span class="zahl">9</span> Gruppen und Standorte</h2>
   <p>
     Gruppen bündeln Personen nach Funktion &ndash; Krisenstab, Schulsanität,
-    Evakuationshelfer, Deeskalationsteam, IT, Hausdienst. Szenarien und Alarmpläne
+    Evakuationshelfende, Deeskalationsteam, IT, Hausdienst. Szenarien und Alarmpläne
     sprechen immer Gruppen an, nie einzelne Personen. Das hält die Alarmierung stabil,
     wenn jemand die Stelle wechselt.
   </p>
@@ -529,7 +530,7 @@ KOERPER = r"""
       <tbody>
         <tr><td>SMS-Gateway, VoIP, Microsoft Teams</td><td>Kein Versand über diese Kanäle; Alarme gehen per Push</td></tr>
         <tr><td>Single Sign-On</td><td>Anmeldung mit E-Mail-Adresse und Passwort</td></tr>
-        <tr><td>Synchronisation mit dem Personalsystem</td><td>Benutzer werden von Hand oder per Import gepflegt</td></tr>
+        <tr><td>Synchronisation mit dem Personalsystem</td><td>Konten werden von Hand oder per Import gepflegt</td></tr>
         <tr><td>Mehrsprachige App-Inhalte</td><td>Alle Inhalte sind deutsch; die Sprache im Benutzerprofil ist eine Vormerkung</td></tr>
         <tr><td>Geofencing</td><td>Alarmiert wird nach dem Standort im Profil; die App überträgt keinen Standort</td></tr>
         <tr><td>Eingehende Webhooks</td><td>Der Server nimmt keine Auslösung von aussen entgegen (z. B. Brandmeldeanlage)</td></tr>
@@ -584,7 +585,7 @@ KOERPER = r"""
 <section id="a12">
   <h2 class="abschnitt"><span class="zahl">12</span> Die Anwendung aktualisieren</h2>
   <p>
-    Im Live-Betrieb erscheint für Administratoren unten in der Seitenleiste der Knopf
+    Im Live-Betrieb erscheint für die Administration unten in der Seitenleiste der Knopf
     <span class="ui">Aktualisierung</span>. Er holt den neuen Stand, baut Portal und
     Server neu und startet den Server neu &ndash; ohne Konsole, ohne Fernzugriff.
   </p>
@@ -625,7 +626,7 @@ KOERPER = r"""
   <div class="tabelle-huelle">
     <table>
       <caption>Wer darf was</caption>
-      <thead><tr><th>&nbsp;</th><th>Mitarbeiter</th><th>Krisenstab</th><th>Admin</th></tr></thead>
+      <thead><tr><th>&nbsp;</th><th>Mitarbeitende</th><th>Krisenstab</th><th>Administration</th></tr></thead>
       <tbody>
         <tr><th scope="row">App benutzen</th><td class="ja">ja</td><td class="ja">ja</td><td class="ja">ja</td></tr>
         <tr><th scope="row">Alarm auslösen</th><td class="ja">ja</td><td class="ja">ja</td><td class="ja">ja</td></tr>
@@ -637,7 +638,7 @@ KOERPER = r"""
         <tr><th scope="row">Lagemeldung senden</th><td class="nein">nein</td><td class="ja">ja</td><td class="ja">ja</td></tr>
         <tr><th scope="row">Übung auslösen</th><td class="nein">nein</td><td class="ja">ja</td><td class="ja">ja</td></tr>
         <tr><th scope="row">Szenarien, Alarmpläne, Kontakte, Alarmknöpfe</th><td class="nein">nein</td><td class="ja">ja</td><td class="ja">ja</td></tr>
-        <tr><th scope="row">Benutzer, Gruppen, Standorte</th><td class="nein">nein</td><td class="nein">nein</td><td class="ja">ja</td></tr>
+        <tr><th scope="row">Konten, Gruppen, Standorte</th><td class="nein">nein</td><td class="nein">nein</td><td class="ja">ja</td></tr>
         <tr><th scope="row">Integrationen</th><td class="nein">nein</td><td class="nein">nein</td><td class="ja">ja</td></tr>
         <tr><th scope="row">Aktualisierung</th><td class="nein">nein</td><td class="nein">nein</td><td class="ja">ja</td></tr>
       </tbody>
@@ -651,9 +652,9 @@ KOERPER = r"""
     <p class="marke-klein">Eine Eigenheit, die Sie kennen sollten</p>
     <p>
       Das Menü des Portals ist für Krisenstab und Administration gleich. Ein
-      Krisenstabsmitglied kann also die Seite <span class="ui">Benutzer</span> öffnen
+      Krisenstabsmitglied kann also die Seite <span class="ui">Benutzende</span> öffnen
       &ndash; beim Speichern weist der Alarmserver die Änderung jedoch ab und meldet
-      «Diese Aktion ist Administratoren vorbehalten». Die Rechte greifen zuverlässig,
+      «Diese Aktion ist der Administration vorbehalten». Die Rechte greifen zuverlässig,
       nur eben erst beim Speichern.
     </p>
   </div>
