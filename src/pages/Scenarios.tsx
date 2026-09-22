@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Eye, EyeOff, Pencil, Phone, Plus, Scale, Trash2, Users, WifiOff } from 'lucide-react'
+import { Eye, EyeOff, Pencil, Phone, Plus, Scale, Trash2, Users } from 'lucide-react'
 import { uid, useStore } from '../store'
 import type { Channel, ResponseStep, Scenario, ScenarioPriority } from '../types'
 import { Badge, Button, Card, Field, Modal, Toggle, inputClass, useConfirm, kanalName } from '../components/ui'
@@ -69,11 +69,6 @@ export default function Scenarios() {
             </button>
           ))}
         </div>
-      </div>
-
-      <div className="text-xs text-slate-500 bg-white border border-slate-200 rounded-lg px-4 py-2.5 flex items-center gap-2">
-        <WifiOff size={14} className="text-emerald-600" />
-        Offline-Verfügbarkeit: Alle Szenarien und Checklisten werden lokal auf den Endgeräten zwischengespeichert und sind auch ohne Netz abrufbar.
       </div>
 
       <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
