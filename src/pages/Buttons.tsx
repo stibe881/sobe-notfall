@@ -125,7 +125,7 @@ export default function Buttons() {
                   Letztes Signal: {b.lastSeen > 0 ? formatDateTime(b.lastSeen) : 'noch keines empfangen'}
                   {stummSeit && ' – Knopf prüfen'}
                 </div>
-                <div>Eskalation an Blaulicht nach {b.escalateToEmergencyServicesAfterMin} Min. ohne Reaktion</div>
+                <div>Krisenstab aufbieten nach {b.escalateToEmergencyServicesAfterMin} Min. ohne Quittierung</div>
               </div>
               <div className="flex gap-2 mt-4">
                 <Button variant="danger" onClick={() => ask(`Alarmknopf «${b.name}» jetzt testweise auslösen?`, () => testFire(b), 'Auslösen')}><Zap size={14} /> Auslösen (Test)</Button>
@@ -208,12 +208,17 @@ function ButtonEditor({ button, onClose }: { button: AlarmButton; onClose: () =>
           ))}
         </div>
       </Field>
-      <Field label={`Eskalation an Blaulichtorganisationen nach ${draft.escalateToEmergencyServicesAfterMin} Min. ohne Reaktion`}>
+      <Field label={`Krisenstab aufbieten nach ${draft.escalateToEmergencyServicesAfterMin} Min. ohne Quittierung`}>
         <input
           type="range" min={1} max={30} className="w-full"
           value={draft.escalateToEmergencyServicesAfterMin}
           onChange={(e) => setDraft({ ...draft, escalateToEmergencyServicesAfterMin: Number(e.target.value) })}
         />
+        <p className="text-xs text-slate-500 mt-1">
+          Quittiert niemand innerhalb dieser Zeit, wird der Krisenstab per Sprachanruf und SMS
+          aufgeboten. Blaulichtorganisationen alarmiert das System nicht selbst – dafür sind die
+          Notrufnummern unter «Notfallkontakte» hinterlegt.
+        </p>
       </Field>
       <div className="flex justify-end gap-2 mt-5">
         <Button variant="secondary" onClick={onClose}>Abbrechen</Button>

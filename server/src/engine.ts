@@ -5,10 +5,10 @@ import {
 } from './push.js'
 import { standbyPassiv } from './replikation.js'
 import {
-  addAudit, allAlarms, allButtons, allLoneWork, allScenarios, allStoredUsers, buildDeliveries, createAlarm,
+  addAudit, allAlarms, allButtons, allGroups, allLoneWork, allScenarios, allStoredUsers, buildDeliveries, createAlarm,
   integrations, purgePresence, resolveRecipients, saveAlarm, upsertDoc,
 } from './store.js'
-import { LONE_WORK_DEFAULT_GROUPS, type Alarm, type AlarmLogEntry, type AlarmUpdate, type LoneWorkSession } from './types.js'
+import { CHANNEL_LABELS, LONE_WORK_DEFAULT_GROUPS, type Alarm, type AlarmLogEntry, type AlarmUpdate, type LoneWorkSession } from './types.js'
 
 /** Kennzeichnung einer Übung in Titel und Protokoll */
 export const UEBUNG = 'ÜBUNG'
@@ -135,12 +135,20 @@ export async function tick(): Promise<void> {
     if (quittiert || jetzt - alarm.triggeredAt <= stufe.afterMinutes * 60_000) continue
 
     const empfaenger = resolveRecipients(allStoredUsers(), stufe.groupIds, alarm.locationIds)
+    const gruppen = allGroups().filter((g) => stufe.groupIds.includes(g.id)).map((g) => g.name)
+    const kanaele = stufe.channels.map((c) => CHANNEL_LABELS[c]).join(', ')
+    // Der Eintrag nennt die aufgebotene Gruppe. Das Kennzeichen
+    // notifyEmergencyServices steuert keine Alarmierung – es gibt keine
+    // Schnittstelle zu einer Einsatzleitzentrale. Damit im Journal niemand
+    // einen ausgelösten Blaulichteinsatz vermutet, steht das ausdrücklich da.
     const log: AlarmLogEntry[] = [
       ...alarm.log,
       {
         ts: jetzt,
         message: `Eskalationsstufe ${alarm.escalationStage + 1}: ${empfaenger.length} weitere Empfänger${
-          stufe.notifyEmergencyServices ? (alarm.drill ? ' – Übung: keine Blaulichtorganisationen' : ' – Blaulichtorganisationen benachrichtigt') : ''
+          gruppen.length ? ` (${gruppen.join(', ')})` : ''
+        }${kanaele ? ` über ${kanaele}` : ''}${
+          stufe.notifyEmergencyServices ? ' – Blaulichtorganisationen werden nicht automatisch alarmiert, bei Bedarf selbst anrufen' : ''
         }`,
       },
     ]
@@ -151,7 +159,7 @@ export async function tick(): Promise<void> {
       log,
     }
     saveAlarm(aktualisiert)
-    addAudit('alarm', `Eskalation Stufe ${aktualisiert.escalationStage} für Alarm ${alarm.id}`)
+    addAudit('alarm', `Eskalation Stufe ${aktualisiert.escalationStage} für Alarm ${alarm.id}: ${empfaenger.length} weitere Empfänger${gruppen.length ? ` (${gruppen.join(', ')})` : ''}`)
     await alarmPush(aktualisiert, empfaenger.map((e) => e.id))
     await sendeAlarmKanaele(aktualisiert, empfaenger.map((e) => e.id))
     veraendert = true

@@ -386,9 +386,20 @@ KOERPER = r"""
   <p>
     Alarmknöpfe und tragbare Notrufgeräte melden sich über ein Funknetz beim
     Alarmserver. Ein Knopfdruck löst einen <b>stillen Alarm mit Quittierpflicht</b>
-    aus &ndash; nach der eingestellten Zeit ohne Reaktion eskaliert er an den
-    Krisenstab und, wenn vorgesehen, an die Blaulichtorganisationen.
+    aus &ndash; quittiert innerhalb der eingestellten Zeit niemand, wird der
+    <b>Krisenstab</b> per Sprachanruf und SMS aufgeboten.
   </p>
+  <div class="hinweis hinweis--warnung">
+    <p class="marke-klein">Kein automatischer Notruf</p>
+    <p>
+      Die Eskalation geht an den Krisenstab, <b>nicht</b> an Polizei, Feuerwehr
+      oder Rettungsdienst. Eine Schnittstelle zu einer Einsatzleitzentrale gibt
+      es nicht &ndash; der Notruf wird von Hand gewählt. Die Nummern stehen unter
+      <span class="ui">Notfallkontakte</span> und sind in der App direkt
+      antippbar. Das Alarmjournal hält bei einer solchen Eskalationsstufe
+      ausdrücklich fest, dass keine externe Alarmierung erfolgt ist.
+    </p>
+  </div>
 
   <h3>Was es dafür braucht</h3>
   <div class="tabelle-huelle">

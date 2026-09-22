@@ -39,7 +39,6 @@ export type Action =
   | { type: 'END_ALARM'; alarmId: string; byUserId: string; note?: string }
   | { type: 'ALARM_UPDATE'; alarmId: string; message: string; kind: 'lage' | 'fehlalarm' }
   | { type: 'ACK_ALARM'; alarmId: string; userId: string; ack: 'acknowledged' | 'declined' }
-  | { type: 'TICK'; now: number }
   | { type: 'UPSERT_BUTTON'; button: AlarmButton }
   | { type: 'DELETE_BUTTON'; buttonId: string }
   | { type: 'START_LONE_WORK'; session: LoneWorkSession }
@@ -164,73 +163,6 @@ export function createAlarm(state: AppState, opts: TriggerOptions): Alarm {
       ...(opts.silent ? [{ ts: now, message: 'Stiller Alarm – keine Signaltöne auf Empfängergeräten.' }] : []),
     ],
   }
-}
-
-/** Eskalationsstufen und Alleinarbeits-Timer; den echten Versand rechnet der Server */
-function tick(state: AppState, now: number): AppState {
-  let changed = false
-
-  const alarms = state.alarms.map((alarm) => {
-    if (alarm.status !== 'active') return alarm
-    let aChanged = false
-    const deliveries = alarm.deliveries
-
-    // 2. Eskalation
-    const log = [...alarm.log]
-    let escalationStage = alarm.escalationStage
-    let nextDeliveries = deliveries
-    const nextLevel = alarm.escalation[escalationStage]
-    const ackDone = alarm.requireAck && alarm.deliveries.length > 0 &&
-      uniqueUserIds(alarm.deliveries).every((uidX) => alarm.deliveries.some((d) => d.userId === uidX && d.ack === 'acknowledged'))
-    if (nextLevel && !ackDone && now - alarm.triggeredAt > nextLevel.afterMinutes * 60_000) {
-      escalationStage += 1
-      aChanged = true
-      const recipients = resolveRecipients(state, nextLevel.groupIds, alarm.locationIds)
-      nextDeliveries = [...deliveries, ...buildDeliveries(recipients, nextLevel.channels)]
-      log.push({
-        ts: now,
-        message: `Eskalationsstufe ${escalationStage} gezündet: ${recipients.length} weitere Empfänger (${nextLevel.channels.map((c) => CHANNEL_LABELS[c]).join(', ')})${nextLevel.notifyEmergencyServices ? ' – Blaulichtorganisationen benachrichtigt' : ''}`,
-      })
-    }
-
-    if (!aChanged) return alarm
-    changed = true
-    return { ...alarm, deliveries: nextDeliveries, log, escalationStage }
-  })
-
-  // 3. Alleinarbeits-Timer: abgelaufen -> Alarm auslösen
-  let loneWorkSessions = state.loneWorkSessions
-  let newAlarms: Alarm[] = []
-  let newAudit = state.audit
-  const expired = state.loneWorkSessions.filter((s) => s.status === 'running' && now > s.expiresAt)
-  if (expired.length > 0) {
-    changed = true
-    loneWorkSessions = state.loneWorkSessions.map((s) =>
-      expired.some((e) => e.id === s.id) ? { ...s, status: 'alarm' as const } : s,
-    )
-    for (const session of expired) {
-      const user = state.users.find((u) => u.id === session.userId)
-      const ziel = alleinarbeitEmpfaenger(state, session)
-      const alarm = createAlarm(state, {
-        scenarioId: 'sc-medizin',
-        message: `ALLEINARBEIT: Timer von ${user ? user.firstName + ' ' + user.lastName : session.userId} abgelaufen (Tätigkeit: ${session.activity}). Keine Rückmeldung – bitte sofort prüfen!`,
-        silent: session.silent,
-        requireAck: true,
-        channels: ['push', 'sms', 'voice'],
-        groupIds: ziel.groupIds,
-        recipientUserIds: ziel.recipientUserIds,
-        locationIds: [session.locationId],
-        triggeredByUserId: session.userId,
-        triggeredVia: 'timer',
-        escalation: [{ afterMinutes: 5, channels: ['voice'], groupIds: ['gr-krisenstab'], notifyEmergencyServices: true }],
-      })
-      newAlarms = [alarm, ...newAlarms]
-      newAudit = [{ id: uid('audit'), ts: now, type: 'alarm', message: `Automatischer Alleinarbeiter-Alarm: Timer abgelaufen (${user?.firstName} ${user?.lastName})`, userId: session.userId }, ...newAudit].slice(0, 300)
-    }
-  }
-
-  if (!changed) return state
-  return { ...state, alarms: [...newAlarms, ...alarms], loneWorkSessions, audit: newAudit }
 }
 
 function uniqueUserIds(deliveries: Delivery[]): string[] {
@@ -429,8 +361,6 @@ function reducer(state: AppState, action: Action): AppState {
           }
         }),
       }
-    case 'TICK':
-      return tick(state, action.now)
     case 'UPSERT_BUTTON': {
       const exists = state.buttons.some((b) => b.id === action.button.id)
       return {
