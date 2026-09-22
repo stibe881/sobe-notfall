@@ -10,5 +10,5 @@ expo-env.d.ts
 *.key
 *.mobileprovision
 .DS_Store
-ios/
-android/
+/ios/
+/android/

@@ -267,8 +267,52 @@ Critical Alert – Apple würde die Nachricht abweisen.
 
 ## Android
 
-Der Kanal `alarme` wird beim Start mit höchster Wichtigkeit angelegt und umgeht
-«Nicht stören». Dort braucht es keine Bewilligung.
+Android kennt kein Bewilligungsverfahren wie Apple – aber auch keine direkte
+Entsprechung zu Critical Alerts. Zwei Bausteine kombiniert kommen dem am
+nächsten:
+
+| Baustein | Was es bringt | Bewilligung |
+| --- | --- | --- |
+| Kanal `alarme` (höchste Wichtigkeit) | umgeht «Nicht stören» | keine, nur der einmalige Zugriff auf «Nicht-stören-Regeln», den der Kanal beim Erstellen mit `bypassDnd: true` anfragt |
+| Vollbild-Meldung (`notifee`, `fullScreenAction`) | erscheint wie ein eingehender Anruf über dem Sperrbildschirm | ab Android 14 (API 34) nur automatisch erteilt, wenn die App im Play-Store-Eintrag als «Alarme & Erinnerungen»/Anrufe-App geführt wird – sonst muss die Person es einmalig unter **Einstellungen → Apps → SOBE Notfall → Vollbildbenachrichtigungen** freigeben. Fehlt sie, kommt die normale (laute) Meldung im Kanal `alarme` trotzdem an, nur ohne Vollbild. |
+| Alarmton auf Wecker-Lautstärke (natives Modul `alarm-sound`) | bleibt hörbar, auch wenn das Telefon komplett stummgeschaltet ist | keine – `AudioAttributes.USAGE_ALARM` ist eine normale, unbewilligte Android-API |
+
+### Wie es zusammenspielt
+
+Bei einem nicht stillen Alarm (`notifyNow(..., true)`, z. B. SOS oder ein im
+Vordergrund ablaufender Alleinarbeits-Timer) zeigt `mobile/src/notifications.ts`
+auf Android statt der expo-notifications-Meldung eine Vollbild-Meldung über
+`notifee` und startet gleichzeitig das native Modul `mobile/modules/alarm-sound`:
+Es spielt den System-Weckerton über `AudioAttributes.USAGE_ALARM` in Schleife,
+bis die Meldung angetippt oder weggewischt wird (oder nach spätestens 2 Minuten
+von selbst). Auf iOS und in Expo Go/Builds ohne das native Modul läuft alles
+unverändert über expo-notifications und Critical Alerts weiter.
+
+Für die als Sicherheitsnetz **vorausgeplante** Meldung (Timer-Ablauf, falls die
+App bis dahin beendet wurde) verwendet `scheduleAt(..., true)` auf Android
+ebenfalls `notifee`, aber über Androids `AlarmManager.setAlarmClock()`
+(`AlarmType.SET_ALARM_CLOCK`) – das ist von Doze/Energiesparmodus ausgenommen,
+braucht anders als `setExact()` keine `SCHEDULE_EXACT_ALARM`-Berechtigung und
+liefert zuverlässiger als die Standardplanung. Der Alarmton auf Wecker-Lautstärke
+lässt sich dafür **nicht** vorausplanen: `alarm-sound` wird nur per JS-Aufruf
+gestartet, das setzt eine laufende App voraus. Ist die App beim Ablauf ganz
+beendet, kommt nur die – weiterhin laute, `bypassDnd`-Meldung im Kanal `alarme`
+– ohne den zusätzlichen Weckerton. In der Praxis ist das unkritisch: Solange die
+App läuft (Vorder- oder Hintergrund), löst der Timer selbst `notifyNow()` aus,
+und genau dieser Fall bekommt den vollen Weckerton.
+
+### Build-Voraussetzung
+
+`@notifee/react-native` und `alarm-sound` sind native Module – wie
+`expo-live-activity` funktionieren sie nicht in Expo Go, sondern erst nach
+`expo prebuild` in einem Development- oder Store-Build (`eas build`). Beide
+linken sich beim Prebuild automatisch ein, ohne Eintrag unter `plugins` in
+`app.json`: `@notifee/react-native` bringt kein `app.plugin.js` mit (die
+nötigen Android-Berechtigungen kommen über den Gradle-Manifest-Merge aus der
+`app.notifee:core`-Bibliothek), und `alarm-sound` ist ein lokales
+Expo-Modul (`mobile/modules/alarm-sound`), das über die
+`file:./modules/alarm-sound`-Abhängigkeit in `package.json` automatisch
+gefunden wird.
 
 ---
 
