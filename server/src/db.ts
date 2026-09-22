@@ -8,7 +8,14 @@ import { dirname, resolve } from 'node:path'
  * Alarms (Zustellungen, Journal) als JSON in der jeweiligen Zeile.
  */
 
-const DB_PATH = resolve(process.env.SOBE_DB_PATH ?? 'data/sobe-notfall.sqlite')
+/**
+ * Pfad der Datenbankdatei. Ohne SOBE_DB_PATH wird er gegen das
+ * Arbeitsverzeichnis aufgelöst – wird der Server einmal aus einem anderen
+ * Verzeichnis gestartet, öffnet er damit eine andere (womöglich leere) Datei,
+ * ohne dass es jemand merkt. Deshalb wird der Pfad exportiert und beim Start
+ * protokolliert; siehe serverStartProtokollieren() in setup.ts.
+ */
+export const DB_PATH = resolve(process.env.SOBE_DB_PATH ?? 'data/sobe-notfall.sqlite')
 mkdirSync(dirname(DB_PATH), { recursive: true })
 
 export const db = new Database(DB_PATH)

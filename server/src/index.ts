@@ -10,7 +10,7 @@ import { startEngine } from './engine.js'
 import { startHeartbeat } from './events.js'
 import { starteReplikation } from './replikation.js'
 import { router } from './routes.js'
-import { INITIAL_ADMIN_EMAIL, seedDatabase } from './setup.js'
+import { INITIAL_ADMIN_EMAIL, seedDatabase, serverStartProtokollieren } from './setup.js'
 
 const PORT = Number(process.env.PORT ?? 3001)
 const HOST = process.env.HOST ?? '0.0.0.0'
@@ -59,6 +59,7 @@ app.use((fehler: Error, _req: express.Request, res: express.Response, _next: exp
 })
 
 seedDatabase()
+serverStartProtokollieren()
 purgeExpiredSessions()
 startEngine()
 startHeartbeat()

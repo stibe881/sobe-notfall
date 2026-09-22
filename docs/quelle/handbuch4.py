@@ -638,6 +638,29 @@ KOERPER = r"""
     grosszügigem Kontingent. Das Token erscheint nie im Update-Protokoll.
   </p>
 
+  <h4>Das Ereignisprotokoll wirkt zurückgesetzt &ndash; jüngste Einträge fehlen</h4>
+  <p>
+    Fast immer arbeitet der Server dann auf einer <b>anderen Datenbankdatei</b>. Ohne
+    <code>SOBE_DB_PATH</code> in <code>server/.env</code> wird der Pfad
+    <code>data/sobe-notfall.sqlite</code> gegen das <b>Arbeitsverzeichnis</b> aufgelöst:
+    Wird der Server einmal aus einem anderen Verzeichnis gestartet, legt er dort eine
+    neue, leere Datenbank an oder greift auf eine ältere zurück &ndash; ohne Fehlermeldung.
+  </p>
+  <p>
+    Seit dem Startprotokoll ist das erkennbar: Jeder Serverstart schreibt einen Eintrag
+    <em>«Alarmserver gestartet &ndash; Datenbank &lt;Pfad&gt;, N Protokolleinträge
+    vorhanden»</em> ins Ereignisprotokoll und dieselbe Zeile auf die Konsole. Weicht der
+    Pfad vom gewohnten ab oder sackt die Anzahl plötzlich ab, ist die Ursache benannt.
+  </p>
+  <p>
+    Zu prüfen: Wie viele Datenbankdateien gibt es?
+    <code>find ~ -name '*.sqlite' -printf '%TF %p\n' | sort</code>. Der Server soll
+    dauerhaft dieselbe verwenden &ndash; tragen Sie den <b>absoluten</b> Pfad als
+    <code>SOBE_DB_PATH</code> in <code>server/.env</code> ein, dann spielt das
+    Arbeitsverzeichnis keine Rolle mehr. Gehen dabei Einträge verloren, liegen sie in
+    der Sicherung unter <code>~/sicherung/</code>.
+  </p>
+
   <h4>Portal erreichbar, aber «Alarmserver nicht erreichbar»</h4>
   <p>
     Das Portal wurde geladen, die Schnittstelle antwortet nicht. Prüfen Sie

@@ -1,4 +1,4 @@
-import { db, getSetting, setSetting } from './db.js'
+import { DB_PATH, db, getSetting, setSetting } from './db.js'
 import { hashPassword, newSalt, verifyPassword } from './auth.js'
 import { ssoKonfiguriert } from './sso.js'
 import { INTEGRATION_VORGABEN } from './integrationen.js'
@@ -189,4 +189,22 @@ export function ensureAdmin(): void {
     mustChangePassword: true,
   })
   addAudit('system', `Administratorkonto ${admin.email} mit Erstpasswort eingerichtet – Wechsel bei der ersten Anmeldung erforderlich.`)
+}
+
+/**
+ * Bei jedem Start festhalten, aus welcher Datei der Server arbeitet und wie
+ * viele Protokolleinträge darin stehen.
+ *
+ * Ohne SOBE_DB_PATH hängt die Datei am Arbeitsverzeichnis. Startet jemand den
+ * Server versehentlich von woanders, arbeitet er ab sofort auf einer anderen
+ * oder frisch angelegten Datenbank – bisher liess sich das weder im Betrieb
+ * noch nachträglich erkennen, das Ereignisprotokoll wirkte schlicht
+ * zurückgesetzt. Mit diesem Eintrag steht der Wechsel im Protokoll selbst.
+ */
+export function serverStartProtokollieren(): void {
+  const { anzahl } = db.prepare('SELECT COUNT(*) AS anzahl FROM audit').get() as { anzahl: number }
+  const { aeltester } = db.prepare('SELECT MIN(ts) AS aeltester FROM audit').get() as { aeltester: number | null }
+  const seit = aeltester ? `, Einträge seit ${new Date(aeltester).toLocaleString('de-CH')}` : ''
+  console.log(`Datenbank: ${DB_PATH} (${anzahl} Protokolleinträge${seit})`)
+  addAudit('system', `Alarmserver gestartet – Datenbank ${DB_PATH}, ${anzahl} Protokolleinträge vorhanden${seit}.`)
 }
