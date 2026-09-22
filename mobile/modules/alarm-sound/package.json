@@ -1,9 +1,0 @@
-{
-  "name": "alarm-sound",
-  "version": "1.0.0",
-  "description": "Android: spielt den Alarmton über die Wecker-Lautstärke (STREAM_ALARM) statt der Benachrichtigungs-Lautstärke – bleibt dadurch auch bei stummgeschaltetem Gerät hörbar.",
-  "main": "index.ts",
-  "types": "index.ts",
-  "license": "UNLICENSED",
-  "private": true
-}
