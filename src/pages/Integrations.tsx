@@ -1,6 +1,10 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useLocation } from 'react-router-dom'
 import qrcode from 'qrcode-generator'
-import { Building2, CheckCircle2, Copy, KeyRound, Link2, Loader2, MapPin, MessageSquare, Phone, PhoneCall, Plus, QrCode, Radio, RefreshCw, ServerCog, Smartphone, Trash2, Users, XCircle } from 'lucide-react'
+import {
+  Building2, CheckCircle2, ChevronDown, Copy, KeyRound, Link2, Loader2, MapPin, MessageSquare, Phone, PhoneCall,
+  Plus, QrCode, Radio, RefreshCw, Search, ServerCog, Smartphone, Trash2, Users, XCircle, type LucideIcon,
+} from 'lucide-react'
 import { api, logoUrl, serverUrl, type RedundanzConfig, type RedundanzStatus } from '../lib/api'
 import { uid, useStore } from '../store'
 import type { IntegrationSettings, Webhook } from '../types'
@@ -22,155 +26,386 @@ const BEREICHE = [
   { id: 'int-betrieb', titel: 'Betrieb & Ausfallsicherheit', hinweis: 'Ein zweiter Alarmserver übernimmt, wenn dieser ausfällt.' },
 ] as const
 
-/** Ein Themenbereich: Zwischentitel mit Kurzbeschreibung, darunter die Karten */
-function Bereich({ id, children }: { id: (typeof BEREICHE)[number]['id']; children: ReactNode }) {
-  const bereich = BEREICHE.find((b) => b.id === id)!
-  return (
-    <section id={id} className="scroll-mt-4">
-      <div className="mb-3">
-        <h2 className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">{bereich.titel}</h2>
-        <p className="text-xs text-slate-400 mt-0.5">{bereich.hinweis}</p>
-      </div>
-      <div className="grid lg:grid-cols-2 gap-6 items-start">{children}</div>
-    </section>
-  )
+type BereichId = (typeof BEREICHE)[number]['id']
+
+/**
+ * Zustand einer Einstellung in einem Wort.
+ *
+ * «aktiv» und «inaktiv» sind Schalter, die man kennen muss, bevor man einen
+ * Alarm auslöst – ein ausgeschaltetes SMS-Gateway heisst: es geht keine SMS
+ * raus. «info» ist für Karten ohne Schalter, «vorbereitet» für das, was im
+ * Portal steht, aber noch nichts bewirkt.
+ */
+type StatusArt = 'aktiv' | 'inaktiv' | 'vorbereitet' | 'info'
+interface KartenStatus { art: StatusArt; text: string }
+
+const STATUS_PUNKT: Record<StatusArt, string> = {
+  aktiv: 'bg-emerald-500',
+  inaktiv: 'bg-slate-300',
+  vorbereitet: 'bg-amber-400',
+  info: 'bg-slate-400',
+}
+
+interface KartenDefinition {
+  id: string
+  bereich: BereichId
+  titel: string
+  icon: LucideIcon
+  /** Zusätzliche Wörter für die Suche, die nicht im Titel stehen */
+  suchbegriffe: string
+  status: KartenStatus
+  inhalt: ReactNode
+  aktionen?: ReactNode
 }
 
 export default function Integrations() {
   const { state, dispatch } = useStore()
   const integ = state.integrations
   const [editingWebhook, setEditingWebhook] = useState<Webhook | null>(null)
-  // Verlinkung aus dem Alarmserver-Status des Dashboards: direkt zur Karte
+  const [bereich, setBereich] = useState<BereichId | 'alle'>(BEREICHE[0].id)
+  const [offen, setOffen] = useState<string | null>(null)
+  const [suche, setSuche] = useState('')
+  const { hash } = useLocation()
+  // Verlinkung aus dem Alarmserver-Status des Dashboards: zur Karte scrollen
   useSprungziel()
 
+  const karten: KartenDefinition[] = [
+    {
+      id: 'int-organisation-auftritt',
+      bereich: 'int-organisation',
+      titel: 'Organisation & Auftritt',
+      icon: Building2,
+      suchbegriffe: 'name logo farbe kurzname notfallnummer hotline branding',
+      status: integ.organization?.name
+        ? { art: 'info', text: `${integ.organization.name}${integ.hotline.enabled ? ` · Notfallnummer ${integ.hotline.number}` : ''}` }
+        : { art: 'inaktiv', text: 'Name und Auftritt noch nicht erfasst' },
+      inhalt: <OrganisationEinstellungen />,
+    },
+    {
+      id: 'int-app-verbindung',
+      bereich: 'int-app',
+      titel: 'App-Verbindung',
+      icon: Smartphone,
+      suchbegriffe: 'qr code link serveradresse installieren verteilen',
+      status: { art: 'info', text: 'QR-Code und Link, mit dem sich die App verbindet' },
+      inhalt: <AppVerbindung />,
+    },
+    {
+      id: 'int-geofencing',
+      bereich: 'int-app',
+      titel: 'Geofencing',
+      icon: MapPin,
+      suchbegriffe: 'standort aufenthaltsort gps radius',
+      status: integ.geofencing
+        ? { art: 'aktiv', text: 'Alarmiert wird nach dem gemeldeten Aufenthaltsort' }
+        : { art: 'inaktiv', text: 'Aus – alarmiert wird nach dem Standort im Profil' },
+      inhalt: <GeofencingEinstellungen />,
+    },
+    {
+      id: 'int-zugangscodes',
+      bereich: 'int-app',
+      titel: 'Deployment via Zugangscodes',
+      icon: KeyRound,
+      suchbegriffe: 'selbstinstallation code registrierung',
+      status: { art: 'vorbereitet', text: `${integ.accessCodes.length} Codes erfasst – die App kennt sie noch nicht` },
+      inhalt: <ZugangscodeEinstellungen />,
+    },
+    {
+      id: 'int-sms',
+      bereich: 'int-kanaele',
+      titel: 'SMS-Gateway',
+      icon: MessageSquare,
+      suchbegriffe: 'ecall sms textmeldung absender gateway',
+      status: integ.smsGateway.enabled
+        ? { art: 'aktiv', text: `${integ.smsGateway.provider}${integ.smsGateway.sentCount ? ` · ${integ.smsGateway.sentCount} versendet` : ''}` }
+        : { art: 'inaktiv', text: 'Kein Gateway – der Kanal «SMS» wird nicht zugestellt' },
+      inhalt: <SmsEinstellungen />,
+    },
+    {
+      id: 'int-teams',
+      bereich: 'int-kanaele',
+      titel: 'Microsoft Teams: Kanalmeldungen',
+      icon: MessageSquare,
+      suchbegriffe: 'teams webhook kanal microsoft karte',
+      status: integ.teams.enabled
+        ? { art: 'aktiv', text: integ.teams.tenant || 'Kanalmeldungen eingerichtet' }
+        : { art: 'inaktiv', text: 'Keine Meldungen in einen Teams-Kanal' },
+      inhalt: <TeamsEinstellungen />,
+    },
+    {
+      id: 'int-telefonie',
+      bereich: 'int-kanaele',
+      titel: 'Sprachanruf & Telefonkonferenz',
+      icon: PhoneCall,
+      suchbegriffe: 'anruf voice konferenz teams telefon graph',
+      status: integ.telephony.enabled
+        ? { art: 'aktiv', text: 'über Microsoft Teams' }
+        : { art: 'inaktiv', text: 'Keine Sprachanrufe, keine Krisenkonferenz' },
+      inhalt: <TelefonieEinstellungen />,
+    },
+    {
+      id: 'int-sso',
+      bereich: 'int-anmeldung',
+      titel: 'Single Sign-On (Microsoft Entra ID)',
+      icon: KeyRound,
+      suchbegriffe: 'sso entra azure anmeldung microsoft konto',
+      status: integ.sso.enabled
+        ? { art: 'aktiv', text: 'Anmeldung mit dem Microsoft-Konto' }
+        : { art: 'inaktiv', text: 'Anmeldung mit E-Mail-Adresse und Passwort' },
+      inhalt: <SsoEinstellungen />,
+    },
+    {
+      id: 'int-personalsystem',
+      bereich: 'int-anmeldung',
+      titel: 'Personalsystem',
+      icon: Users,
+      suchbegriffe: 'hr abgleich import konten synchronisation',
+      status: integ.hrSync.enabled
+        ? { art: 'vorbereitet', text: integ.hrSync.system || 'Abgleich vorgemerkt' }
+        : { art: 'inaktiv', text: 'Konten werden von Hand oder per CSV gepflegt' },
+      inhalt: <PersonalsystemEinstellungen />,
+    },
+    {
+      id: 'int-lorawan',
+      bereich: 'int-systeme',
+      titel: 'LoRaWAN-Netz / Alarmknöpfe',
+      icon: Radio,
+      suchbegriffe: 'knopf button uplink ttn chirpstack token endpunkt armband',
+      status: integ.lorawan.enabled
+        ? { art: 'aktiv', text: `${integ.lorawan.provider} · ${state.buttons.length} Knöpfe erfasst` }
+        : { art: 'inaktiv', text: 'Uplink-Endpunkt aus – ein Knopfdruck löst nichts aus' },
+      inhalt: <LorawanEinstellungen />,
+    },
+    {
+      id: 'int-webhooks',
+      bereich: 'int-systeme',
+      titel: 'IP- / Webhook-Integration',
+      icon: Link2,
+      suchbegriffe: 'schnittstelle brandmeldeanlage leitstelle ausgehend eingehend',
+      status: integ.webhooks.some((w) => w.active)
+        ? { art: 'aktiv', text: `${integ.webhooks.filter((w) => w.active).length} von ${integ.webhooks.length} aktiv` }
+        : { art: 'inaktiv', text: integ.webhooks.length ? 'Keiner aktiv' : 'Keine Schnittstelle eingerichtet' },
+      inhalt: <WebhookEinstellungen onBearbeiten={setEditingWebhook} />,
+      aktionen: (
+        <Button
+          variant="secondary"
+          onClick={(e) => { e.stopPropagation(); setEditingWebhook({ id: uid('wh'), name: '', url: '', direction: 'inbound', active: true }) }}
+        >
+          <Plus size={14} /> Webhook
+        </Button>
+      ),
+    },
+    {
+      id: 'int-redundanz',
+      bereich: 'int-betrieb',
+      titel: 'Redundanz – zweiter Alarmserver',
+      icon: ServerCog,
+      suchbegriffe: 'standby failover replikation ausfall spiegel',
+      status: { art: 'info', text: 'Übernimmt, wenn dieser Server ausfällt' },
+      inhalt: <RedundanzEinstellungen />,
+    },
+  ]
+
+  /**
+   * Ein Link aus dem Dashboard zeigt auf eine einzelne Karte. Sie kann in
+   * einem Bereich liegen, der gerade nicht gewählt ist – dann wird auf ihn
+   * umgeschaltet und die Karte geöffnet, sonst liefe der Sprung ins Leere.
+   */
+  useEffect(() => {
+    const ziel = karten.find((k) => k.id === hash.slice(1))
+    if (!ziel) return
+    setBereich(ziel.bereich)
+    setOffen(ziel.id)
+    setSuche('')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hash])
+
+  const begriffe = suche.toLowerCase().split(/\s+/).filter(Boolean)
+  const sichtbar = useMemo(
+    () =>
+      karten.filter((k) => {
+        if (begriffe.length > 0) {
+          const heuhaufen = `${k.titel} ${k.suchbegriffe} ${k.status.text}`.toLowerCase()
+          return begriffe.every((b) => heuhaufen.includes(b))
+        }
+        return bereich === 'alle' || k.bereich === bereich
+      }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [bereich, suche, integ, state.buttons.length],
+  )
+
+  const aktiv = karten.filter((k) => k.status.art === 'aktiv').length
+  const offeneBereiche = suche ? 'alle' : bereich
+  const bereichInfo = BEREICHE.find((b) => b.id === offeneBereiche)
+
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-800">Integrationen &amp; Optionen</h1>
-        <p className="text-sm text-slate-500">
-          Von der Organisation über die App und die Alarmierungskanäle bis zur Ausfallsicherheit – geordnet nach
-          der Reihenfolge der Einrichtung.
-        </p>
-        {/* Schnellnavigation: springt zum Bereich, ohne die Adresse (Hash-Routing) zu verändern */}
-        <div className="flex flex-wrap gap-1.5 mt-3">
-          {BEREICHE.map((b) => (
-            <button
-              key={b.id}
-              onClick={() => document.getElementById(b.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-              className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-600 hover:border-slate-400 hover:text-slate-900 transition"
-            >
-              {b.titel}
-            </button>
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-800">Integrationen</h1>
+          <p className="text-sm text-slate-500">
+            Alles, was das System mit der Aussenwelt verbindet – {aktiv} von {karten.length} Bereichen sind aktiv.
+          </p>
+        </div>
+        <div className="relative w-full sm:w-72">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            className={inputClass + ' pl-9'}
+            placeholder="Einstellung suchen – z. B. SMS, Knopf, Teams…"
+            value={suche}
+            onChange={(e) => setSuche(e.target.value)}
+          />
+        </div>
+      </div>
+
+      <div className="grid lg:grid-cols-[15rem_1fr] gap-6 items-start">
+        {/* Bereichswahl: links als Liste, auf schmalen Fenstern oben als Zeile */}
+        <nav className="flex lg:flex-col gap-1 overflow-x-auto lg:overflow-visible lg:sticky lg:top-4 pb-1 lg:pb-0">
+          {BEREICHE.map((b) => {
+            const eigene = karten.filter((k) => k.bereich === b.id)
+            const eigeneAktiv = eigene.filter((k) => k.status.art === 'aktiv').length
+            const gewaehlt = !suche && bereich === b.id
+            return (
+              <button
+                key={b.id}
+                onClick={() => { setSuche(''); setBereich(b.id) }}
+                className={`flex items-center gap-2 rounded-lg px-3 py-2 text-left text-sm whitespace-nowrap lg:whitespace-normal transition ${
+                  gewaehlt ? 'bg-slate-800 text-white' : 'text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                <span className="flex-1">{b.titel}</span>
+                <span className={`text-xs tabular-nums ${gewaehlt ? 'text-slate-300' : 'text-slate-400'}`}>
+                  {eigeneAktiv}/{eigene.length}
+                </span>
+              </button>
+            )
+          })}
+        </nav>
+
+        <div className="space-y-3 min-w-0">
+          {suche ? (
+            <p className="text-sm text-slate-500">
+              {sichtbar.length === 0
+                ? 'Keine Einstellung gefunden.'
+                : `${sichtbar.length} Einstellung${sichtbar.length === 1 ? '' : 'en'} gefunden`}
+            </p>
+          ) : (
+            bereichInfo && <p className="text-sm text-slate-500">{bereichInfo.hinweis}</p>
+          )}
+
+          {sichtbar.map((k) => (
+            <EinstellungsKarte
+              key={k.id}
+              karte={k}
+              offen={offen === k.id}
+              onUmschalten={() => setOffen(offen === k.id ? null : k.id)}
+            />
           ))}
         </div>
       </div>
 
-      <Bereich id="int-organisation">
-        <Card id="int-organisation-auftritt" title={<span className="flex items-center gap-2"><Building2 size={16} /> Organisation &amp; Auftritt</span>}>
-          <OrganisationEinstellungen />
-        </Card>
-      </Bereich>
-
-      <Bereich id="int-app">
-        <Card id="int-app-verbindung" title={<span className="flex items-center gap-2"><Smartphone size={16} /> App-Verbindung</span>}>
-          <AppVerbindung />
-        </Card>
-
-        <Card title={<span className="flex items-center gap-2"><MapPin size={16} /> Geofencing</span>}>
-          <GeofencingEinstellungen />
-        </Card>
-
-        <Card title={<span className="flex items-center gap-2"><KeyRound size={16} /> Deployment via Zugangscodes <Vorbereitet /></span>}>
-          <p className="text-sm text-slate-500 mb-3">
-            Gedacht für die Selbstinstallation ohne Geräteverwaltung. Die App kennt die Codes noch nicht – Mitarbeitende
-            verbinden sich heute über den QR-Code und melden sich mit E-Mail-Adresse und Passwort an.
-          </p>
-          <div className="space-y-2">
-            {integ.accessCodes.map((c) => (
-              <div key={c.code} className="flex items-center gap-3 rounded-lg border border-slate-100 p-3 text-sm">
-                <code className="font-mono font-semibold text-slate-800">{c.code}</code>
-                <span className="text-xs text-slate-400 flex-1">
-                  {state.locations.find((l) => l.id === c.locationId)?.name} · erstellt {formatDateTime(c.createdAt)}
-                </span>
-                <Badge>{c.used}× verwendet</Badge>
-              </div>
-            ))}
-          </div>
-          <div className="mt-3 flex gap-2 flex-wrap">
-            {state.locations.map((l) => (
-              <Button key={l.id} variant="secondary" onClick={() => dispatch({ type: 'ADD_ACCESS_CODE', locationId: l.id })}>
-                <Plus size={13} /> Code für {l.name}
-              </Button>
-            ))}
-          </div>
-        </Card>
-      </Bereich>
-
-      <Bereich id="int-kanaele">
-        <Card id="int-sms" title={<span className="flex items-center gap-2"><MessageSquare size={16} /> SMS-Gateway</span>}>
-          <SmsEinstellungen />
-        </Card>
-
-        <Card id="int-teams" title={<span className="flex items-center gap-2"><MessageSquare size={16} /> Microsoft Teams: Kanalmeldungen</span>}>
-          <TeamsEinstellungen />
-        </Card>
-
-        <Card id="int-telefonie" title={<span className="flex items-center gap-2"><PhoneCall size={16} /> Sprachanruf &amp; Telefonkonferenz (Microsoft Teams)</span>}>
-          <TelefonieEinstellungen />
-        </Card>
-      </Bereich>
-
-      <Bereich id="int-anmeldung">
-        <Card title={<span className="flex items-center gap-2"><KeyRound size={16} /> Single Sign-On (Microsoft Entra ID)</span>}>
-          <SsoEinstellungen />
-        </Card>
-
-        <Card title={<span className="flex items-center gap-2"><Users size={16} /> Personalsystem</span>}>
-          <PersonalsystemEinstellungen />
-        </Card>
-      </Bereich>
-
-      <Bereich id="int-systeme">
-        <Card id="int-lorawan" title={<span className="flex items-center gap-2"><Radio size={16} /> LoRaWAN-Netz / Alarmknöpfe</span>}>
-          <LorawanEinstellungen />
-        </Card>
-
-        <Card
-          title={<span className="flex items-center gap-2"><Link2 size={16} /> IP- / Webhook-Integration</span>}
-          actions={<Button variant="secondary" onClick={() => setEditingWebhook({ id: uid('wh'), name: '', url: '', direction: 'inbound', active: true })}><Plus size={14} /> Webhook</Button>}
-        >
-          <div className="space-y-2">
-            {integ.webhooks.map((w) => (
-              <div key={w.id} className="flex items-center gap-3 rounded-lg border border-slate-100 p-3 text-sm">
-                <div className="flex-1 min-w-0">
-                  <div className="font-medium text-slate-800">{w.name}</div>
-                  <div className="text-xs text-slate-400 truncate">{w.url}</div>
-                  <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
-                    <Badge color={w.direction === 'inbound' ? 'blue' : 'violet'}>{w.direction === 'inbound' ? 'eingehend' : 'ausgehend'}</Badge>
-                    <Badge color={w.active ? 'green' : 'slate'}>{w.active ? 'aktiv' : 'inaktiv'}</Badge>
-                    {w.direction === 'inbound' && <Vorbereitet />}
-                  </div>
-                </div>
-                <Button variant="ghost" onClick={() => setEditingWebhook(w)}>Bearbeiten</Button>
-                <Button variant="ghost" onClick={() => dispatch({ type: 'DELETE_WEBHOOK', webhookId: w.id })}><Trash2 size={14} /></Button>
-              </div>
-            ))}
-          </div>
-          <div className="text-xs text-slate-400 mt-3">
-            Ausgehende Webhooks melden jede Auslösung an Drittsysteme und sind aktiv. Eingehende Webhooks von
-            Brandmeldeanlagen sind {VORBEREITET}; Alarmknöpfe kommen bereits über den LoRaWAN-Endpunkt herein.
-          </div>
-        </Card>
-      </Bereich>
-
-      <Bereich id="int-betrieb">
-        <Card id="int-redundanz" title={<span className="flex items-center gap-2"><ServerCog size={16} /> Redundanz – zweiter Alarmserver</span>}>
-          <RedundanzEinstellungen />
-        </Card>
-      </Bereich>
-
       {editingWebhook && <WebhookEditor webhook={editingWebhook} onClose={() => setEditingWebhook(null)} />}
     </div>
+  )
+}
+
+/**
+ * Eine Einstellung als zugeklappte Zeile: Titel, Zustand im Klartext und ein
+ * farbiger Punkt. Aufgeklappt wird nur, was gerade bearbeitet wird – vorher
+ * standen alle zwölf Formulare gleichzeitig offen, und man musste jedes lesen,
+ * um zu sehen, was überhaupt eingeschaltet ist.
+ */
+function EinstellungsKarte({ karte, offen, onUmschalten }: { karte: KartenDefinition; offen: boolean; onUmschalten: () => void }) {
+  const Icon = karte.icon
+  return (
+    <div id={karte.id} className="bg-white rounded-xl border border-slate-200 shadow-sm scroll-mt-4 overflow-hidden">
+      <div className="flex items-center gap-2 pr-3">
+        <button
+          onClick={onUmschalten}
+          aria-expanded={offen}
+          className="flex flex-1 items-center gap-3 px-4 py-3 text-left min-w-0 hover:bg-slate-50 transition"
+        >
+          <Icon size={17} className="text-slate-400 shrink-0" />
+          <span className="min-w-0 flex-1">
+            <span className="flex items-center gap-2">
+              <span className="font-semibold text-slate-800">{karte.titel}</span>
+              {karte.status.art === 'vorbereitet' && <Vorbereitet />}
+            </span>
+            <span className="block text-xs text-slate-500 truncate mt-0.5">{karte.status.text}</span>
+          </span>
+          <span className={`w-2 h-2 rounded-full shrink-0 ${STATUS_PUNKT[karte.status.art]}`} aria-hidden />
+          <span className="text-xs text-slate-400 w-14 text-right shrink-0 hidden sm:inline">
+            {karte.status.art === 'aktiv' ? 'aktiv' : karte.status.art === 'inaktiv' ? 'inaktiv' : ''}
+          </span>
+          <ChevronDown size={16} className={`text-slate-400 shrink-0 transition ${offen ? 'rotate-180' : ''}`} />
+        </button>
+        {offen && karte.aktionen}
+      </div>
+      {offen && <div className="px-4 sm:px-5 pb-5 pt-4 border-t border-slate-100">{karte.inhalt}</div>}
+    </div>
+  )
+}
+
+/** Codes für die Selbstinstallation – je Standort einer */
+function ZugangscodeEinstellungen() {
+  const { state, dispatch } = useStore()
+  return (
+    <>
+      <p className="text-sm text-slate-500 mb-3">
+        Gedacht für die Selbstinstallation ohne Geräteverwaltung. Die App kennt die Codes noch nicht – Mitarbeitende
+        verbinden sich heute über den QR-Code und melden sich mit E-Mail-Adresse und Passwort an.
+      </p>
+      <div className="space-y-2">
+        {state.integrations.accessCodes.map((c) => (
+          <div key={c.code} className="flex items-center gap-3 rounded-lg border border-slate-100 p-3 text-sm">
+            <code className="font-mono font-semibold text-slate-800">{c.code}</code>
+            <span className="text-xs text-slate-400 flex-1">
+              {state.locations.find((l) => l.id === c.locationId)?.name} · erstellt {formatDateTime(c.createdAt)}
+            </span>
+            <Badge>{c.used}× verwendet</Badge>
+          </div>
+        ))}
+      </div>
+      <div className="mt-3 flex gap-2 flex-wrap">
+        {state.locations.map((l) => (
+          <Button key={l.id} variant="secondary" onClick={() => dispatch({ type: 'ADD_ACCESS_CODE', locationId: l.id })}>
+            <Plus size={13} /> Code für {l.name}
+          </Button>
+        ))}
+      </div>
+    </>
+  )
+}
+
+/** Schnittstellen zu Drittsystemen – ein- und ausgehend */
+function WebhookEinstellungen({ onBearbeiten }: { onBearbeiten: (w: Webhook) => void }) {
+  const { state, dispatch } = useStore()
+  const webhooks = state.integrations.webhooks
+  return (
+    <>
+      <div className="space-y-2">
+        {webhooks.length === 0 && <p className="text-sm text-slate-400">Noch keine Schnittstelle eingerichtet.</p>}
+        {webhooks.map((w) => (
+          <div key={w.id} className="flex items-center gap-3 rounded-lg border border-slate-100 p-3 text-sm">
+            <div className="flex-1 min-w-0">
+              <div className="font-medium text-slate-800">{w.name}</div>
+              <div className="text-xs text-slate-400 truncate">{w.url}</div>
+              <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                <Badge color={w.direction === 'inbound' ? 'blue' : 'violet'}>{w.direction === 'inbound' ? 'eingehend' : 'ausgehend'}</Badge>
+                <Badge color={w.active ? 'green' : 'slate'}>{w.active ? 'aktiv' : 'inaktiv'}</Badge>
+                {w.direction === 'inbound' && <Vorbereitet />}
+              </div>
+            </div>
+            <Button variant="ghost" onClick={() => onBearbeiten(w)}>Bearbeiten</Button>
+            <Button variant="ghost" onClick={() => dispatch({ type: 'DELETE_WEBHOOK', webhookId: w.id })}><Trash2 size={14} /></Button>
+          </div>
+        ))}
+      </div>
+      <div className="text-xs text-slate-400 mt-3">
+        Ausgehende Webhooks melden jede Auslösung an Drittsysteme und sind aktiv. Eingehende Webhooks von
+        Brandmeldeanlagen sind {VORBEREITET}; Alarmknöpfe kommen bereits über den LoRaWAN-Endpunkt herein.
+      </div>
+    </>
   )
 }
 
