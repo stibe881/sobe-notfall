@@ -618,6 +618,48 @@ footer .adressfuss { margin-top: 22px; }
       firmenintern genügt oft das APK aus dem Preview-Profil.
     </p>
   </div>
+
+  <h3>Hinweise der Play&nbsp;Console</h3>
+  <p>
+    Nach jedem Upload prüft Google das Bundle und zeigt im Release-Dashboard
+    Empfehlungen an. Drei davon betreffen die App und sind im Projekt bereits
+    berücksichtigt:
+  </p>
+  <div class="tabelle-huelle">
+    <table>
+      <caption>Prüfpunkte der Play&nbsp;Console und ihre Behandlung</caption>
+      <thead><tr><th>Hinweis</th><th>Stand</th></tr></thead>
+      <tbody>
+        <tr>
+          <th scope="row">DEX-Codeoptimierung / Verschleierung</th>
+          <td>R8 ist für Release-Builds eingeschaltet
+          (<code>expo-build-properties</code> in <code>mobile/app.json</code>).</td>
+        </tr>
+        <tr>
+          <th scope="row">Einschränkungen für Grösse und Ausrichtung</th>
+          <td>Die Android-App ist nicht mehr aufs Hochformat festgelegt; der Inhalt
+          wird auf breiten Displays mittig begrenzt. Auf dem iPhone bleibt es beim
+          Hochformat, das iPad darf drehen.</td>
+        </tr>
+        <tr>
+          <th scope="row">Nicht mehr unterstützte APIs für die randlose Anzeige</th>
+          <td>Die genannten Aufrufe stammen aus React&nbsp;Native selbst
+          (<code>com.facebook.react.&hellip;</code>), nicht aus dem Code dieser App.
+          Sie verschwinden mit einer künftigen React-Native-Fassung.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="hinweis hinweis--warnung">
+    <p class="marke-klein">Nach dem Einschalten von R8 zuerst testen</p>
+    <p>
+      R8 entfernt und verschleiert ungenutzten Code. Die verwendeten Bibliotheken
+      liefern die nötigen Ausnahmeregeln selbst mit, trotzdem gilt: Den nächsten
+      Android-Build <b>zuerst über den internen Test</b> auf ein Gerät bringen und
+      Anmeldung, Alarmauslösung, Push-Zustellung und den Alleinarbeits-Timer
+      durchspielen, bevor der Release in die Produktion hochgestuft wird.
+    </p>
+  </div>
 </section>
 
 <section id="a9">

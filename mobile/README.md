@@ -136,10 +136,26 @@ Remote-Alarme.
 Ab dann baut und übermittelt der Update-Knopf des Portals Android automatisch mit. Für die
 firmeninterne Verteilung genügt oft das APK aus dem Preview-Profil (per MDM oder Download).
 
+### Hinweise der Play Console
+
+Google prüft jedes Bundle und zeigt im Release-Dashboard Empfehlungen an:
+
+| Hinweis | Stand |
+| --- | --- |
+| DEX-Codeoptimierung / Verschleierung zu niedrig | R8 ist für Release-Builds eingeschaltet (`expo-build-properties` in `app.json`, `enableMinifyInReleaseBuilds` + `enableShrinkResourcesInReleaseBuilds`). |
+| Einschränkungen für Grössenänderung und Ausrichtung | `orientation` steht auf `default`, Android setzt damit `screenOrientation="unspecified"`. Der Inhalt wird auf breiten Displays mittig auf 640&nbsp;dp begrenzt. iOS bleibt auf dem iPhone im Hochformat (`UISupportedInterfaceOrientations` im `infoPlist`), das iPad darf drehen. |
+| Nicht mehr unterstützte APIs für die randlose Anzeige | Die genannten Aufrufe (`setStatusBarColor`, `setNavigationBarColor`, `LAYOUT_IN_DISPLAY_CUTOUT_MODE_*`) stammen aus React Native selbst (`com.facebook.react.…`). Die App ruft sie nicht auf – sie verwendet `expo-status-bar` nur mit `style`, ohne `backgroundColor`, und setzt kein `androidNavigationBar`. Der Hinweis verschwindet mit einer künftigen React-Native-Fassung. |
+
+> **Nach dem Einschalten von R8 zuerst testen.** Die verwendeten Bibliotheken (React Native,
+> expo-modules-core, Notifee, react-native-svg) liefern ihre Proguard-Ausnahmen über
+> `consumerProguardFiles` selbst mit. Trotzdem gehört der nächste Android-Build zuerst über den
+> internen Test auf ein echtes Gerät: Anmeldung, Alarmauslösung, Push-Zustellung und
+> Alleinarbeits-Timer durchspielen, bevor der Release in die Produktion hochgestuft wird.
+
 ## Struktur
 
 - `App.tsx` – Einstieg: Header, Tab-Navigation, Toasts
 - `src/screens.tsx` – die fünf Screens (Start/SOS, Szenarien, Alleinarbeit, Notruf, Profil)
-- `src/store.tsx` – Zustand mit AsyncStorage-Persistenz und Alarmserver-Simulation
+- `src/store.tsx` – Zustand mit AsyncStorage-Zwischenspeicher, Anbindung an den Alarmserver
 - `src/seed.ts`, `src/types.ts` – Kopie der Daten/Typen aus der Web-App (`../src`)
 - `src/ui.tsx` – Farben, Badges, Halte-Button

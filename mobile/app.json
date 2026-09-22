@@ -4,7 +4,7 @@
     "slug": "sonnenberg-notfall",
     "scheme": "sobenotfall",
     "version": "1.0.0",
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "./assets/icon.png",
     "plugins": [
       [
@@ -23,6 +23,15 @@
           "isIosBackgroundLocationEnabled": true,
           "isAndroidBackgroundLocationEnabled": true
         }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableMinifyInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true
+          }
+        }
       ]
     ],
     "userInterfaceStyle": "light",
@@ -36,7 +45,16 @@
         "NSAppTransportSecurity": {
           "NSAllowsLocalNetworking": true
         },
-        "NSLocalNetworkUsageDescription": "SOBE Notfall verbindet sich mit dem Alarmserver im Schulnetz, um Benutzerkonten, Szenarien und Alarme zu laden."
+        "NSLocalNetworkUsageDescription": "SOBE Notfall verbindet sich mit dem Alarmserver im Schulnetz, um Benutzerkonten, Szenarien und Alarme zu laden.",
+        "UISupportedInterfaceOrientations": [
+          "UIInterfaceOrientationPortrait"
+        ],
+        "UISupportedInterfaceOrientations~ipad": [
+          "UIInterfaceOrientationPortrait",
+          "UIInterfaceOrientationPortraitUpsideDown",
+          "UIInterfaceOrientationLandscapeLeft",
+          "UIInterfaceOrientationLandscapeRight"
+        ]
       },
       "entitlements": {
         "com.apple.developer.usernotifications.time-sensitive": true,

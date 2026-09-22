@@ -203,7 +203,8 @@ function Root() {
         </Pressable>
       )}
 
-      <View style={{ flex: 1, backgroundColor: colors.bg }}>
+      <View style={styles.inhalt}>
+       <View style={styles.inhaltMitte}>
         {openScenario ? (
           <ScenarioDetailScreen
             key={`${openScenario.id}-${openModus}-${openAlarm?.id ?? ''}-${openPhase ?? ''}`}
@@ -226,6 +227,7 @@ function Root() {
         ) : (
           <ProfileScreen />
         )}
+       </View>
       </View>
 
       {toasts.length > 0 && (
@@ -277,6 +279,10 @@ export default function App() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.dark },
+  // Auf Tablets und im Querformat wird der Inhalt mittig begrenzt – über die
+  // volle Breite eines 10-Zoll-Displays wären Zeilen und Listen unlesbar lang
+  inhalt: { flex: 1, backgroundColor: colors.bg, alignItems: 'center' },
+  inhaltMitte: { flex: 1, width: '100%', maxWidth: 640 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',

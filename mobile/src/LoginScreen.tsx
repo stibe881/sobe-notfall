@@ -324,7 +324,8 @@ export function ForcePasswordChange({ user }: { user: User }) {
 }
 
 const s = StyleSheet.create({
-  screen: { flexGrow: 1, justifyContent: 'center', padding: 22, paddingBottom: 40 },
+  // maxWidth: auf Tablets und im Querformat bleibt die Maske mittig und lesbar
+  screen: { flexGrow: 1, justifyContent: 'center', padding: 22, paddingBottom: 40, width: '100%', maxWidth: 520, alignSelf: 'center' },
   logo: { width: 64, height: 64, borderRadius: 18, backgroundColor: '#1e293b', alignItems: 'center', justifyContent: 'center', alignSelf: 'center', marginBottom: 16 },
   logoBild: { borderRadius: 18, backgroundColor: '#ffffff', paddingHorizontal: 14, paddingVertical: 10, alignSelf: 'center', marginBottom: 16 },
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
