@@ -138,6 +138,31 @@ offen ist und wann die letzte Anmeldung war. `reset-admin` setzt ein neues
 Passwort, beendet alle bestehenden Anmeldungen des Kontos und erzwingt den
 Wechsel bei der nächsten Anmeldung.
 
+## Datenbank prüfen
+
+Wirkt das Ereignisprotokoll zurückgesetzt oder fehlen Einträge, klärt das ein
+Befehl – aufzurufen **aus dem Ordner `server/`**, damit der Pfad genauso
+aufgelöst wird wie beim Serverstart:
+
+```bash
+npm run pruefe-datenbank
+npm run pruefe-datenbank -- /eigener/sicherungsordner
+```
+
+Er nennt die verwendete Datei, die Anzahl der Protokolleinträge pro Tag und
+vergleicht jede Sicherung damit. Stehen Einträge nur noch in einer Sicherung,
+sagt er das ausdrücklich.
+
+> Ohne `SOBE_DB_PATH` wird `data/sobe-notfall.sqlite` gegen das **Arbeits-**
+> **verzeichnis** aufgelöst. Wird der Server einmal aus einem anderen Verzeichnis
+> gestartet, öffnet er eine andere oder frisch angelegte Datei – ohne Fehlermeldung.
+> Tragen Sie deshalb den absoluten Pfad in `server/.env` ein. Seit dem Startprotokoll
+> steht die verwendete Datei bei jedem Start auf der Konsole und im Ereignisprotokoll.
+>
+> Ein `find ~ -name '*.sqlite'` findet die laufende Datenbank auf Shared Hosting oft
+> nicht: `public_html` ist dort meist eine symbolische Verknüpfung, der `find` ohne
+> `-L` nicht folgt.
+
 Häufige Ursachen:
 
 | Meldung | Ursache |

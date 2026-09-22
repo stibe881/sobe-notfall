@@ -934,13 +934,29 @@ footer .adressfuss { margin-top: 22px; }
     Pfad vom gewohnten ab oder sackt die Anzahl plötzlich ab, ist die Ursache benannt.
   </p>
   <p>
-    Zu prüfen: Wie viele Datenbankdateien gibt es?
-    <code>find ~ -name '*.sqlite' -printf '%TF %p\n' | sort</code>. Der Server soll
-    dauerhaft dieselbe verwenden &ndash; tragen Sie den <b>absoluten</b> Pfad als
-    <code>SOBE_DB_PATH</code> in <code>server/.env</code> ein, dann spielt das
-    Arbeitsverzeichnis keine Rolle mehr. Gehen dabei Einträge verloren, liegen sie in
-    der Sicherung unter <code>~/sicherung/</code>.
+    Nachträglich klärt das ein eigener Befehl. Er zeigt, mit welcher Datei gearbeitet
+    wird, wie viele Einträge pro Tag darin stehen, und vergleicht jede Sicherung damit:
   </p>
+  <pre><code>cd ~/public_html/ihre-domain.ch/server
+npm run pruefe-datenbank</code></pre>
+  <p>
+    Meldet er <em>«Das Ereignisprotokoll ist vollständig»</em>, ist nichts verloren
+    gegangen &ndash; das Portal hat dann zwischenzeitlich eine andere Datei gesehen.
+    Nennt er dagegen Einträge, die nur noch in einer Sicherung stehen, überschreiben Sie
+    nichts und klären erst die Ursache.
+  </p>
+  <div class="hinweis">
+    <p class="marke-klein">Dauerhaft abstellen</p>
+    <p>
+      Tragen Sie den <b>absoluten</b> Pfad der Datenbank als
+      <code>SOBE_DB_PATH</code> in <code>server/.env</code> ein. Dann spielt das
+      Arbeitsverzeichnis keine Rolle mehr, und der Server öffnet immer dieselbe Datei.
+      Ein <code>find</code> über das Benutzerverzeichnis hilft dabei nur bedingt: Auf
+      Shared Hosting ist <code>public_html</code> oft eine symbolische Verknüpfung, und
+      <code>find</code> folgt ihr ohne <code>-L</code> nicht &ndash; die laufende
+      Datenbank fehlt dann in der Liste, obwohl sie existiert.
+    </p>
+  </div>
 
   <h4>Portal erreichbar, aber «Alarmserver nicht erreichbar»</h4>
   <p>

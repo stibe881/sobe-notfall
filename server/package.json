@@ -13,7 +13,8 @@
     "reset-admin": "tsx src/reset-admin.ts",
     "accounts": "tsx src/accounts.ts",
     "test": "tsx src/test.ts",
-    "sicherung": "node scripts/sicherung.mjs"
+    "sicherung": "node scripts/sicherung.mjs",
+    "pruefe-datenbank": "node scripts/pruefe-datenbank.mjs"
   },
   "dependencies": {
     "better-sqlite3": "^12.11.1",
