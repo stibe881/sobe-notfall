@@ -292,7 +292,16 @@ function StufenEditor({
 }
 
 /** Bestehenden Plan bearbeiten – dieselben Schritte wie im Assistenten, nur alle auf einmal */
-function PlanEditor({ plan, onClose }: { plan: AlarmPlan; onClose: () => void }) {
+export function PlanEditor({
+  plan,
+  onClose,
+  onSaved,
+}: {
+  plan: AlarmPlan
+  onClose: () => void
+  /** Wird aufgerufen, wenn tatsächlich gespeichert wurde (nicht bei Abbrechen) */
+  onSaved?: (plan: AlarmPlan) => void
+}) {
   const { state, dispatch } = useStore()
   const [draft, setDraft] = useState<AlarmPlan>(() => JSON.parse(JSON.stringify(plan)) as AlarmPlan)
 
@@ -401,7 +410,12 @@ function PlanEditor({ plan, onClose }: { plan: AlarmPlan; onClose: () => void })
 
       <div className="flex justify-end gap-2 mt-6">
         <Button variant="secondary" onClick={onClose}>Abbrechen</Button>
-        <Button onClick={() => { dispatch({ type: 'UPSERT_PLAN', plan: draft }); onClose() }} disabled={!draft.name.trim()}>Speichern</Button>
+        <Button
+          onClick={() => { dispatch({ type: 'UPSERT_PLAN', plan: draft }); onSaved?.(draft); onClose() }}
+          disabled={!draft.name.trim()}
+        >
+          Speichern
+        </Button>
       </div>
     </Modal>
   )

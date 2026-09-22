@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react'
-import { Eye, EyeOff, Pencil, Phone, Plus, Scale, Trash2, Users } from 'lucide-react'
+import { ClipboardList, Eye, EyeOff, Pencil, Phone, Plus, Scale, Trash2, Users } from 'lucide-react'
 import { uid, useStore } from '../store'
-import type { Channel, ResponseStep, Scenario, ScenarioPriority } from '../types'
+import type { AlarmPlan, Channel, ResponseStep, Scenario, ScenarioPriority } from '../types'
 import { Badge, Button, Card, Field, Modal, Toggle, inputClass, useConfirm, kanalName } from '../components/ui'
 import { AuswahlChip, Wizard } from '../components/Wizard'
 import { SCENARIO_ICONS, ScenarioIcon } from '../components/ScenarioIcon'
 import { isActive, responseStepsOf } from '../lib/scenarios'
+import { PlanEditor } from './AlarmPlans'
 
 const CATEGORIES = ['Schüler:innen', 'Gesundheit', 'Sicherheit', 'Gebäude & Technik', 'Naturereignis', 'Organisation']
 const ALL_CHANNELS: Channel[] = ['push', 'sms', 'email', 'voice', 'conference', 'tts', 'teams']
@@ -74,6 +75,7 @@ export default function Scenarios() {
       <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
         {filtered.map((s) => {
           const aktiv = isActive(s)
+          const plan = state.plans.find((p) => p.scenarioId === s.id)
           return (
           <Card key={s.id} className={aktiv ? 'hover:shadow transition' : 'transition bg-slate-50 border-dashed'}>
             <div className={`flex items-start gap-3 ${aktiv ? '' : 'opacity-55'}`}>
@@ -87,10 +89,17 @@ export default function Scenarios() {
                   {s.silentDefault && <Badge color="violet">stiller Alarm</Badge>}
                   {s.custom && <Badge color="blue">eigenes Szenario</Badge>}
                   {(s.legalBasis?.length ?? 0) > 0 && <Badge color="green">Rechtsgrundlagen</Badge>}
+                  {!plan && <Badge color="amber">kein Alarmplan hinterlegt</Badge>}
                 </div>
                 <div className="text-xs text-slate-400 mt-2">
                   {s.instructions.length} Sofortmassnahmen · {responseStepsOf(s).length} für Empfänger:innen · {s.checklist.length} Checklistenpunkte
                 </div>
+                {plan && (
+                  <div className="text-xs text-slate-400 mt-1 flex items-center gap-1">
+                    <ClipboardList size={11} />
+                    Alarmplan: {plan.name}
+                  </div>
+                )}
                 {s.responsibleGroupIds.length > 0 && (
                   <div className="text-xs text-slate-400 mt-1 flex items-center gap-1">
                     <Users size={11} />
@@ -268,9 +277,21 @@ function ScenarioDetail({ scenario, onClose }: { scenario: Scenario; onClose: ()
 function ScenarioEditor({ scenario, onClose }: { scenario: Scenario; onClose: () => void }) {
   const { state, dispatch } = useStore()
   const [draft, setDraft] = useState<Scenario>(JSON.parse(JSON.stringify(scenario)))
+  // Jedes Szenario braucht einen Alarmplan – bestehender (verknüpfter oder noch freier) oder neu angelegter
+  const [planId, setPlanId] = useState(() => state.plans.find((p) => p.scenarioId === scenario.id)?.id ?? '')
+  const [newPlanDraft, setNewPlanDraft] = useState<AlarmPlan | null>(null)
+  const waehlbarePlaene = state.plans.filter((p) => !p.scenarioId || p.scenarioId === scenario.id)
 
   function toggleIn<T>(list: T[], value: T): T[] {
     return list.includes(value) ? list.filter((v) => v !== value) : [...list, value]
+  }
+
+  function neuerPlan(): AlarmPlan {
+    return {
+      id: uid('pl'), name: draft.title ? `Alarmplan ${draft.title}` : '', scenarioId: draft.id,
+      locationIds: [], groupIds: draft.responsibleGroupIds, channels: draft.defaultChannels.length ? draft.defaultChannels : ['push'],
+      requireAck: false, respectOperatingHours: false, escalation: [],
+    }
   }
 
   function save() {
@@ -289,6 +310,15 @@ function ScenarioEditor({ scenario, onClose }: { scenario: Scenario; onClose: ()
         legalBasis: (draft.legalBasis ?? []).filter((s) => s.trim()),
       },
     })
+    // Verknüpfung mit dem Alarmplan nachführen: alten Plan lösen, falls gewechselt; neuen verknüpfen
+    const bisherigerPlan = state.plans.find((p) => p.scenarioId === draft.id)
+    if (bisherigerPlan && bisherigerPlan.id !== planId) {
+      dispatch({ type: 'UPSERT_PLAN', plan: { ...bisherigerPlan, scenarioId: undefined } })
+    }
+    const neuVerknuepft = state.plans.find((p) => p.id === planId)
+    if (neuVerknuepft && neuVerknuepft.scenarioId !== draft.id) {
+      dispatch({ type: 'UPSERT_PLAN', plan: { ...neuVerknuepft, scenarioId: draft.id } })
+    }
     onClose()
   }
 
@@ -296,6 +326,18 @@ function ScenarioEditor({ scenario, onClose }: { scenario: Scenario; onClose: ()
     <Modal title={scenario.title ? `Szenario bearbeiten: ${scenario.title}` : 'Neues Szenario'} onClose={onClose} wide>
       <Field label="Titel">
         <input className={inputClass} value={draft.title} onChange={(e) => setDraft({ ...draft, title: e.target.value })} />
+      </Field>
+      <Field label="Alarmplan – wer im Ernstfall alarmiert wird, über welche Kanäle und mit welcher Eskalation">
+        <div className="flex gap-2">
+          <select className={inputClass} value={planId} onChange={(e) => setPlanId(e.target.value)}>
+            <option value="">– bitte wählen –</option>
+            {waehlbarePlaene.map((p) => <option key={p.id} value={p.id}>{p.name || '(ohne Namen)'}</option>)}
+          </select>
+          <Button type="button" variant="secondary" onClick={() => setNewPlanDraft(neuerPlan())}>
+            <Plus size={14} /> Neu
+          </Button>
+        </div>
+        {!planId && <p className="text-xs text-amber-600 mt-1.5">Ohne Alarmplan lässt sich das Szenario nicht speichern.</p>}
       </Field>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Field label="Kategorie">
@@ -423,8 +465,15 @@ function ScenarioEditor({ scenario, onClose }: { scenario: Scenario; onClose: ()
       <Toggle checked={draft.silentDefault} onChange={(v) => setDraft({ ...draft, silentDefault: v })} label="Standardmässig als stiller Alarm auslösen" />
       <div className="flex justify-end gap-2 mt-5">
         <Button variant="secondary" onClick={onClose}>Abbrechen</Button>
-        <Button onClick={save} disabled={!draft.title.trim()}>Speichern &amp; sofort verteilen</Button>
+        <Button onClick={save} disabled={!draft.title.trim() || !planId}>Speichern &amp; sofort verteilen</Button>
       </div>
+      {newPlanDraft && (
+        <PlanEditor
+          plan={newPlanDraft}
+          onClose={() => setNewPlanDraft(null)}
+          onSaved={(saved) => setPlanId(saved.id)}
+        />
+      )}
     </Modal>
   )
 }
@@ -537,6 +586,12 @@ function SzenarioWizard({ onClose }: { onClose: () => void }) {
     instructions: [''], followUp: [], checklist: [''], silentDefault: false,
     defaultChannels: ['push'], responsibleGroupIds: [], contactIds: [], custom: true,
   }))
+  // Jedes Szenario braucht einen Alarmplan – entweder neu (Kanäle/Gruppen vom Szenario übernommen)
+  // oder ein bereits bestehender, noch freier Plan (falls vorhanden)
+  const [planModus, setPlanModus] = useState<'neu' | 'bestehend'>('neu')
+  const [planName, setPlanName] = useState('')
+  const [gewaehlterPlanId, setGewaehlterPlanId] = useState('')
+  const freiePlaene = state.plans.filter((p) => !p.scenarioId)
 
   function toggleIn<T>(list: T[], value: T): T[] {
     return list.includes(value) ? list.filter((v) => v !== value) : [...list, value]
@@ -557,11 +612,26 @@ function SzenarioWizard({ onClose }: { onClose: () => void }) {
         legalBasis: (draft.legalBasis ?? []).filter((s) => s.trim()),
       },
     })
+    if (planModus === 'neu') {
+      dispatch({
+        type: 'UPSERT_PLAN',
+        plan: {
+          id: uid('pl'), name: planName.trim(), scenarioId: draft.id,
+          locationIds: [], groupIds: draft.responsibleGroupIds,
+          channels: draft.defaultChannels.length ? draft.defaultChannels : ['push'],
+          requireAck: false, respectOperatingHours: false, escalation: [],
+        },
+      })
+    } else {
+      const plan = state.plans.find((p) => p.id === gewaehlterPlanId)
+      if (plan) dispatch({ type: 'UPSERT_PLAN', plan: { ...plan, scenarioId: draft.id } })
+    }
     onClose()
   }
 
   const gewaehlteGruppen = state.groups.filter((g) => draft.responsibleGroupIds.includes(g.id))
   const gewaehlteKontakte = state.contacts.filter((c) => draft.contactIds.includes(c.id))
+  const gewaehlterPlan = state.plans.find((p) => p.id === gewaehlterPlanId)
 
   return (
     <Wizard
@@ -660,6 +730,42 @@ function SzenarioWizard({ onClose }: { onClose: () => void }) {
                   Stille Alarme erscheinen ohne Ton und Banner – etwa bei einer Bedrohungslage, in der kein Alarmton ertönen darf.
                 </p>
               </div>
+            </>
+          ),
+        },
+        {
+          titel: 'Alarmplan',
+          hinweis: 'Jedes Szenario braucht einen Alarmplan – er wird beim Auslösen automatisch vorgeschlagen und regelt die Eskalation.',
+          gueltig: planModus === 'neu' ? !!planName.trim() : !!gewaehlterPlanId,
+          inhalt: (
+            <>
+              {freiePlaene.length > 0 && (
+                <div className="flex gap-2 mb-3">
+                  <AuswahlChip aktiv={planModus === 'neu'} onClick={() => setPlanModus('neu')}>Neuen Plan erstellen</AuswahlChip>
+                  <AuswahlChip aktiv={planModus === 'bestehend'} onClick={() => setPlanModus('bestehend')}>Bestehenden freien Plan verwenden</AuswahlChip>
+                </div>
+              )}
+              {planModus === 'neu' ? (
+                <Field label="Name des Alarmplans">
+                  <input
+                    className={inputClass}
+                    placeholder={`z. B. Alarmplan ${draft.title || 'Szenario'}`}
+                    value={planName}
+                    onChange={(e) => setPlanName(e.target.value)}
+                  />
+                  <p className="text-xs text-slate-500 mt-1.5">
+                    Übernimmt vorerst die Standard-Alarmkanäle und zuständigen Gruppen aus dem Schritt «Alarmierung» –
+                    Eskalationsstufen lassen sich danach unter «Alarmpläne» ergänzen.
+                  </p>
+                </Field>
+              ) : (
+                <Field label="Bestehender, noch freier Alarmplan">
+                  <select className={inputClass} value={gewaehlterPlanId} onChange={(e) => setGewaehlterPlanId(e.target.value)}>
+                    <option value="">– bitte wählen –</option>
+                    {freiePlaene.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                  </select>
+                </Field>
+              )}
             </>
           ),
         },
@@ -771,6 +877,10 @@ function SzenarioWizard({ onClose }: { onClose: () => void }) {
                     {gewaehlteKontakte.length > 0 && <div><Phone size={11} className="inline mr-1" />Notrufnummern: {gewaehlteKontakte.map((c) => `${c.number} ${c.name}`).join(', ')}</div>}
                   </div>
                 )}
+                <div className="text-xs text-slate-600 mt-1">
+                  <ClipboardList size={11} className="inline mr-1" />
+                  Alarmplan: {planModus === 'neu' ? (planName.trim() || 'Ohne Namen') : (gewaehlterPlan?.name ?? '–')}
+                </div>
               </div>
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 mt-4">
                 <Toggle
