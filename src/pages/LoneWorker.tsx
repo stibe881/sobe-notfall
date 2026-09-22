@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { CheckCircle2, Clock, Play, ShieldAlert } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { CheckCircle2, Clock, Play, Search, ShieldAlert } from 'lucide-react'
 import { alleinarbeitEmpfaenger, resolveRecipients, uid, useStore } from '../store'
 import { LONE_WORK_DEFAULT_GROUPS, type LoneWorkSession } from '../types'
 import { Badge, Button, Card, EmptyState, Field, Toggle, formatDateTime, formatDuration, inputClass } from '../components/ui'
@@ -15,6 +15,7 @@ export default function LoneWorker() {
     LONE_WORK_DEFAULT_GROUPS.filter((id) => state.groups.some((g) => g.id === id)),
   )
   const [alertUserIds, setAlertUserIds] = useState<string[]>([])
+  const [personenSuche, setPersonenSuche] = useState('')
   const [now, setNow] = useState(Date.now())
 
   useEffect(() => {
@@ -31,6 +32,25 @@ export default function LoneWorker() {
   const anzahlEmpfaenger = vorschau.recipientUserIds
     ? vorschau.recipientUserIds.length
     : resolveRecipients(state, vorschau.groupIds, [locationId]).filter((u) => u.id !== userId).length
+
+  /**
+   * Auswahlliste der Einzelpersonen. Gesucht wird über Name, E-Mail-Adresse und
+   * Standort; mehrere Wörter werden mit UND verknüpft. Bereits gewählte Personen
+   * bleiben immer sichtbar – sonst verschwände die Auswahl beim Tippen aus dem
+   * Blick, obwohl sie weiterhin alarmiert würden.
+   */
+  const auswahlPersonen = useMemo(() => {
+    const begriffe = personenSuche.toLowerCase().split(/\s+/).filter(Boolean)
+    return state.users
+      .filter((u) => u.id !== userId)
+      .filter((u) => {
+        if (alertUserIds.includes(u.id) || begriffe.length === 0) return true
+        const standort = state.locations.find((l) => l.id === u.locationId)?.name ?? ''
+        const heuhaufen = `${u.firstName} ${u.lastName} ${u.email} ${standort}`.toLowerCase()
+        return begriffe.every((b) => heuhaufen.includes(b))
+      })
+      .sort((a, b) => a.lastName.localeCompare(b.lastName, 'de'))
+  }, [state.users, state.locations, userId, alertUserIds, personenSuche])
 
   function start() {
     const session: LoneWorkSession = {
@@ -90,14 +110,26 @@ export default function LoneWorker() {
             </div>
           </Field>
           <Field label="Zusätzlich einzelne Personen (unabhängig von Gruppe und Standort)">
+            <div className="relative mb-2">
+              <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                className={inputClass + ' pl-9'}
+                placeholder="Person suchen – Name, E-Mail oder Standort…"
+                value={personenSuche}
+                onChange={(e) => setPersonenSuche(e.target.value)}
+              />
+            </div>
             <div className="max-h-48 overflow-y-auto rounded-lg border border-slate-200 divide-y divide-slate-100">
-              {[...state.users].filter((u) => u.id !== userId).sort((a, b) => a.lastName.localeCompare(b.lastName, 'de')).map((u) => (
-                <label key={u.id} className="flex items-center gap-2 px-3 py-1.5 text-sm">
+              {auswahlPersonen.map((u) => (
+                <label key={u.id} className="flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-slate-50 cursor-pointer">
                   <input type="checkbox" checked={alertUserIds.includes(u.id)} onChange={() => setAlertUserIds(toggleId(alertUserIds, u.id))} />
                   <span className="flex-1">{u.firstName} {u.lastName}</span>
                   <span className="text-xs text-slate-400">{state.locations.find((l) => l.id === u.locationId)?.name}</span>
                 </label>
               ))}
+              {auswahlPersonen.length === 0 && (
+                <div className="px-3 py-4 text-sm text-slate-400 text-center">Keine Person gefunden.</div>
+              )}
             </div>
             <div className={`text-xs mt-1.5 ${anzahlEmpfaenger === 0 ? 'text-alarm-600' : 'text-slate-500'}`}>
               <b>{anzahlEmpfaenger} Person{anzahlEmpfaenger === 1 ? '' : 'en'}</b> würden bei Ablauf alarmiert{anzahlEmpfaenger === 0 ? ' – bitte mindestens eine Gruppe oder Person wählen' : ''}.

@@ -387,7 +387,10 @@ KOERPER = r"""
   <p>
     Beim Start wird festgelegt, wer bei Ablauf alarmiert wird: Gruppen am Standort
     (vorgewählt Schulsanität und Hausdienst) und wahlweise einzelne Personen unabhängig
-    von Gruppe und Standort. Läuft ein Timer ab, darf die betroffene Person den Alarm
+    von Gruppe und Standort. Das Suchfeld über der Personenliste findet Leute nach
+    Name, E-Mail-Adresse und Standort; bereits angekreuzte Personen bleiben dabei
+    sichtbar, damit die Auswahl beim Tippen nicht aus dem Blick gerät.
+    Läuft ein Timer ab, darf die betroffene Person den Alarm
     selbst mit <span class="ui">Mir geht es gut</span> beenden; die Entwarnung geht dann
     an alle Alarmierten.
   </p>

@@ -1101,6 +1101,7 @@ export function LoneWorkScreen() {
   )
   const [alertUserIds, setAlertUserIds] = useState<string[]>([])
   const [personenOffen, setPersonenOffen] = useState(false)
+  const [personenSuche, setPersonenSuche] = useState('')
   const [now, setNow] = useState(Date.now())
 
   useEffect(() => {
@@ -1113,8 +1114,16 @@ export function LoneWorkScreen() {
   // Timer abgelaufen, Alarm läuft noch: «mir geht es gut» beendet ihn
   const abgelaufenerAlarm = state.alarms.find((a) => a.status === 'active' && a.triggeredVia === 'timer' && a.triggeredByUserId === me.id)
   const waehlbareGruppen = state.groups.filter((g) => g.id !== 'gr-alle')
-  const waehlbarePersonen = [...state.users]
+  // Suchbare Auswahlliste; Gewählte bleiben sichtbar, auch wenn sie nicht zur Suche passen
+  const personenBegriffe = personenSuche.toLowerCase().split(/\s+/).filter(Boolean)
+  const waehlbarePersonen = state.users
     .filter((u) => u.id !== me.id)
+    .filter((u) => {
+      if (alertUserIds.includes(u.id) || personenBegriffe.length === 0) return true
+      const ort = state.locations.find((l) => l.id === u.locationId)?.name ?? ''
+      const heuhaufen = `${u.firstName} ${u.lastName} ${u.email} ${ort}`.toLowerCase()
+      return personenBegriffe.every((b) => heuhaufen.includes(b))
+    })
     .sort((a, b) => a.lastName.localeCompare(b.lastName, 'de'))
   const vorschau = alleinarbeitEmpfaenger(state.users, {
     id: '', userId: me.id, locationId: me.locationId, activity: '', startedAt: 0, durationMin, expiresAt: 0, silent, status: 'running',
@@ -1286,6 +1295,16 @@ export function LoneWorkScreen() {
           </Text>
         </Pressable>
         {personenOffen && (
+          <>
+          <TextInput
+            style={[styles.input, { marginTop: 8 }]}
+            placeholder="Person suchen…"
+            placeholderTextColor={colors.faint}
+            autoCapitalize="none"
+            autoCorrect={false}
+            value={personenSuche}
+            onChangeText={setPersonenSuche}
+          />
           <View style={{ marginTop: 6, borderWidth: 1, borderColor: colors.border, borderRadius: 12, maxHeight: 260 }}>
             <ScrollView nestedScrollEnabled>
               {waehlbarePersonen.map((u) => {
@@ -1301,8 +1320,12 @@ export function LoneWorkScreen() {
                   </Pressable>
                 )
               })}
+              {waehlbarePersonen.length === 0 && (
+                <Text style={[styles.faint, { padding: 14, textAlign: 'center' }]}>Keine Person gefunden.</Text>
+              )}
             </ScrollView>
           </View>
+          </>
         )}
         {alertUserIds.length > 0 && (
           <Text style={[styles.faint, { marginTop: 6 }]}>Zusätzlich: {alertUserIds.map(nameVon).filter(Boolean).join(', ')}</Text>

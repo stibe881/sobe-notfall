@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   ArrowRight, BellRing, BookOpen, Check, CheckCircle2, ChevronLeft, ClipboardCheck, Clock, KeyRound, LayoutDashboard,
@@ -977,6 +977,7 @@ function LoneWorkTab() {
     LONE_WORK_DEFAULT_GROUPS.filter((id) => state.groups.some((g) => g.id === id)),
   )
   const [alertUserIds, setAlertUserIds] = useState<string[]>([])
+  const [personenSuche, setPersonenSuche] = useState('')
   const [personenOffen, setPersonenOffen] = useState(false)
   const [now, setNow] = useState(Date.now())
 
@@ -990,7 +991,19 @@ function LoneWorkTab() {
   // Timer abgelaufen, Alarm läuft noch: «mir geht es gut» beendet ihn
   const abgelaufenerAlarm = state.alarms.find((a) => a.status === 'active' && a.triggeredVia === 'timer' && a.triggeredByUserId === me.id)
   const waehlbareGruppen = state.groups.filter((g) => g.id !== 'gr-alle')
-  const waehlbarePersonen = [...state.users].filter((u) => u.id !== me.id).sort((a, b) => a.lastName.localeCompare(b.lastName, 'de'))
+  // Suchbare Auswahlliste; Gewählte bleiben sichtbar, auch wenn sie nicht zur Suche passen
+  const waehlbarePersonen = useMemo(() => {
+    const begriffe = personenSuche.toLowerCase().split(/\s+/).filter(Boolean)
+    return state.users
+      .filter((u) => u.id !== me.id)
+      .filter((u) => {
+        if (alertUserIds.includes(u.id) || begriffe.length === 0) return true
+        const standort = state.locations.find((l) => l.id === u.locationId)?.name ?? ''
+        const heuhaufen = `${u.firstName} ${u.lastName} ${u.email} ${standort}`.toLowerCase()
+        return begriffe.every((b) => heuhaufen.includes(b))
+      })
+      .sort((a, b) => a.lastName.localeCompare(b.lastName, 'de'))
+  }, [state.users, state.locations, me.id, alertUserIds, personenSuche])
   const vorschau = alleinarbeitEmpfaenger(state, {
     id: '', userId: me.id, locationId: me.locationId, activity: '', startedAt: 0, durationMin, expiresAt: 0, silent, status: 'running',
     alertGroupIds, alertUserIds,
@@ -1108,15 +1121,29 @@ function LoneWorkTab() {
           {personenOffen ? 'Einzelne Personen ausblenden' : `Zusätzlich einzelne Personen wählen${alertUserIds.length ? ` (${alertUserIds.length} gewählt)` : ''}`}
         </button>
         {personenOffen && (
-          <div className="mt-2 max-h-64 overflow-y-auto rounded-xl border border-slate-200 divide-y divide-slate-100">
-            {waehlbarePersonen.map((u) => (
-              <label key={u.id} className="flex items-center gap-2.5 px-3 py-2 text-sm">
-                <input type="checkbox" checked={alertUserIds.includes(u.id)} onChange={() => setAlertUserIds(toggleId(alertUserIds, u.id))} />
-                <span className="flex-1 text-slate-700">{u.firstName} {u.lastName}</span>
-                <span className="text-xs text-slate-400">{state.locations.find((l) => l.id === u.locationId)?.name}</span>
-              </label>
-            ))}
-          </div>
+          <>
+            <div className="relative mt-2">
+              <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                className={inputClass + ' pl-9'}
+                placeholder="Person suchen…"
+                value={personenSuche}
+                onChange={(e) => setPersonenSuche(e.target.value)}
+              />
+            </div>
+            <div className="mt-2 max-h-64 overflow-y-auto rounded-xl border border-slate-200 divide-y divide-slate-100">
+              {waehlbarePersonen.map((u) => (
+                <label key={u.id} className="flex items-center gap-2.5 px-3 py-2 text-sm">
+                  <input type="checkbox" checked={alertUserIds.includes(u.id)} onChange={() => setAlertUserIds(toggleId(alertUserIds, u.id))} />
+                  <span className="flex-1 text-slate-700">{u.firstName} {u.lastName}</span>
+                  <span className="text-xs text-slate-400">{state.locations.find((l) => l.id === u.locationId)?.name}</span>
+                </label>
+              ))}
+              {waehlbarePersonen.length === 0 && (
+                <div className="px-3 py-4 text-sm text-slate-400 text-center">Keine Person gefunden.</div>
+              )}
+            </div>
+          </>
         )}
         <div className={`text-xs mt-2 mb-3 ${anzahlEmpfaenger === 0 ? 'text-alarm-600' : 'text-slate-500'}`}>
           <b>{anzahlEmpfaenger} Person{anzahlEmpfaenger === 1 ? '' : 'en'}</b> würden bei Ablauf alarmiert{anzahlEmpfaenger === 0 ? ' – bitte mindestens eine Gruppe oder Person wählen' : ''}.
