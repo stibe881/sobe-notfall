@@ -118,6 +118,18 @@ export function seedDatabase(): void {
     setSetting('scenarioContentVersion', String(SCENARIO_CONTENT_VERSION))
   }
 
+  // Neu hinzugekommene Standard-Szenarien nachtragen, unabhängig von der
+  // Inhaltsversion: Ein Szenario, das es hier noch gar nicht gibt, kann keine
+  // Änderung überschreiben. Ohne diesen Schritt erreichte ein neues Szenario
+  // eine laufende Installation erst mit der nächsten Inhaltsversion – und die
+  // setzt alle Standardinhalte zurück, auch die selbst angepassten.
+  for (const s of SEED_SCENARIOS) {
+    if (!db.prepare('SELECT 1 FROM scenarios WHERE id = ?').get(s.id)) {
+      upsertDoc('scenarios', s.id, s)
+      addAudit('system', `Neues Standard-Szenario ergänzt: ${s.title}`)
+    }
+  }
+
   if (!getSetting('integrations')) {
     const leer: IntegrationSettings = {
       ...INTEGRATION_VORGABEN,

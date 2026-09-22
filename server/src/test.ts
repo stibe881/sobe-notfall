@@ -62,7 +62,7 @@ async function main(): Promise<void> {
   // --- Datenbestand ---
   const stand = await ruf('/state', { token: adminToken })
   pruefe('Datenbestand abrufbar', stand.status === 200)
-  pruefe('22 Szenarien vorhanden', stand.body.scenarios.length === 22, `gefunden: ${stand.body.scenarios?.length}`)
+  pruefe('23 Szenarien vorhanden', stand.body.scenarios.length === 23, `gefunden: ${stand.body.scenarios?.length}`)
   pruefe('3 Standorte vorhanden', stand.body.locations.length === 3)
   pruefe('7 Gruppen vorhanden', stand.body.groups.length === 7)
   pruefe('Notrufnummern vorhanden', stand.body.contacts.length === 8)
@@ -71,7 +71,7 @@ async function main(): Promise<void> {
 
   // --- Ablauf der Szenarien: Alarmieren steht in callGuidance, nicht in den Sofortmassnahmen ---
   const aktive = stand.body.scenarios.filter((s: any) => s.active !== false)
-  pruefe('11 Szenarien für Mitarbeitende freigegeben', aktive.length === 11, `gefunden: ${aktive.length}`)
+  pruefe('12 Szenarien für Mitarbeitende freigegeben', aktive.length === 12, `gefunden: ${aktive.length}`)
   pruefe('Alarmpläne verweisen nur auf freigegebene Szenarien',
     stand.body.plans.every((p: any) => !p.scenarioId || aktive.some((s: any) => s.id === p.scenarioId)),
     stand.body.plans.filter((p: any) => p.scenarioId && !aktive.some((s: any) => s.id === p.scenarioId)).map((p: any) => p.id).join(', '))
@@ -241,7 +241,7 @@ async function main(): Promise<void> {
   const sos = await ruf('/alarms', {
     method: 'POST', token: peterToken,
     body: JSON.stringify({
-      scenarioId: 'sc-medizin', message: 'SOS-Alarm von Peter Muster (App) – Standort: Hauptsitz Baar', silent: false,
+      scenarioId: 'sc-sos', message: 'SOS-Alarm von Peter Muster (App) – Standort: Hauptsitz Baar', silent: false,
       requireAck: true, channels: ['push'], groupIds: ['gr-ersthelfer'], locationIds: ['loc-baar'], triggeredVia: 'app',
     }),
   })

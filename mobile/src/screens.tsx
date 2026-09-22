@@ -116,7 +116,7 @@ export function StartScreen({ onOpenScenario }: { onOpenScenario: (s: Scenario, 
     dispatch({
       type: 'TRIGGER_ALARM',
       alarm: createAlarm(state.users, {
-        scenarioId: 'sc-medizin',
+        scenarioId: 'sc-sos',
         message: `SOS-Alarm von ${me.firstName} ${me.lastName} (App) – Standort: ${location?.name ?? 'unbekannt'}`,
         silent: false,
         requireAck: true,
@@ -288,7 +288,9 @@ export function StartScreen({ onOpenScenario }: { onOpenScenario: (s: Scenario, 
         <>
           <HoldButton label="SOS" onTrigger={sos} />
           <Text style={[styles.faint, { textAlign: 'center' }]}>
-            Alarmiert sofort Schulsanität und Hausdienst an Ihrem Standort – mit automatischer Eskalation.
+            Für jede Lage, in der es schnell Hilfe braucht – der Grund muss nicht feststehen.
+            Ruft Schulsanität und Hausdienst an Ihren Standort, mit automatischer Eskalation.
+            Was los ist, können Sie danach nachmelden.
           </Text>
         </>
       )}

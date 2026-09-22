@@ -1,5 +1,6 @@
 import type { LucideIcon } from 'lucide-react'
 import {
+  Siren,
   Activity, Bomb, Biohazard, Bus, ClipboardList, CloudLightning, DoorOpen, Droplets, Flame, Hand,
   HeartCrack, HeartPulse, LifeBuoy, LockOpen, Pill, Search, ServerCrash, ShieldAlert, Stethoscope, Users, ZapOff,
 } from 'lucide-react'
@@ -26,6 +27,7 @@ export const SCENARIO_ICONS: Record<string, { icon: LucideIcon; label: string }>
   'pill': { icon: Pill, label: 'Medikamente' },
   'heart-crack': { icon: HeartCrack, label: 'Todesfall' },
   'life-buoy': { icon: LifeBuoy, label: 'Psychische Krise' },
+  'siren': { icon: Siren, label: 'SOS / Hilferuf' },
   'clipboard-list': { icon: ClipboardList, label: 'Allgemein' },
 }
 

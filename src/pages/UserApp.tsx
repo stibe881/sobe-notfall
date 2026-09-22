@@ -247,7 +247,7 @@ function StartTab({ onOpenScenario }: { onOpenScenario: (s: Scenario, alarm: Ala
   function sos() {
     navigator.vibrate?.([120, 60, 120])
     const alarm = createAlarm(state, {
-      scenarioId: 'sc-medizin',
+      scenarioId: 'sc-sos',
       message: `SOS-Alarm von ${me.firstName} ${me.lastName} (App) – Standort: ${state.locations.find((l) => l.id === me.locationId)?.name ?? 'unbekannt'}`,
       silent: false,
       requireAck: true,
@@ -438,7 +438,9 @@ function StartTab({ onOpenScenario }: { onOpenScenario: (s: Scenario, alarm: Ala
             <Siren size={24} /> SOS
           </HoldButton>
           <div className="text-xs text-center text-slate-500">
-            Alarmiert sofort Schulsanität und Hausdienst an Ihrem Standort – mit automatischer Eskalation.
+            Für jede Lage, in der es schnell Hilfe braucht – der Grund muss nicht feststehen.
+            Ruft Schulsanität und Hausdienst an Ihren Standort, mit automatischer Eskalation.
+            Was los ist, können Sie danach nachmelden.
           </div>
         </>
       )}

@@ -1,6 +1,7 @@
 import React from 'react'
 import type { LucideIcon } from 'lucide-react-native'
 import {
+  Siren,
   Activity, Bomb, Biohazard, Bus, ClipboardList, CloudLightning, DoorOpen, Droplets, Flame, Hand,
   HeartCrack, HeartPulse, LifeBuoy, LockOpen, Pill, Search, ServerCrash, ShieldAlert, Stethoscope, Users, ZapOff,
 } from 'lucide-react-native'
@@ -26,6 +27,7 @@ const ICONS: Record<string, LucideIcon> = {
   'pill': Pill,
   'heart-crack': HeartCrack,
   'life-buoy': LifeBuoy,
+  'siren': Siren,
   'clipboard-list': ClipboardList,
 }
 

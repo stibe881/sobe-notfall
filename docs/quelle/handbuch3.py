@@ -108,8 +108,10 @@ KOERPER = r"""
 <section id="c4">
   <h2 class="abschnitt"><span class="zahl">4</span> SOS &ndash; Hilfe für sich selbst</h2>
   <p>
-    Der grosse rote Knopf auf der Startseite ist für den Fall gedacht, dass
-    <em>Sie</em> Hilfe brauchen und keine Zeit haben, ein Szenario zu suchen.
+    Der grosse rote Knopf auf der Startseite ist für den Fall gedacht, dass es
+    <em>schnell</em> Hilfe braucht und keine Zeit bleibt, ein Szenario zu suchen.
+    <b>Der Grund muss nicht feststehen.</b> SOS heisst nur: Jemand braucht sofort
+    Hilfe an diesem Ort &ndash; nicht, dass es ein medizinischer Notfall ist.
   </p>
   <div class="geraet-reihe">
     <figure class="geraet">
@@ -124,6 +126,17 @@ KOERPER = r"""
   <p>
     SOS alarmiert sofort Schulsanität und Hausdienst an Ihrem Standort. Antwortet
     niemand, weitet das System die Alarmierung selbständig aus.
+  </p>
+  <p>
+    Sobald Sie können, <b>melden Sie nach, worum es geht</b> &ndash; im laufenden Alarm
+    über <span class="ui">Weitere Meldung</span>. Die Helfenden wissen sonst nur, wo
+    sie hin müssen, nicht was sie erwartet. Jede Angabe spart ihnen Zeit und
+    entscheidet, wer zusätzlich gebraucht wird.
+  </p>
+  <p>
+    Die Alarmierten kommen und beurteilen die Lage vor Ort. Passt ein anderes
+    Szenario &ndash; Brand, Bedrohung, medizinischer Notfall &ndash;, arbeiten sie dort
+    weiter. Sie müssen das nicht entscheiden.
   </p>
   <div class="hinweis">
     <p class="marke-klein">Fehlalarm ausgelöst?</p>
