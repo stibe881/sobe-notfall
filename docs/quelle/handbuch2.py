@@ -316,7 +316,7 @@ KOERPER = r"""
       <caption>Ihre Zuständigkeit in der Vorbereitung</caption>
       <thead><tr><th>Bereich</th><th>Was Sie dort tun</th></tr></thead>
       <tbody>
-        <tr><td><b>Szenarien &amp; Checklisten</b></td><td>Abläufe schreiben und aktuell halten, Szenarien ein- und ausblenden</td></tr>
+        <tr><td><b>Szenarien</b></td><td>Abläufe und Checklisten schreiben und aktuell halten, Szenarien ein- und ausblenden</td></tr>
         <tr><td><b>Alarmpläne</b></td><td>Zielgruppen, Kanäle und Eskalationszeiten festlegen</td></tr>
         <tr><td><b>Notfallkontakte</b></td><td>Nummern pflegen, die in der App als Anrufknöpfe erscheinen</td></tr>
         <tr><td><b>Alarmknöpfe</b></td><td>Knöpfe benennen, zuordnen, Batteriestand im Blick behalten</td></tr>

@@ -36,7 +36,7 @@ const NAV = [
   { to: '/alleinarbeit', label: 'Alleinarbeit (Timer)', icon: Timer },
   { to: '/alarmknoepfe', label: 'Alarmknöpfe', icon: Radio },
   { section: 'Vorbereitung (Admin-Web)' },
-  { to: '/szenarien', label: 'Szenarien & Checklisten', icon: BookOpen },
+  { to: '/szenarien', label: 'Szenarien', icon: BookOpen },
   { to: '/alarmplaene', label: 'Alarmpläne', icon: ClipboardList },
   { to: '/benutzer', label: 'Benutzer', icon: Users },
   { to: '/gruppen', label: 'Gruppen & Krisenteams', icon: UsersRound },
