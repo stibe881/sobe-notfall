@@ -499,6 +499,11 @@ KOERPER = r"""
     </p>
   </div>
   <p>
+    Einen vollständigen Durchlauf &ndash; Gateway, eingebauter Netzserver,
+    Payload-Decoder, Endpunkt, erster Knopf &ndash; beschreibt im Projektordner die
+    Datei <code>LORAWAN-EINRICHTUNG.md</code>.
+  </p>
+  <p>
     Die Überwachung der Knöpfe (stumme Geräte, schwache Batterie) beschreibt
     Handbuch&nbsp;1, Abschnitt «Alleinarbeit und Alarmknöpfe».
   </p>

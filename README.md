@@ -88,6 +88,10 @@ Kunde kann jederzeit ein **zweiter Alarmserver (Standby)** angebunden werden –
 er spiegelt den Datenbestand laufend, die App weicht bei einem Ausfall
 selbständig dorthin aus. Anleitung: [`KUNDEN-SETUP.md`](KUNDEN-SETUP.md).
 
+Physische Alarmknöpfe kommen über ein LoRaWAN-Netz herein. Wie ein Gateway vor
+Ort mit einem Alarmserver beim Hoster zusammenspielt, beschreibt Schritt für
+Schritt [`LORAWAN-EINRICHTUNG.md`](LORAWAN-EINRICHTUNG.md).
+
 ## Betrieb
 
 Portal und App arbeiten ausschliesslich gegen den Alarmserver: Dort liegen alle

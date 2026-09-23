@@ -1,312 +1,472 @@
-# LoRaWAN-Alarmknöpfe anbinden
+# LoRaWAN-Alarmknöpfe anbinden – Schritt für Schritt
 
-Für das **RAK WisGate Edge Lite 2** und den Alarmserver auf
-`https://temp-gross-ict.ch`.
+Für das **RAK WisGate Edge Lite 2** mit seinem **eingebauten Netzserver** und
+den Alarmserver auf `https://temp-gross-ict.ch`.
+
+Rechnen Sie mit **zwei bis drei Stunden** für den ersten Knopf. Jeder weitere
+dauert dann zehn Minuten. Jeder Schritt endet mit einer Prüfung, die Sie sehen
+können – gehen Sie nicht weiter, solange sie nicht stimmt.
+
+> **Ein Vorbehalt zu den Menünamen.** Ich kenne Ihre Firmware nicht. WisGateOS
+> benennt seine Menüs von Version zu Version unterschiedlich. Ich schreibe
+> deshalb bei jedem Schritt **was Sie suchen** und den Pfad, der am ehesten
+> zutrifft. Heisst es bei Ihnen anders: Das Ziel steht dabei, danach finden Sie
+> es. Schicken Sie mir einen Screenshot, wenn Sie nicht weiterkommen – dann
+> benenne ich die Schritte für Ihre Version genau.
 
 ---
 
-## 0. Zuerst das Unangenehme
+## Vor dem Start
 
-**Ein Gateway allein löst keinen Alarm aus.** Es ist nur die Antenne. Was Sie
-zusätzlich brauchen:
+Legen Sie bereit:
 
-| Was | Warum |
+- [ ] Das Gateway, ein **LAN-Kabel** und den Handzettel mit den Zugangsdaten
+- [ ] Mindestens **einen LoRaWAN-Alarmknopf** für **EU868**
+- [ ] Vom Knopf: **DevEUI**, **AppEUI/JoinEUI** und **AppKey** (Etikett, Beipackzettel
+      oder QR-Code auf dem Gerät)
+- [ ] Den **Payload-Decoder** des Knopfherstellers (Download-Bereich des
+      Herstellers, meist eine `.js`-Datei oder ein Textblock zum Kopieren)
+- [ ] Zugang zum Portal als **Administration**
+
+> **Ohne Decoder brauchen Sie gar nicht anzufangen.** Ohne ihn kommen beim
+> Alarmserver rohe Bytes an, in denen kein Knopfdruck zu erkennen ist. Suchen
+> Sie ihn jetzt, nicht in Schritt 6.
+
+Notieren Sie DevEUI, AppEUI und AppKey **schriftlich** und legen Sie das Blatt
+zu den Serverunterlagen. Beim eingebauten Netzserver leben diese Schlüssel nur
+auf dem Gateway; geht es kaputt, müssen Sie ohne diese Notiz jeden Knopf neu
+beschaffen oder auslesen.
+
+---
+
+# Teil 1 · Gateway
+
+## Schritt 1 – Gateway erreichen
+
+**Ziel:** Die Weboberfläche des Gateways im Browser offen haben.
+
+1. Gateway mit Strom versorgen und mit dem LAN-Kabel ans Netz hängen.
+2. Zwei Minuten warten, bis die Leuchten stabil sind.
+3. Die IP-Adresse finden – am einfachsten in der Geräteliste Ihres Routers
+   (der Name beginnt mit `RAK`). Diese Adresse im Browser öffnen.
+
+Geht das nicht, nehmen Sie den Weg über das eigene WLAN des Gateways: Es spannt
+ein Netz auf, dessen Name mit `RAK` beginnt; das Passwort steht im Handzettel.
+Die Oberfläche liegt dann unter **`http://192.168.230.1`**.
+
+Anmelden mit den Zugangsdaten aus dem Handzettel (bei WisGateOS ist der
+Benutzername in der Regel `root`).
+
+**Geprüft, wenn:** Sie die Übersichtsseite mit der **Gateway-EUI** sehen.
+Notieren Sie diese EUI – nicht zu verwechseln mit der DevEUI der Knöpfe.
+
+---
+
+## Schritt 2 – Passwort ändern
+
+**Ziel:** Das Gateway ist nicht mehr mit dem Auslieferungspasswort erreichbar.
+
+**Wo:** `System` → `Password` / `Change Password` / `Account`.
+
+Vergeben Sie ein eigenes Passwort und legen Sie es dort ab, wo auch die übrigen
+Zugangsdaten der Schule liegen.
+
+**Geprüft, wenn:** Sie sich abmelden und mit dem neuen Passwort wieder anmelden
+können.
+
+> **Kein Formalismus.** Das Gateway hängt in Ihrem Schulnetz und ist ab Werk mit
+> einem Passwort erreichbar, das in jedem Handbuch im Internet steht. Wer darauf
+> kommt, kann den Netzserver umkonfigurieren – und damit die Alarmierung
+> abschalten, ohne dass es jemandem auffällt.
+
+---
+
+## Schritt 3 – Frequenzplan EU868
+
+**Ziel:** Das Gateway funkt auf dem in der Schweiz zulässigen Band.
+
+**Wo:** `LoRa` → `Configuration` (je nach Version `Network Settings` oder
+`Gateway Settings`).
+
+Als **Frequency Plan / Region** **`EU868`** wählen und speichern.
+
+**Geprüft, wenn:** Auf der Übersichtsseite `EU868` steht.
+
+> Ein Gateway auf dem falschen Frequenzplan empfängt schlicht nichts – und gibt
+> keine Fehlermeldung aus. Wenn später kein Uplink ankommt, ist das die erste
+> Stelle, an der Sie nachsehen.
+
+---
+
+## Schritt 4 – Betriebsart: eingebauter Netzserver
+
+**Ziel:** Das Gateway verwaltet die Knöpfe selbst, statt sie an einen Dienst im
+Internet weiterzureichen.
+
+**Wo:** Im selben LoRa-Bereich gibt es eine **Work Mode**-Auswahl mit etwa
+diesen Möglichkeiten:
+
+| Auswahl | Bedeutung |
 | --- | --- |
-| **LoRaWAN-Alarmknöpfe** | Das Gateway empfängt nur; gedrückt wird der Knopf. Ohne Knöpfe gibt es nichts zu empfangen. |
-| **Ein Netzserver** | Das Gateway reicht rohe Funkpakete weiter. Erst der Netzserver entschlüsselt sie und macht JSON daraus. |
-| **Ein Payload-Decoder** | Jeder Hersteller kodiert den Knopfdruck anders. Ohne Decoder kommt ein Uplink an, den niemand deuten kann. |
+| Packet Forwarder | Gateway reicht rohe Pakete an einen externen Netzserver weiter |
+| Basics Station | dasselbe, neueres Verfahren |
+| **Built-in Network Server** | **das ist Ihre Wahl** |
 
-Haben Sie noch keine Knöpfe: Achten Sie darauf, dass für das Modell ein
-Payload-Decoder verfügbar ist (die gängigen Hersteller veröffentlichen ihn) und
-dass es ein **EU868**-Gerät ist. Geräte mit Quittierung (das Gerät blinkt oder
-vibriert, wenn der Alarm angekommen ist) sind einem Knopf ohne Rückmeldung
-vorzuziehen – wer im Ernstfall drückt, will wissen, dass es geklappt hat.
+Auf **Built-in Network Server** stellen und speichern. Das Gateway startet den
+Dienst neu; rechnen Sie mit ein bis zwei Minuten.
 
----
+**Geprüft, wenn:** Im linken Menü ein neuer Bereich erscheint – **`Network
+Server`** oder **`LoRaWAN Network Server`** – mit Unterpunkten wie
+`Applications`, `Device Profiles`, `Gateways`.
 
-## 1. Der Weg eines Knopfdrucks
-
-```
-Knopf  --LoRa-Funk-->  WisGate Edge Lite 2  --Internet (ausgehend)-->  Netzserver
-                                                                          |
-                                                        HTTPS-Webhook     |
-                                                                          v
-                                    https://temp-gross-ict.ch/api/hooks/lorawan
-                                                                          |
-                                                    Alarmknopf über DevEUI gefunden
-                                                                          v
-                                             stiller Alarm, Push/SMS, Eskalation
-```
-
-**Das Gateway spricht nie direkt mit dem Alarmserver.** Deshalb ist es kein
-Problem, dass das Gateway bei Ihnen steht und der Server bei Hetzner:
-
-- keine Portfreigabe im Router
-- keine feste IP-Adresse
-- kein VPN
-
-Alle Verbindungen gehen **von innen nach aussen**. Das Gateway braucht nur
-Internet; der Alarmserver ist unter seiner öffentlichen Adresse ohnehin
-erreichbar – sonst käme die App auch nicht durch.
+Ab hier arbeiten Sie nur noch in diesem Bereich.
 
 ---
 
-## 2. Die Entscheidung: welcher Netzserver
+# Teil 2 · Netzserver im Gateway
 
-Genau hier müssen Sie sich festlegen. Beide Wege funktionieren mit diesem
-Server; der Unterschied ist betrieblicher Art.
+## Schritt 5 – Anwendung anlegen
 
-### A) Netzserver im Gateway (empfohlen)
+**Ziel:** Ein Behälter, in dem Ihre Knöpfe liegen und an dem später die
+Verbindung zum Alarmserver hängt.
 
-Das WisGate Edge Lite 2 bringt einen eigenen Netzserver mit. Die Knöpfe melden
-sich beim Gateway an, das Gateway schickt die fertige Meldung direkt an den
-Alarmserver.
+**Wo:** `Network Server` → `Applications` → `Add` / `Create`.
 
-**Dafür spricht:** Eine Partei weniger und ein Internet-Weg weniger in einer
-Kette, die im Ernstfall halten muss. Die Funkdaten verlassen Ihr Haus nur auf
-dem Weg zum eigenen Server – für eine Schule mit besonders schutzbedürftigen
-Schüler:innen kein Nebenaspekt.
+| Feld | Eintrag |
+| --- | --- |
+| Name | `sobe-notfall` |
+| Beschreibung | `Alarmknöpfe SOBE Notfall` |
 
-**Dagegen spricht:** Die Geräteschlüssel liegen nur auf dem Gateway. Geht es
-kaputt, müssen alle Knöpfe neu angelernt werden. Notieren Sie darum von jedem
-Gerät **DevEUI, AppEUI/JoinEUI und AppKey** (stehen auf dem Etikett oder im
-beiliegenden Zettel) und bewahren Sie sie sicher auf.
+Speichern.
 
-### B) The Things Stack (TTN)
+**Geprüft, wenn:** `sobe-notfall` in der Anwendungsliste steht.
 
-Das Gateway arbeitet als reiner Paketweiterleiter, der Netzserver läuft in der
-Cloud, von dort geht ein Webhook an den Alarmserver.
-
-**Dafür spricht:** Bequemere Geräteverwaltung, sehr gute Live-Ansicht zum
-Fehlersuchen, und der Gerätebestand überlebt einen Gateway-Defekt.
-
-**Dagegen spricht – und das ist der Punkt:** Die Community-Edition ist
-ausdrücklich ohne Verfügbarkeitszusage und hat eine Fair-Use-Richtlinie. Für
-eine Alarmkette, an der ein Notruf hängt, ist das die schwächere Grundlage. Wer
-diesen Weg produktiv gehen will, nimmt den kostenpflichtigen Dienst.
-
-> **Empfehlung:** Weg A. Bei drei Standorten und einem Gateway ist der
-> eingebaute Netzserver der kürzere und ehrlichere Weg. Weg B lohnt sich, sobald
-> mehrere Gateways zentral verwaltet werden sollen.
-
-Die folgenden Schritte beschreiben **Weg A**. Für Weg B stellen Sie das Gateway
-stattdessen auf *Packet Forwarder* bzw. *Basics Station* mit dem Server
-`eu1.cloud.thethings.network` und richten den Webhook aus Schritt 6 in der
-TTN-Konsole unter **Integrations → Webhooks → Custom webhook** ein; alles
-Übrige ist gleich.
+Eine Anwendung genügt für alle Knöpfe aller drei Standorte – die Zuordnung zum
+Standort machen Sie später im Portal, nicht hier.
 
 ---
 
-## 3. Gateway erreichen und einrichten
+## Schritt 6 – Geräteprofil mit Payload-Decoder
 
-1. Gateway mit Strom und – am einfachsten – mit dem LAN-Kabel ans Netz.
-2. Oberfläche im Browser öffnen. Ohne Kabel spannt das Gerät ein eigenes WLAN
-   auf (Name beginnt mit `RAK`); die Oberfläche liegt dann unter
-   `http://192.168.230.1`. Die Zugangsdaten stehen im Handzettel des Geräts.
-3. **Passwort sofort ändern.** Das Gateway hängt in Ihrem Schulnetz.
-4. Unter den LoRa-Einstellungen den **Frequenzplan EU868** wählen – für die
-   Schweiz der einzig zulässige.
-5. Betriebsart auf **Built-in Network Server** (je nach Firmware *Network
-   Server* oder *LoRaWAN Network Server*) umstellen und speichern.
+**Ziel:** Der Netzserver weiss, wie Ihr Knopfmodell funkt und wie seine Bytes zu
+lesen sind. **Das ist der Schritt, an dem es erfahrungsgemäss klemmt.**
 
-**Prüfen:** Die Statusseite meldet den Netzserver als laufend, und der
-Frequenzplan steht auf EU868.
+**Wo:** `Network Server` → `Device Profiles` → `Add` / `Create`.
 
-### Wo das Gateway stehen sollte
+### 6a – Die Funkeigenschaften
 
-LoRa ist reichweitenstark, aber kein Zauberwerk. Das Gateway gehört möglichst
-hoch und frei – nicht in den Technikschrank im Keller. Massive Betondecken,
-Aufzugsschächte und Metallschränke kosten jeweils spürbar Reichweite. Bei drei
-Standorten wird **ein** Gateway kaum alle drei abdecken; prüfen Sie das mit
-einem Knopf vor Ort, bevor Sie sich darauf verlassen.
+Diese Angaben stehen im Datenblatt des Knopfs:
 
----
+| Feld | Üblicher Wert |
+| --- | --- |
+| Name | Modellbezeichnung, z. B. `SOS-Knopf Modell X` |
+| LoRaWAN MAC version | `1.0.3` (bei neueren Geräten `1.1.0`) |
+| Regional Parameters revision | `A` oder `B` – **wie im Datenblatt** |
+| Join (OTAA/ABP) | **OTAA** |
+| Class | `A` |
 
-## 4. Anwendung, Geräteprofil und Decoder anlegen
+Raten Sie hier nicht. Stimmt die MAC-Version nicht, gelingt das Anlernen in
+Schritt 9 nicht, und die Fehlermeldung sagt Ihnen nicht warum.
 
-Im Netzserver des Gateways:
+### 6b – Den Decoder eintragen
 
-1. Eine **Anwendung** anlegen, z. B. `sobe-notfall`.
-2. Ein **Geräteprofil** anlegen: LoRaWAN-Version und Regionalparameter nach
-   Datenblatt des Knopfs, Aktivierung in der Regel **OTAA**.
-3. Im Geräteprofil den **Payload-Decoder** des Herstellers eintragen
-   (JavaScript-Funktion `decodeUplink` bzw. `Decode`).
+Im selben Geräteprofil gibt es einen Reiter **`Codec`** / **`Payload Codec`** /
+**`Application Payload Codec`**.
 
-> **Schritt 3 ist nicht optional.** Ohne Decoder kommt der Uplink zwar an, aber
-> ohne übersetzte Nutzlast. Der Alarmserver erkennt das inzwischen, weist den
-> Uplink mit einer Fehlermeldung ab und schreibt einen Eintrag ins
-> Ereignisprotokoll – ein Knopfdruck löste sonst stillschweigend nichts aus.
+1. Als Art **`Custom JavaScript codec functions`** wählen.
+2. Den Decoder des Herstellers vollständig hineinkopieren.
+3. Speichern.
 
-Der Decoder muss ein Feld liefern, an dem ein Knopfdruck zu erkennen ist. Der
-Alarmserver wertet `alarm`, `button`, `pressed`, `sos`, `panic`, `emergency`,
-`alert`, `press` und ähnliche Namen aus, ebenso Ereignisfelder wie
-`event: "sos"` oder `type: "button_pressed"`.
+### 6c – Die Übersetzungszeile
 
-Zusätzlich verwertet werden, wenn vorhanden: `battery` (Prozent oder Anteil)
-sowie `latitude`/`longitude`. Alles Weitere wird ignoriert.
+Der Alarmserver erkennt einen Knopfdruck an Feldern wie `alarm`, `button`,
+`pressed`, `sos`, `panic`, `emergency`, `alert`, `press` – oder an einem
+Ereignisfeld mit diesem Inhalt (`event: "sos"`, `type: "button_pressed"`).
 
-### Wenn der Decoder des Herstellers andere Namen benutzt
-
-Nehmen Sie den Decoder unverändert und hängen Sie **eine Übersetzungszeile**
-an. So bleibt er bei einem Update des Herstellers austauschbar:
+Benennt Ihr Hersteller das anders, hängen Sie **unten an den Decoder** eine
+Übersetzung an, statt im fremden Code herumzuschneiden:
 
 ```js
-// ... hier steht der unveränderte Decoder des Herstellers ...
+// ... darüber der unveränderte Decoder des Herstellers ...
 
-// Übersetzung für SOBE Notfall: heisst das Feld beim Hersteller anders,
-// hier den richtigen Namen einsetzen.
+// Übersetzung für SOBE Notfall.
+// Den Feldnamen links durch den ersetzen, den Ihr Decoder tatsächlich liefert.
 if (data.press_type === 'long' || data.alarm_status === 1) {
   data.alarm = true
 }
 ```
 
-Welche Felder Ihr Decoder tatsächlich liefert, müssen Sie nicht raten: Das
-Portal zeigt es unter **Integrationen → LoRaWAN → Letzte Uplinks** bei jedem
-eingetroffenen Uplink an (Schritt 7).
+**Sie müssen jetzt nicht raten, wie die Felder heissen.** In Schritt 11 zeigt
+Ihnen das Portal bei jedem eingetroffenen Uplink die Namen der übersetzten
+Felder an. Lassen Sie diesen Block also zunächst weg, drücken Sie in Schritt 11
+den Knopf, lesen Sie die Feldnamen ab – und kommen Sie dann hierher zurück.
+
+**Geprüft, wenn:** Das Geräteprofil gespeichert ist und der Codec-Reiter Ihren
+Code enthält.
 
 ---
 
-## 5. Knopf zweimal anlegen
+# Teil 3 · Portal
 
-Der Knopf muss an zwei Stellen bekannt sein.
+## Schritt 7 – Endpunkt einschalten und Token erzeugen
 
-**Im Netzserver des Gateways:** Gerät mit DevEUI, AppEUI/JoinEUI und AppKey vom
-Etikett anlegen, dem Geräteprofil und der Anwendung zuordnen. Dann den Knopf
-anlernen (meist langer Tastendruck); das Gerät erscheint als beigetreten.
+**Ziel:** Der Alarmserver nimmt Uplinks entgegen, und Sie haben Adresse und
+Token für Schritt 8 in der Zwischenablage.
 
-**Im Portal** unter **Alarmknöpfe → Neuer Knopf**:
+**Wo:** Portal → **Integrationen** → Bereich **Drittsysteme & Alarmknöpfe** →
+Karte **LoRaWAN-Netz / Alarmknöpfe**.
 
-| Feld | Inhalt |
+1. Schalter **«Uplink-Endpunkt für LoRaWAN- und GSM-Alarmknöpfe»** einschalten.
+2. **Netzserver:** **`ChirpStack (auch der im Gateway eingebaute Netzserver)`**
+   wählen.
+3. **Warnen ohne Signal nach (Stunden):** auf das Melde-Intervall Ihrer Knöpfe
+   abstimmen. Sendet ein Knopf alle 12 Stunden ein Lebenszeichen, tragen Sie
+   nicht 12 ein, sondern 26 – sonst meldet das System bei jedem ausgefallenen
+   Funkpaket eine Störung. Im Zweifel: das Doppelte des Intervalls plus zwei
+   Stunden.
+4. **Warnen bei Batterie unter (%):** 20 ist ein brauchbarer Ausgangswert.
+5. **`Token erzeugen`** drücken.
+6. **Endpunkt** und **Token** mit den Kopiersymbolen sichern – Sie brauchen
+   beide im nächsten Schritt.
+
+Der Endpunkt lautet:
+
+```
+https://temp-gross-ict.ch/api/hooks/lorawan
+```
+
+**Geprüft, wenn:** Unter dem Token die Liste **«Letzte Uplinks»** erscheint, mit
+dem Hinweis, dass noch nichts eingetroffen ist.
+
+> Lassen Sie diesen Browser-Tab ab jetzt offen. Die Liste frischt sich alle zehn
+> Sekunden auf und ist Ihr Messgerät für den Rest der Einrichtung.
+
+---
+
+# Teil 4 · Die Verbindung
+
+## Schritt 8 – HTTP-Integration im Gateway
+
+**Ziel:** Der Netzserver im Gateway schickt jeden Uplink an den Alarmserver.
+
+**Wo:** `Network Server` → `Applications` → `sobe-notfall` → Reiter
+**`Integrations`** → **`HTTP`** hinzufügen.
+
+| Feld | Eintrag |
 | --- | --- |
-| Bezeichnung | sprechender Ort, z. B. «Eingang Weststrasse» |
-| Typ | LoRaWAN |
-| **Seriennummer** | **die DevEUI** – Schreibweise egal, Trennzeichen und Gross-/Kleinschreibung werden ignoriert |
-| Standort | der Standort, für den der Alarm gilt |
-| Individuelle Alarmnachricht | was die Empfangenden lesen |
-| Ausgelöstes Szenario, Personengruppen, Eskalation | wie gewünscht |
+| Payload marshaler / Format | **`JSON`** |
+| Uplink data URL / Event endpoint URL | `https://temp-gross-ict.ch/api/hooks/lorawan` |
 
-Die Zuordnung läuft ausschliesslich über die DevEUI. Stimmt sie nicht, antwortet
-der Endpunkt mit «Kein Alarmknopf mit der Seriennummer … registriert».
+Für das **Token** gibt es zwei Wege. Nehmen Sie den ersten, wenn Ihre Oberfläche
+ihn anbietet:
 
----
+**Weg 1 – Kopfzeile (bevorzugt).** Gibt es einen Bereich `Headers` mit
+Schlüssel/Wert-Paaren:
 
-## 6. Endpunkt einschalten und Webhook eintragen
+| Header name | Header value |
+| --- | --- |
+| `Authorization` | `Bearer IHR-TOKEN` |
 
-Im Portal unter **Integrationen → LoRaWAN-Netz / Alarmknöpfe**:
+Das Wort `Bearer`, ein Leerzeichen, dann das Token – genau so.
 
-1. Schalter **Uplink-Endpunkt** einschalten.
-2. Netzserver auf **ChirpStack** stellen (der eingebaute Netzserver ist
-   ChirpStack; bei Weg B auf TTN).
-3. **Token erzeugen** und kopieren. Adresse und Token stehen darunter:
-   ```
-   https://temp-gross-ict.ch/api/hooks/lorawan
-   ```
-4. Warnschwellen prüfen: «ohne Signal nach Stunden» auf das Melde-Intervall
-   Ihrer Knöpfe abstimmen, «Batterie unter %» nach Bedarf.
+**Weg 2 – in der Adresse.** Erlaubt die Oberfläche keine eigenen Kopfzeilen,
+hängen Sie das Token an die Adresse:
 
-Im Netzserver des Gateways bei der Anwendung eine **HTTP-Integration**
-einrichten und die Adresse aus Schritt 3 als Ziel für Uplink-Ereignisse
-eintragen. Für das Token gibt es zwei Wege:
+```
+https://temp-gross-ict.ch/api/hooks/lorawan?token=IHR-TOKEN
+```
 
-- **Bevorzugt:** Kopfzeile `Authorization: Bearer IHR-TOKEN`.
-- **Falls die Oberfläche keine eigenen Kopfzeilen erlaubt:** das Token an die
-  Adresse hängen – `…/api/hooks/lorawan?token=IHR-TOKEN`. Funktioniert genauso,
-  steht aber in Protokolldateien; dann das Token gelegentlich erneuern.
+Funktioniert gleichwertig. Das Token steht dann allerdings in Protokolldateien;
+erneuern Sie es gelegentlich über **`Neues Token erzeugen`** im Portal – und
+denken Sie daran, es danach hier nachzutragen.
+
+Gibt es mehrere Ereignisarten (`uplink`, `join`, `status`, `ack`, `error`): Es
+genügt **`uplink`**. Die übrigen schaden nicht, der Alarmserver ignoriert sie.
+
+**Geprüft, wenn:** Die Integration gespeichert ist. Ob sie funktioniert, sehen
+Sie erst in Schritt 11 – oder sofort über Anhang A.
 
 ---
 
-## 7. Prüfen
+# Teil 5 · Der erste Knopf
 
-Lassen Sie beim Einrichten im Portal **Integrationen → LoRaWAN-Netz /
-Alarmknöpfe** offen. Unter **Letzte Uplinks** erscheint dort jeder eintreffende
-Uplink innert zehn Sekunden – **auch ein abgewiesener**, mit dem Grund im
-Klartext und der Gerätekennung zum Kopieren. Das ist die Antwort auf die Frage,
-die man sonst nicht beantworten kann: Liegt es am Gateway oder am Portal?
+## Schritt 9 – Knopf anlernen
 
-**a) Endpunkt von aussen erreichbar** (von einem beliebigen Rechner):
+**Ziel:** Der Knopf hat sich beim Netzserver angemeldet.
+
+**Wo:** `Network Server` → `Applications` → `sobe-notfall` → `Devices` → `Add`.
+
+| Feld | Eintrag |
+| --- | --- |
+| Device name | Ort, an den der Knopf kommt, z. B. `Eingang Weststrasse` |
+| Device EUI (DevEUI) | vom Etikett |
+| Device profile | das Profil aus Schritt 6 |
+
+Speichern. Danach erscheint ein Reiter für die **Schlüssel** (`Keys (OTAA)`):
+
+| Feld | Eintrag |
+| --- | --- |
+| Application key (AppKey) | vom Etikett |
+| Application EUI / Join EUI | vom Etikett – falls das Feld vorhanden ist |
+
+Speichern. Dann den Knopf **anlernen**: bei den meisten Modellen ein langer
+Tastendruck von 5 bis 10 Sekunden, bis eine Leuchte blinkt. Das Datenblatt sagt
+es genau.
+
+**Geprüft, wenn:** Beim Gerät `Last seen` gesetzt ist oder unter `LoRaWAN
+frames` / `Device data` ein Join-Vorgang steht.
+
+Klappt es nicht: Der Knopf muss beim Anlernen in Reichweite sein – legen Sie ihn
+für den ersten Versuch neben das Gateway. Danach prüfen Sie den Empfang an der
+vorgesehenen Stelle.
+
+---
+
+## Schritt 10 – Knopf im Portal registrieren
+
+**Ziel:** Der Alarmserver weiss, was beim Druck auf diesen Knopf geschehen soll.
+
+> **Kleiner Umweg, der Ihnen Tippfehler erspart:** Drücken Sie den Knopf **jetzt
+> schon einmal**. Der Uplink wird abgewiesen – aber unter **«Letzte Uplinks»**
+> im Portal steht dann «Gerät nicht registriert» und **daneben die exakte
+> Kennung mit einem Kopiersymbol**. Diese Kennung ist verlässlicher als das
+> Abtippen vom Etikett.
+
+**Wo:** Portal → **Alarmknöpfe** → **`Knopf registrieren`**.
+
+| Feld | Eintrag |
+| --- | --- |
+| **Bezeichnung** | derselbe Ort wie im Netzserver, z. B. `Eingang Weststrasse` |
+| **Typ** | `LoRaWAN` |
+| **Seriennummer** | **die DevEUI** – kopiert aus «Letzte Uplinks» oder vom Etikett. Gross-/Kleinschreibung und Bindestriche sind egal |
+| **Standort** | der Standort, für den der Alarm gilt |
+| **Zugewiesene Person** | nur bei einem tragbaren Knopf; beim fest montierten leer lassen |
+| **Individuelle Alarmnachricht** | was die Empfangenden lesen. Schreiben Sie, **wo** und **was** – nicht «Alarm», sondern `Stiller Alarm Eingang Weststrasse – bitte sofort hingehen` |
+| **Ausgelöstes Szenario** | welche Schritte die Alarmierten angezeigt bekommen |
+| **Alarmierte Personengruppen** | wer den Alarm erhält |
+| **Krisenstab aufbieten nach … Min. ohne Quittierung** | Regler. 5 Minuten sind ein üblicher Ausgangswert |
+
+Speichern.
+
+**Geprüft, wenn:** Der Knopf in der Liste steht. Ein Alarm über diesen Knopf ist
+immer **still und quittierpflichtig** – das ist so gewollt und nicht einstellbar.
+
+> **Was die Eskalation tut und was nicht:** Quittiert niemand rechtzeitig, wird
+> der **Krisenstab** per Sprachanruf und SMS aufgeboten. **Polizei, Feuerwehr
+> und Rettungsdienst werden nicht automatisch alarmiert** – das System hat keine
+> Schnittstelle zu einer Einsatzleitzentrale. Der Notruf wird von Hand gewählt.
+
+---
+
+## Schritt 11 – Drücken und die Liste beobachten
+
+**Ziel:** Die Kette steht.
+
+Portal offen lassen bei **Integrationen → LoRaWAN-Netz / Alarmknöpfe →
+«Letzte Uplinks»**. Dann den Knopf drücken. Innert Sekunden erscheint ein
+Eintrag. Was dort steht, sagt Ihnen genau, wo Sie stehen:
+
+| Eintrag | Bedeutung | Was zu tun ist |
+| --- | --- | --- |
+| **Alarm ausgelöst** | Die Kette steht. | Weiter mit Schritt 12. |
+| **Statusmeldung** mit aufgeführten Feldern | Der Uplink kam an, aber kein Feld sah nach Alarm aus. | Die angezeigten Feldnamen ablesen und in Schritt 6c die Übersetzungszeile eintragen. |
+| **Gerät nicht registriert** | Die DevEUI im Portal weicht ab. | Kennung aus der Liste kopieren und in Schritt 10 als Seriennummer eintragen. |
+| **ohne übersetzte Nutzlast** | Der Payload-Decoder fehlt oder wirft einen Fehler. | Zurück zu Schritt 6b. |
+| **Token abgewiesen** | Das Gateway sendet ein anderes Token. | Zurück zu Schritt 8, Token neu kopieren. |
+| **Format nicht verstanden** | Die Integration schickt kein JSON. | In Schritt 8 Payload marshaler auf `JSON` stellen. |
+| **gar nichts** | Der Uplink hat den Alarmserver nie erreicht. | Nicht im Portal suchen. Im Gateway nachsehen: Kommt der Uplink beim Netzserver an? Was meldet die HTTP-Integration als Antwort? Erscheint dort gar kein Uplink, ist es Funk oder Frequenzplan (Schritt 3). |
+
+Steht **Alarm ausgelöst**, läuft im Portal ein stiller Alarm, die alarmierten
+Personen bekommen ihn aufs Telefon, und im **Ereignisprotokoll** steht
+«Alarmknopf ausgelöst».
+
+**Beenden Sie diesen Testalarm** in der Alarmzentrale, sonst läuft die
+Eskalation weiter und bietet nach der eingestellten Zeit den Krisenstab auf.
+
+> Zwei Drücke innerhalb von zwei Minuten gelten absichtlich als **ein**
+> Ereignis. Warten Sie zwischen zwei Versuchen also kurz.
+
+---
+
+## Schritt 12 – Scharfstellen
+
+**Ziel:** Der Knopf hängt dort, wo er hingehört, und funktioniert auch da.
+
+1. **Am richtigen Ort prüfen.** Knopf montieren und **von dort aus** drücken.
+   Die Funkabdeckung am Montageort ist eine andere als neben dem Gateway. Das
+   gilt besonders für Untergeschoss, Technikraum und Therapiebad – dort ist der
+   Empfang am schlechtesten und der Knopf am wichtigsten.
+2. **Die Beteiligten einweihen.** Wer in den alarmierten Gruppen ist, muss
+   wissen, dass dieser Knopf existiert, was er bedeutet und dass quittiert
+   werden muss.
+3. **Testalarm beenden** und im Ereignisprotokoll nachsehen, ob alles
+   nachvollziehbar steht.
+4. **Nach 24 Stunden** unter **Alarmknöpfe** nachsehen: «letztes Signal» muss
+   frisch sein. Ist es das nicht, sendet der Knopf keine Lebenszeichen – dann
+   wüssten Sie im Ernstfall nicht, ob er noch lebt.
+
+Für jeden weiteren Knopf: Schritte 9 bis 12 wiederholen. Gleiches Modell heisst
+gleiches Geräteprofil – Schritt 6 entfällt.
+
+---
+
+# Anhang A · Zwischenprüfung ohne Knopf
+
+Sie können Schritt 7 und die Erreichbarkeit des Servers prüfen, bevor
+überhaupt ein Knopf da ist. Von einem beliebigen Rechner mit Internet:
 
 ```bash
 curl -sS -X POST "https://temp-gross-ict.ch/api/hooks/lorawan?token=IHR-TOKEN" \
   -H 'Content-Type: application/json' \
-  -d '{"devEUI":"IHRE-DEVEUI","rxInfo":[],"object":{"battery":95}}'
+  -d '{"devEUI":"0102030405060708","rxInfo":[],"object":{"battery":95}}'
 ```
-
-Erwartet: `{"ok":true,"alarm":null}`. Im Portal steht bei **Alarmknöpfe** jetzt
-ein frisches «letztes Signal» und 95 % Batterie.
-
-Andere Antworten:
 
 | Antwort | Bedeutung |
 | --- | --- |
-| `403` nicht aktiviert | Schalter in Schritt 6.1 fehlt |
-| `401` ungültiges Token | Token falsch kopiert oder inzwischen erneuert |
-| `404` kein Alarmknopf … | DevEUI im Portal stimmt nicht mit der gesendeten überein |
-| `422` ohne übersetzte Nutzlast | Payload-Decoder fehlt (Schritt 4.3) |
+| `{"ok":true,"alarm":null}` | Alles richtig – sofern Sie einen Knopf mit dieser Kennung angelegt haben |
+| `Kein Alarmknopf … registriert` | **Auch gut:** Server erreichbar, Token stimmt, nur das Gerät ist unbekannt |
+| `Ungültiges Zugangstoken` | Token falsch kopiert |
+| `Der LoRaWAN-Endpunkt ist … nicht aktiviert` | Schalter aus Schritt 7.1 fehlt |
+| keine Antwort / Zeitüberschreitung | Der Alarmserver ist von aussen nicht erreichbar – dann funktioniert auch die App nicht |
 
-**b) Echter Knopfdruck.** Knopf drücken. Unter **Letzte Uplinks** muss innert
-Sekunden ein Eintrag erscheinen. Steht dort:
-
-- **«Alarm ausgelöst»** – fertig, die Kette steht.
-- **«Statusmeldung»** mit aufgeführten Feldern – der Uplink kam an, aber kein
-  Feld sah nach Alarm aus. Die angezeigten Feldnamen sagen Ihnen, was Sie in der
-  Übersetzungszeile aus Schritt 4 einsetzen müssen.
-- **«Gerät nicht registriert»** – die angezeigte Kennung kopieren und unter
-  **Alarmknöpfe** als Seriennummer eintragen.
-- **«ohne übersetzte Nutzlast»** – der Payload-Decoder fehlt.
-- **«Token abgewiesen»** – der Netzserver schickt ein anderes Token.
-- **gar nichts** – der Uplink hat den Alarmserver nie erreicht. Weiter im
-  Netzserver des Gateways: Kommt der Uplink dort an, und was meldet die
-  HTTP-Integration als Antwort?
-
-Läuft alles, steht im Portal ein stiller Alarm und im **Ereignisprotokoll**
-«Alarmknopf ausgelöst».
-
-Zwei Drücke innerhalb von zwei Minuten gelten absichtlich als **ein** Ereignis –
-sonst löst ein nervöser Daumen drei Alarme aus.
-
-**c) Der Weg als Ganzes.** Lassen Sie jemanden am vorgesehenen Ort drücken,
-während Sie am Portal sitzen. Erst dieser Durchlauf zeigt, ob die Funkabdeckung
-an genau dieser Stelle reicht.
+Der Aufruf erscheint anschliessend in **«Letzte Uplinks»**, genau wie ein
+echter Uplink.
 
 ---
 
-## 8. Was dieser Weg nicht leistet
+# Anhang B · Wenn Sie es später doch über The Things Stack machen
+
+Der Weg bleibt derselbe, nur die Teile 1 und 2 ändern sich: Gateway in Schritt 4
+auf **Packet Forwarder** bzw. **Basics Station** stellen und auf
+`eu1.cloud.thethings.network` richten, Gateway und Geräte in der TTN-Konsole
+anlegen, und den Webhook aus Schritt 8 dort unter **Integrations → Webhooks →
+Custom webhook** einrichten. Im Portal in Schritt 7.2 dann
+**The Things Network / The Things Stack** wählen.
+
+Bedenken Sie: Die Community-Edition ist ausdrücklich ohne Verfügbarkeitszusage
+und hat eine Fair-Use-Richtlinie. Für eine Alarmkette, an der ein Notruf hängt,
+ist das die schwächere Grundlage.
+
+---
+
+# Anhang C · Was dieser Weg nicht leistet
 
 Das gehört auf den Tisch, bevor sich jemand darauf verlässt.
 
 - **Ohne Internet am Standort kommt kein Alarm durch.** Die Kette führt über
-  Ihre Leitung zum Server bei Hetzner. Fällt die Leitung aus, hilft auch das
-  Gateway im Haus nichts. Wer das abdecken will, braucht einen Alarmserver vor
-  Ort oder ein Gateway mit Mobilfunk als Rückfallebene.
-- **Keine Rückmeldung an den Knopf.** Der Server bestätigt dem Netzserver den
-  Empfang, schickt aber keinen Downlink an das Gerät. Ein Knopf, der nach
-  erfolgreicher Alarmierung blinken soll, braucht diese Erweiterung – sie ist
+  Ihre Leitung zum Server beim Hoster. Fällt die Leitung aus, hilft auch das
+  Gateway im Haus nichts.
+- **Keine Rückmeldung an den Knopf.** Wer drückt, erfährt vom Gerät nicht, dass
+  der Alarm angekommen ist. Ein Knopf, der das könnte, bräuchte einen Downlink –
   vorgemerkt, aber nicht gebaut.
 - **Ein Gateway ist eine einzelne Stelle, an der alles hängt.** Kein zweites
-  Gerät fängt seinen Ausfall auf. Die Überwachung im Portal meldet stumme
-  Knöpfe – nach Ablauf der eingestellten Stundenzahl, nicht sofort.
-- **Funkabdeckung ist nicht garantiert.** LoRa im 868-MHz-Band unterliegt
-  zudem Sendezeitbeschränkungen; für einzelne Knopfdrücke unkritisch, für
-  häufige Statusmeldungen nicht.
+  Gerät fängt seinen Ausfall auf. Ein zweites Gateway ergäbe ohne jede
+  Konfiguration Redundanz: LoRaWAN funktioniert als Rundruf, der Netzserver
+  verwirft die Duplikate.
+- **Die Überwachung meldet einen stummen Knopf erst nach der eingestellten
+  Stundenzahl**, nicht sofort.
+- **Ein Gateway deckt kaum drei Standorte ab.** Messen Sie, bevor Sie planen.
 
 Ein LoRaWAN-Knopf ist eine gute **Ergänzung** zur App – für Räume ohne
 Mobilfunk, für Personen ohne Diensttelefon, für den festen Platz an der Wand.
 Als alleiniger Alarmweg ist er der schwächere.
-
----
-
-## 9. Fehlersuche
-
-Erste Anlaufstelle ist immer **Integrationen → LoRaWAN → Letzte Uplinks**. Steht
-dort nichts, hat der Alarmserver nie etwas gesehen – dann liegt es am Gateway
-oder am Netzserver, nicht am Portal.
-
-| Beobachtung | Wo zuerst nachsehen |
-| --- | --- |
-| Knopf erscheint im Netzserver nicht | Anlernen wiederholen; AppKey prüfen; Gateway zu weit weg |
-| Uplink im Netzserver, aber nichts im Portal | HTTP-Integration: Adresse, Token, Antwortcode der letzten Zustellung |
-| `422` ohne übersetzte Nutzlast | Payload-Decoder im Geräteprofil fehlt oder wirft einen Fehler |
-| Uplink kommt an, aber kein Alarm | Decoder liefert kein erkennbares Feld – `data.alarm = true` ergänzen |
-| `404` kein Alarmknopf | DevEUI im Portal gegen die des Geräts halten |
-| Alarm zu selten | Zwei Drücke in zwei Minuten sind ein Ereignis – so gewollt |
-| «Knopf meldet sich nicht mehr» im Protokoll | Batterie, Funkabdeckung, oder Stundenschwelle zu knapp eingestellt |
