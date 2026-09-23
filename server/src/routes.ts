@@ -833,8 +833,6 @@ router.post('/integrations/lorawan/token', auth, adminOnly, (req: AuthRequest, r
   res.json({ token: aktuell.lorawan.token })
 })
 
-/** Zwei Knopfdrücke kurz nacheinander gelten als ein Ereignis */
-const KNOPF_DEBOUNCE_MS = 2 * 60_000
 
 /**
  * Wann zuletzt gemeldet wurde, dass ein Gerät ohne Payload-Decoder sendet.
@@ -932,9 +930,16 @@ router.post('/hooks/lorawan', async (req, res) => {
     return
   }
 
-  // Doppelte Drücke desselben Knopfs innert kurzer Zeit nicht erneut auslösen
+  // Solange der Alarm dieses Knopfs läuft, ist jede weitere Meldung desselbe
+  // Ereignis – kein zweiter Alarm.
+  //
+  // Nicht bloss ein Schutz gegen den nervösen Daumen: Manche Geräte bleiben
+  // nach dem Auslösen im Alarmzustand und wiederholen ihn minütlich, der
+  // Dragino TrackerD etwa bis zu sechzigmal. Ein Zeitfenster von Minuten
+  // würde daraus eine Alarmlawine machen. Erst wenn der Alarm beendet ist,
+  // löst ein neuer Druck wieder aus.
   const laufend = allAlarms().find(
-    (a) => a.status === 'active' && a.triggeredVia === 'button' && a.message.includes(knopf.serial) && Date.now() - a.triggeredAt < KNOPF_DEBOUNCE_MS,
+    (a) => a.status === 'active' && a.triggeredVia === 'button' && a.message.includes(knopf.serial),
   )
   if (laufend) {
     broadcast('state')

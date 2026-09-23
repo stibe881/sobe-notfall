@@ -456,12 +456,39 @@ export function normierteSerie(wert: string): string {
   return wert.toUpperCase().replace(/[^A-Z0-9]/g, '')
 }
 
+/** Zellspannung einer Lithium-Zelle, aus der die Prozentangabe geschätzt wird */
+const ZELLE_LEER_V = 3.0
+const ZELLE_VOLL_V = 4.2
+
+/**
+ * Batterieangabe vereinheitlichen.
+ *
+ * Die Geräte melden höchst unterschiedlich: Prozent, Anteil zwischen 0 und 1,
+ * Zellspannung in Volt oder in Millivolt. Dragino etwa nennt das Feld «BAT»
+ * und meint Volt – ungeprüft übernommen stünde im Portal dauerhaft «4 %» und
+ * damit eine Batteriewarnung, die nie verstummt. Eine Warnung, die immer
+ * leuchtet, liest nach zwei Wochen niemand mehr; das ist schlimmer als keine.
+ *
+ * Die Schätzung aus der Spannung ist grob – die Entladekurve hängt an der
+ * Zelle. Für die Frage «bald wechseln?» reicht sie, für eine Restlaufzeit nicht.
+ */
 function alsProzent(wert: unknown): number | undefined {
   const zahl = Number(wert)
   if (!Number.isFinite(zahl) || zahl < 0) return undefined
-  // Werte zwischen 0 und 1 sind Anteile, alles darüber bereits Prozent
+
+  // Millivolt einer Lithium-Zelle
+  if (zahl >= 2000 && zahl <= 4500) return ausSpannung(zahl / 1000)
+  // Volt einer Lithium-Zelle. Ganze Zahlen bleiben Prozent: «3» ist eher ein
+  // Prozentwert als eine auf die Volt genau gemessene Spannung.
+  if (zahl >= 2 && zahl <= 4.5 && !Number.isInteger(zahl)) return ausSpannung(zahl)
+  // Anteile zwischen 0 und 1, alles darüber bereits Prozent
   const pct = zahl > 0 && zahl <= 1 ? zahl * 100 : zahl
   return pct <= 100 ? Math.round(pct) : undefined
+}
+
+function ausSpannung(volt: number): number {
+  const anteil = (volt - ZELLE_LEER_V) / (ZELLE_VOLL_V - ZELLE_LEER_V)
+  return Math.round(Math.min(1, Math.max(0, anteil)) * 100)
 }
 
 /**
@@ -474,19 +501,22 @@ function alsProzent(wert: unknown): number | undefined {
  */
 function istAlarmNutzlast(nutzlast: Record<string, unknown>): boolean {
   const wahr = (wert: unknown) =>
-    wert === true || wert === 1 || wert === '1' || wert === 'true' || wert === 'TRUE'
+    wert === true || wert === 1 || wert === '1' ||
+    (typeof wert === 'string' && wert.toLowerCase() === 'true')
 
+  // Die Schreibweise ist Herstellersache: Dragino nennt das Feld «ALARM»,
+  // andere «alarm» oder «Alarm». Für die Erkennung darf das nicht zählen.
   for (const schluessel of [
     'alarm', 'button', 'pressed', 'sos', 'panic', 'trigger',
     // Weitere gängige Schreibweisen: Milesight, Browan, Dragino, Adeunis
     'sos_alarm', 'emergency', 'alert', 'button_pressed', 'buttonPressed', 'press',
   ]) {
-    if (wahr(nutzlast[schluessel])) return true
+    if (wahr(ausFeldern(nutzlast, schluessel))) return true
   }
 
   // Ereignisfelder, teils mit Hersteller-Präfix («short_press», «SOS_ALARM»)
   const ereignisse = ['event', 'type', 'message_type', 'messageType', 'action', 'state']
-    .map((feld) => String(nutzlast[feld] ?? '').toLowerCase().trim())
+    .map((feld) => String(ausFeldern(nutzlast, feld) ?? '').toLowerCase().trim())
     .filter(Boolean)
   const treffer = ['alarm', 'sos', 'button', 'panic', 'pressed', 'press', 'emergency', 'alert']
   return ereignisse.some((e) => treffer.some((t) => e === t || e.endsWith(`_${t}`) || e.startsWith(`${t}_`)))
@@ -501,6 +531,20 @@ function gpsAus(nutzlast: Record<string, unknown>): { lat: number; lng: number }
 /** Batteriestand aus einer übersetzten Nutzlast, unter allen gängigen Namen */
 function batterieAus(nutzlast: Record<string, unknown>): unknown {
   return ausFeldern(nutzlast, 'battery', 'batteryPct', 'battery_level', 'batteryLevel', 'bat', 'batV', 'battery_percent')
+}
+
+/**
+ * Batteriestand aus einer Gerätestatus-Meldung des Netzservers.
+ *
+ * LoRaWAN kennt dafür einen eigenen Mechanismus: Der Netzserver fragt das Gerät
+ * periodisch ab und meldet den Stand im Umschlag statt in der Nutzlast. Das ist
+ * die einzige Batteriequelle, wenn das Gerät keinen Payload-Decoder hat – und
+ * damit genau dann wertvoll, wenn sonst nichts zu holen wäre. Meldet das Gerät
+ * «Stand nicht verfügbar», wird der Wert verworfen statt als 0 % gedeutet.
+ */
+function batterieAusStatus(b: Record<string, unknown>): unknown {
+  if (ausFeldern(b, 'batteryLevelUnavailable', 'battery_level_unavailable') === true) return undefined
+  return ausFeldern(b, 'batteryLevel', 'battery_level')
 }
 
 /**
@@ -533,7 +577,7 @@ export function parseLorawanUplink(body: unknown): LorawanEreignis | null {
     return {
       geraet: alsGeraetekennung(b.deviceInfo.devEui),
       alarm: istAlarmNutzlast(nutzlast),
-      batteryPct: alsProzent(batterieAus(nutzlast)),
+      batteryPct: alsProzent(batterieAus(nutzlast) ?? batterieAusStatus(b)),
       gps: gpsAus(nutzlast),
       felder: Object.keys(nutzlast),
       ohneDecoder: Object.keys(nutzlast).length === 0 && Boolean(b.data),
@@ -549,7 +593,7 @@ export function parseLorawanUplink(body: unknown): LorawanEreignis | null {
     return {
       geraet: alsGeraetekennung(v3),
       alarm: istAlarmNutzlast(nutzlast),
-      batteryPct: alsProzent(batterieAus(nutzlast)),
+      batteryPct: alsProzent(batterieAus(nutzlast) ?? batterieAusStatus(b)),
       gps: gpsAus(nutzlast),
       felder: Object.keys(nutzlast),
       ohneDecoder: Object.keys(nutzlast).length === 0 && Boolean(b.data),

@@ -385,6 +385,41 @@ async function main(): Promise<void> {
   pruefe('ChirpStack v3 aktualisiert die Batterie',
     (await ruf('/state', { token: adminToken })).body.buttons.find((b: any) => b.serial === 'LW-TEST-99')?.batteryPct === 61)
 
+  // --- Dragino TrackerD: «ALARM» gross, «BAT» in Volt, Alarm bleibt gesetzt ---
+  const dragino = (alarm: boolean, bat: number) => JSON.stringify({
+    applicationID: '1', devEUI: 'LWTEST99', rxInfo: [],
+    object: { ALARM: alarm, BAT: bat, Latitude: 47.19, Longitude: 8.52 },
+  })
+  const drStatus = await ruf('/hooks/lorawan', { method: 'POST', token: lwToken.body.token, body: dragino(false, 4.02) })
+  pruefe('Grossgeschriebenes ALARM=false ist kein Alarm', drStatus.status === 200 && drStatus.body.alarm === null)
+  pruefe('Zellspannung wird zu Prozent statt zu «4 %»',
+    (await ruf('/state', { token: adminToken })).body.buttons.find((b: any) => b.serial === 'LW-TEST-99')?.batteryPct === 85)
+
+  const drAlarm = await ruf('/hooks/lorawan', { method: 'POST', token: lwToken.body.token, body: dragino(true, 4.02) })
+  pruefe('Grossgeschriebenes ALARM=true löst aus', typeof drAlarm.body.alarm === 'string')
+  const wiederholung = await ruf('/hooks/lorawan', { method: 'POST', token: lwToken.body.token, body: dragino(true, 4.01) })
+  pruefe('Wiederholter Alarmzustand erzeugt keinen zweiten Alarm',
+    wiederholung.body.merged === true && wiederholung.body.alarm === drAlarm.body.alarm)
+  await ruf(`/alarms/${drAlarm.body.alarm}/end`, { method: 'POST', token: adminToken })
+  const nachEnde = await ruf('/hooks/lorawan', { method: 'POST', token: lwToken.body.token, body: dragino(true, 4.01) })
+  pruefe('Nach dem Beenden löst ein Druck wieder aus',
+    typeof nachEnde.body.alarm === 'string' && nachEnde.body.alarm !== drAlarm.body.alarm)
+  await ruf(`/alarms/${nachEnde.body.alarm}/end`, { method: 'POST', token: adminToken })
+
+  // Gerätestatus des Netzservers: Batterie im Umschlag statt in der Nutzlast
+  const status = await ruf('/hooks/lorawan', {
+    method: 'POST', token: lwToken.body.token,
+    body: JSON.stringify({ applicationID: '1', devEUI: 'LWTEST99', batteryLevel: 38, margin: 7 }),
+  })
+  pruefe('Gerätestatus liefert den Batteriestand', status.status === 200 &&
+    (await ruf('/state', { token: adminToken })).body.buttons.find((b: any) => b.serial === 'LW-TEST-99')?.batteryPct === 38)
+  await ruf('/hooks/lorawan', {
+    method: 'POST', token: lwToken.body.token,
+    body: JSON.stringify({ applicationID: '1', devEUI: 'LWTEST99', batteryLevel: 0, batteryLevelUnavailable: true }),
+  })
+  pruefe('«Batteriestand nicht verfügbar» überschreibt den bekannten Wert nicht',
+    (await ruf('/state', { token: adminToken })).body.buttons.find((b: any) => b.serial === 'LW-TEST-99')?.batteryPct === 38)
+
   // Base64-DevEUI (0x0102030405060708) muss auf denselben Knopf zeigen
   await ruf('/buttons', {
     method: 'POST', token: adminToken,

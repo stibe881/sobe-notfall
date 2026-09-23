@@ -142,7 +142,7 @@ Verbindung zum Alarmserver hängt.
 | --- | --- | --- |
 | Application settings | Application name | `sobe_notfall` |
 | Application settings | Application description | `Alarmknöpfe SOBE Notfall` |
-| Application settings | Application Type | die einfachste Auswahl für gewöhnliche LoRaWAN-Geräte |
+| Application settings | Application Type | **`Separate Application keys`** – jeder Knopf bringt seinen eigenen AppKey ab Werk mit. `Unified Application key` gäbe allen Geräten denselben Schlüssel und setzte voraus, dass Sie die Knöpfe selbst umprogrammieren |
 | Payload format | **Payload type** | **nicht `None`** – die Auswahl, mit der sich ein eigener Decoder hinterlegen lässt (Schritt 6b) |
 | Payload format | **Only forward data object** | **aus** – siehe Kasten |
 | Integration Parameters | Decode Type | `Base 64` |
@@ -473,6 +473,58 @@ Custom webhook** einrichten. Im Portal in Schritt 7.2 dann
 Bedenken Sie: Die Community-Edition ist ausdrücklich ohne Verfügbarkeitszusage
 und hat eine Fair-Use-Richtlinie. Für eine Alarmkette, an der ein Notruf hängt,
 ist das die schwächere Grundlage.
+
+---
+
+# Anhang D · Die beiden Dragino-Geräte
+
+## Gemeinsames
+
+Beide sprechen **LoRaWAN 1.0.3, Class A, OTAA** – das sind die Werte für das
+Geräteprofil in Schritt 6a. Beide melden die Batterie als **Spannung**, nicht
+in Prozent: der TrackerD im Feld `BAT` in Volt, der PB01 in Millivolt. Der
+Alarmserver rechnet das um; ohne diese Umrechnung stünde im Portal dauerhaft
+«4 %» und eine Batteriewarnung, die nie verstummt.
+
+> **Zur Prozentangabe:** Sie ist aus der Spannung geschätzt, und die
+> Entladekurve hängt an der Zelle. Beim PB01 wird der angezeigte Wert deshalb
+> **zu tief** liegen. Für die Frage «bald wechseln?» reicht es trotzdem: Leer
+> ist bei beiden Zelltypen um 3,0 V, und dort landet die Warnschwelle richtig.
+> Als Restlaufzeit taugt der Wert nicht.
+
+Der Alarmserver erkennt das Alarmfeld unabhängig von der Schreibweise – der
+TrackerD schreibt `ALARM` gross, der PB01 `alarm` klein.
+
+## TrackerD – der Alarmzustand bleibt
+
+**Auslösen:** rote Taste **länger als 5 Sekunden** halten.
+
+Danach sendet das Gerät den Alarm **bis zu sechzigmal im Minutentakt weiter**.
+Das ist kein Fehler, sondern gewollt – aber es heisst:
+
+- **Solange der Alarm im Portal läuft, wird jede Wiederholung demselben
+  Ereignis zugeschlagen.** Es gibt keine Alarmlawine.
+- **Beenden Sie den Alarm im Portal, ohne den Alarmzustand am Gerät zu
+  verlassen, löst die nächste Wiederholung einen neuen Alarm aus.** Das ist
+  richtig so: Das Gerät meldet weiterhin Alarm.
+- **Beim Entwarnen deshalb zuerst das Gerät zurücksetzen:** rote Taste
+  **zehnmal schnell** drücken. Die rote Leuchte bleibt fünf Sekunden an – dann
+  ist der Alarmzustand verlassen. Erst danach den Alarm im Portal beenden.
+
+Nehmen Sie diesen Handgriff in die Einweisung auf. Wer ihn nicht kennt, endet
+mit einem Alarm, der sich nicht abstellen lässt.
+
+**GPS in Gebäuden:** Der TrackerD ist ein Ortungsgerät. Der Alarm geht über
+LoRaWAN und funktioniert auch drinnen – die Position nicht oder nur veraltet.
+Verlassen Sie sich im Gebäude auf den im Portal hinterlegten Standort des
+Knopfs, nicht auf die mitgeschickten Koordinaten.
+
+## PB01 – der einfache Fall
+
+**Auslösen:** Taste drücken. Das Gerät sendet sofort einen Uplink mit gesetztem
+Alarmfeld – keine Wiederholung, kein Zurücksetzen nötig.
+
+Für den festen Platz an der Wand ist das das passendere Gerät.
 
 ---
 
