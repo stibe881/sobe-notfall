@@ -140,11 +140,29 @@ Im Netzserver des Gateways:
 Der Decoder muss ein Feld liefern, an dem ein Knopfdruck zu erkennen ist. Der
 Alarmserver wertet `alarm`, `button`, `pressed`, `sos`, `panic`, `emergency`,
 `alert`, `press` und ähnliche Namen aus, ebenso Ereignisfelder wie
-`event: "sos"` oder `type: "button_pressed"`. Liefert Ihr Decoder etwas anderes,
-ergänzen Sie im Decoder eine Zeile wie `data.alarm = true`.
+`event: "sos"` oder `type: "button_pressed"`.
 
 Zusätzlich verwertet werden, wenn vorhanden: `battery` (Prozent oder Anteil)
-sowie `latitude`/`longitude`.
+sowie `latitude`/`longitude`. Alles Weitere wird ignoriert.
+
+### Wenn der Decoder des Herstellers andere Namen benutzt
+
+Nehmen Sie den Decoder unverändert und hängen Sie **eine Übersetzungszeile**
+an. So bleibt er bei einem Update des Herstellers austauschbar:
+
+```js
+// ... hier steht der unveränderte Decoder des Herstellers ...
+
+// Übersetzung für SOBE Notfall: heisst das Feld beim Hersteller anders,
+// hier den richtigen Namen einsetzen.
+if (data.press_type === 'long' || data.alarm_status === 1) {
+  data.alarm = true
+}
+```
+
+Welche Felder Ihr Decoder tatsächlich liefert, müssen Sie nicht raten: Das
+Portal zeigt es unter **Integrationen → LoRaWAN → Letzte Uplinks** bei jedem
+eingetroffenen Uplink an (Schritt 7).
 
 ---
 
@@ -199,6 +217,12 @@ eintragen. Für das Token gibt es zwei Wege:
 
 ## 7. Prüfen
 
+Lassen Sie beim Einrichten im Portal **Integrationen → LoRaWAN-Netz /
+Alarmknöpfe** offen. Unter **Letzte Uplinks** erscheint dort jeder eintreffende
+Uplink innert zehn Sekunden – **auch ein abgewiesener**, mit dem Grund im
+Klartext und der Gerätekennung zum Kopieren. Das ist die Antwort auf die Frage,
+die man sonst nicht beantworten kann: Liegt es am Gateway oder am Portal?
+
 **a) Endpunkt von aussen erreichbar** (von einem beliebigen Rechner):
 
 ```bash
@@ -219,9 +243,22 @@ Andere Antworten:
 | `404` kein Alarmknopf … | DevEUI im Portal stimmt nicht mit der gesendeten überein |
 | `422` ohne übersetzte Nutzlast | Payload-Decoder fehlt (Schritt 4.3) |
 
-**b) Echter Knopfdruck.** Knopf drücken. Im Netzserver des Gateways muss der
-Uplink erscheinen **und** die HTTP-Integration als erfolgreich gelten. Im Portal
-läuft dann ein stiller Alarm auf, im **Ereignisprotokoll** steht
+**b) Echter Knopfdruck.** Knopf drücken. Unter **Letzte Uplinks** muss innert
+Sekunden ein Eintrag erscheinen. Steht dort:
+
+- **«Alarm ausgelöst»** – fertig, die Kette steht.
+- **«Statusmeldung»** mit aufgeführten Feldern – der Uplink kam an, aber kein
+  Feld sah nach Alarm aus. Die angezeigten Feldnamen sagen Ihnen, was Sie in der
+  Übersetzungszeile aus Schritt 4 einsetzen müssen.
+- **«Gerät nicht registriert»** – die angezeigte Kennung kopieren und unter
+  **Alarmknöpfe** als Seriennummer eintragen.
+- **«ohne übersetzte Nutzlast»** – der Payload-Decoder fehlt.
+- **«Token abgewiesen»** – der Netzserver schickt ein anderes Token.
+- **gar nichts** – der Uplink hat den Alarmserver nie erreicht. Weiter im
+  Netzserver des Gateways: Kommt der Uplink dort an, und was meldet die
+  HTTP-Integration als Antwort?
+
+Läuft alles, steht im Portal ein stiller Alarm und im **Ereignisprotokoll**
 «Alarmknopf ausgelöst».
 
 Zwei Drücke innerhalb von zwei Minuten gelten absichtlich als **ein** Ereignis –
@@ -259,6 +296,10 @@ Als alleiniger Alarmweg ist er der schwächere.
 ---
 
 ## 9. Fehlersuche
+
+Erste Anlaufstelle ist immer **Integrationen → LoRaWAN → Letzte Uplinks**. Steht
+dort nichts, hat der Alarmserver nie etwas gesehen – dann liegt es am Gateway
+oder am Netzserver, nicht am Portal.
 
 | Beobachtung | Wo zuerst nachsehen |
 | --- | --- |

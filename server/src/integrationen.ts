@@ -376,6 +376,48 @@ export interface LorawanEreignis {
    * gemeldet statt stillschweigend als Statusmeldung verbucht.
    */
   ohneDecoder?: boolean
+  /**
+   * Namen der übersetzten Felder. Nur für die Inbetriebnahme: Daran ist zu
+   * sehen, ob der Payload-Decoder greift und wie er den Knopfdruck nennt.
+   */
+  felder?: string[]
+}
+
+// ---------- Inbetriebnahme: die letzten Uplinks nachvollziehen ----------
+
+export type UplinkErgebnis =
+  | 'alarm' | 'status' | 'unbekanntes-geraet' | 'ohne-decoder' | 'nicht-verstanden' | 'token-falsch'
+
+export interface UplinkSpur {
+  ts: number
+  /** Gerätekennung, wie der Server sie gelesen hat */
+  geraet?: string
+  ergebnis: UplinkErgebnis
+  /** Name des zugeordneten Alarmknopfs, sofern gefunden */
+  knopf?: string
+  /** Namen der übersetzten Felder – zeigt, ob der Payload-Decoder greift */
+  felder?: string[]
+  batteryPct?: number
+}
+
+/**
+ * Die letzten Uplinks – bewusst nur im Arbeitsspeicher.
+ *
+ * Beim Einrichten ist die wichtigste Frage «kommt überhaupt etwas an?», und
+ * ein abgewiesener Uplink hinterliess bisher nirgends eine Spur. Was dauerhaft
+ * festgehalten gehört, steht im Ereignisprotokoll; diese Liste ist eine
+ * Sichthilfe und darf mit dem Server verschwinden.
+ */
+const SPUR_MAX = 25
+const spur: UplinkSpur[] = []
+
+export function merkeUplink(eintrag: Omit<UplinkSpur, 'ts'>): void {
+  spur.unshift({ ts: Date.now(), ...eintrag })
+  if (spur.length > SPUR_MAX) spur.length = SPUR_MAX
+}
+
+export function letzteUplinks(): UplinkSpur[] {
+  return [...spur]
 }
 
 /**
@@ -480,6 +522,7 @@ export function parseLorawanUplink(body: unknown): LorawanEreignis | null {
       alarm: istAlarmNutzlast(nutzlast),
       batteryPct: alsProzent(batterieAus(nutzlast) ?? b.uplink_message?.last_battery_percentage?.value),
       gps: gpsAus(nutzlast),
+      felder: Object.keys(nutzlast),
       ohneDecoder: Object.keys(nutzlast).length === 0 && Boolean(b.uplink_message?.frm_payload),
     }
   }
@@ -492,6 +535,7 @@ export function parseLorawanUplink(body: unknown): LorawanEreignis | null {
       alarm: istAlarmNutzlast(nutzlast),
       batteryPct: alsProzent(batterieAus(nutzlast)),
       gps: gpsAus(nutzlast),
+      felder: Object.keys(nutzlast),
       ohneDecoder: Object.keys(nutzlast).length === 0 && Boolean(b.data),
     }
   }
@@ -507,6 +551,7 @@ export function parseLorawanUplink(body: unknown): LorawanEreignis | null {
       alarm: istAlarmNutzlast(nutzlast),
       batteryPct: alsProzent(batterieAus(nutzlast)),
       gps: gpsAus(nutzlast),
+      felder: Object.keys(nutzlast),
       ohneDecoder: Object.keys(nutzlast).length === 0 && Boolean(b.data),
     }
   }
@@ -519,6 +564,7 @@ export function parseLorawanUplink(body: unknown): LorawanEreignis | null {
       alarm: istAlarmNutzlast(b),
       batteryPct: alsProzent(batterieAus(b)),
       gps: gpsAus(b),
+      felder: Object.keys(b),
     }
   }
   return null

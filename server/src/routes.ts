@@ -9,7 +9,7 @@ import { addClient } from './events.js'
 import { broadcast } from './events.js'
 import { UEBUNG, alarmPush, ausgehendeWebhooks, entwarnungPush, lagemeldungPush, pruefeAlarmknoepfe, testPush } from './engine.js'
 import {
-  erstelleKonferenz, graphToken, lorawanTokenAusRequest, lorawanTokenGueltig,
+  erstelleKonferenz, graphToken, letzteUplinks, lorawanTokenAusRequest, lorawanTokenGueltig, merkeUplink,
   mergeIntegrationen, neuesLorawanToken, normierteSerie, parseLorawanUplink, sendeSms, sendeTeamsKarte,
 } from './integrationen.js'
 import { sendeAlarmKanaele, sendeInfoKanaele } from './kanaele.js'
@@ -846,11 +846,22 @@ const KNOPF_DEBOUNCE_MS = 2 * 60_000
 const decoderGemeldet = new Map<string, number>()
 const DECODER_WARNUNG_MS = 24 * 60 * 60_000
 
+/** Dasselbe für Uplinks von Geräten, die im Portal nicht registriert sind */
+const unbekanntGemeldet = new Map<string, number>()
+
 /**
  * Uplink-Endpunkt für das LoRaWAN-Netz (TTN, ChirpStack) oder GSM-Bridges.
  * Statusmeldungen aktualisieren Batterie und «letztes Signal»; ein Knopfdruck
  * löst den Alarm gemäss der Konfiguration des Knopfs aus.
  */
+/**
+ * Die letzten Uplinks – Sichthilfe für die Inbetriebnahme. Nur Administration,
+ * denn daraus sind Gerätekennungen und Meldeverhalten ablesbar.
+ */
+router.get('/integrations/lorawan/uplinks', auth, adminOnly, (_req, res) => {
+  res.json({ uplinks: letzteUplinks() })
+})
+
 router.post('/hooks/lorawan', async (req, res) => {
   const lorawan = integrations().lorawan
   if (!lorawan.enabled) {
@@ -859,16 +870,27 @@ router.post('/hooks/lorawan', async (req, res) => {
   }
   const token = lorawanTokenAusRequest(req.header('authorization'), typeof req.query.token === 'string' ? req.query.token : undefined)
   if (!lorawanTokenGueltig(lorawan, token)) {
+    merkeUplink({ ergebnis: 'token-falsch' })
     res.status(401).json({ error: 'Ungültiges Zugangstoken.' })
     return
   }
   const ereignis = parseLorawanUplink(req.body)
   if (!ereignis) {
-    res.status(400).json({ error: 'Uplink nicht verstanden – erwartet TTN v3, ChirpStack v4 oder { serial, event, battery, lat, lng }.' })
+    merkeUplink({ ergebnis: 'nicht-verstanden' })
+    res.status(400).json({ error: 'Uplink nicht verstanden – erwartet TTN v3, ChirpStack v4/v3 oder { serial, event, battery, lat, lng }.' })
     return
   }
   const knopf = allButtons().find((b) => normierteSerie(b.serial) === normierteSerie(ereignis.geraet))
   if (!knopf) {
+    // Beim Einrichten der häufigste Fall: Das Gerät funkt, ist im Portal aber
+    // noch nicht angelegt oder die DevEUI weicht ab. Ohne diese Spur suchte
+    // man den Fehler auf der falschen Seite.
+    merkeUplink({ geraet: ereignis.geraet, ergebnis: 'unbekanntes-geraet', felder: ereignis.felder })
+    const zuletzt = unbekanntGemeldet.get(ereignis.geraet) ?? 0
+    if (Date.now() - zuletzt > DECODER_WARNUNG_MS) {
+      unbekanntGemeldet.set(ereignis.geraet, Date.now())
+      addAudit('system', `Uplink von einem nicht registrierten Gerät: ${ereignis.geraet}. Unter «Alarmknöpfe» mit dieser Seriennummer anlegen, damit ein Knopfdruck alarmiert.`)
+    }
     res.status(404).json({ error: `Kein Alarmknopf mit der Seriennummer ${ereignis.geraet} registriert.` })
     return
   }
@@ -890,6 +912,7 @@ router.post('/hooks/lorawan', async (req, res) => {
       decoderGemeldet.set(knopf.id, Date.now())
       addAudit('system', `Alarmknopf ${knopf.name} (${knopf.serial}) sendet ohne übersetzte Nutzlast – im Netzserver fehlt der Payload-Decoder. Ein Knopfdruck löst so keinen Alarm aus.`)
     }
+    merkeUplink({ geraet: ereignis.geraet, ergebnis: 'ohne-decoder', knopf: knopf.name })
     broadcast('state')
     res.status(422).json({
       ok: false,
@@ -900,6 +923,10 @@ router.post('/hooks/lorawan', async (req, res) => {
   }
 
   if (!ereignis.alarm) {
+    merkeUplink({
+      geraet: ereignis.geraet, ergebnis: 'status', knopf: knopf.name,
+      felder: ereignis.felder, batteryPct: aktualisiert.batteryPct,
+    })
     broadcast('state')
     res.json({ ok: true, alarm: null })
     return
@@ -932,6 +959,10 @@ router.post('/hooks/lorawan', async (req, res) => {
     ],
   })
   saveAlarm(alarm)
+  merkeUplink({
+    geraet: ereignis.geraet, ergebnis: 'alarm', knopf: knopf.name,
+    felder: ereignis.felder, batteryPct: aktualisiert.batteryPct,
+  })
   addAudit('alarm', `Alarmknopf ausgelöst: ${knopf.name} (${knopf.serial}) – stille Alarmierung`, knopf.assignedUserId)
   broadcast('state')
   res.json({ ok: true, alarm: alarm.id })

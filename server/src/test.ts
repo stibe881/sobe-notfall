@@ -405,6 +405,16 @@ async function main(): Promise<void> {
     body: JSON.stringify({ applicationID: '1', devEUI: 'LWTEST99', rxInfo: [], data: 'AQ==' }),
   })
   pruefe('Fehlender Payload-Decoder wird als Fehler gemeldet', ohneDecoder.status === 422)
+  const spur = await ruf('/integrations/lorawan/uplinks', { token: adminToken })
+  pruefe('Letzte Uplinks nur für die Administration',
+    spur.status === 200 && (await ruf('/integrations/lorawan/uplinks', { token: peterToken })).status === 403)
+  pruefe('Abgewiesener Uplink hinterlässt eine Spur',
+    spur.body.uplinks.some((u: any) => u.ergebnis === 'ohne-decoder') &&
+    spur.body.uplinks.some((u: any) => u.ergebnis === 'unbekanntes-geraet' && String(u.geraet).includes('XX')) &&
+    spur.body.uplinks.some((u: any) => u.ergebnis === 'token-falsch'))
+  pruefe('Uplink-Spur nennt die übersetzten Felder',
+    spur.body.uplinks.some((u: any) => Array.isArray(u.felder) && u.felder.includes('battery')))
+
   pruefe('Fehlender Payload-Decoder steht im Ereignisprotokoll',
     (await ruf('/state', { token: adminToken })).body.audit.some((e: any) => String(e.message).includes('Payload-Decoder')))
 

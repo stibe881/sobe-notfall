@@ -259,6 +259,16 @@ export const api = {
   lorawanInfo: () =>
     anfrage<{ url: string; token: string | null; enabled: boolean; provider: string }>('/integrations/lorawan'),
   lorawanNewToken: () => anfrage<{ token: string }>('/integrations/lorawan/token', { method: 'POST' }),
+  /** Die letzten Uplinks – Sichthilfe beim Einrichten des Netzservers */
+  lorawanUplinks: () =>
+    anfrage<{ uplinks: {
+      ts: number
+      geraet?: string
+      ergebnis: 'alarm' | 'status' | 'unbekanntes-geraet' | 'ohne-decoder' | 'nicht-verstanden' | 'token-falsch'
+      knopf?: string
+      felder?: string[]
+      batteryPct?: number
+    }[] }>('/integrations/lorawan/uplinks'),
 
   triggerAlarm: (daten: Record<string, unknown>) =>
     anfrage<{ alarm: AppState['alarms'][number]; merged?: boolean }>('/alarms', { method: 'POST', body: JSON.stringify(daten) }),

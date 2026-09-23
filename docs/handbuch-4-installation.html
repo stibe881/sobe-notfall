@@ -719,6 +719,23 @@ footer .adressfuss { margin-top: 22px; }
       spielen keine Rolle.</li>
     <li>Mit <span class="ui">Auslösen (Test)</span> die Kette prüfen, danach am Gerät selbst.</li>
   </ol>
+  <div class="hinweis">
+    <p class="marke-klein">Beim Einrichten: Letzte Uplinks</p>
+    <p>
+      Unter <span class="ui">Integrationen &rsaquo; LoRaWAN-Netz / Alarmknöpfe</span> steht
+      die Liste <span class="ui">Letzte Uplinks</span>. Dort erscheint jeder eintreffende
+      Uplink innert zehn Sekunden &ndash; auch ein abgewiesener, mit dem Grund im Klartext,
+      der Gerätekennung zum Kopieren und den Namen der übersetzten Felder. Damit ist die
+      Frage beantwortet, die sich sonst nicht beantworten lässt: Liegt es am Gateway oder
+      am Portal? Steht dort nichts, hat der Alarmserver nie etwas gesehen.
+    </p>
+    <p>
+      Die Liste hält nur die jüngsten Meldungen und verschwindet mit einem Neustart des
+      Servers &ndash; sie ist eine Sichthilfe, kein Protokoll. Was dauerhaft festgehalten
+      gehört, steht im <span class="ui">Ereignisprotokoll</span>: ein Gerät ohne
+      Payload-Decoder ebenso wie ein Uplink von einer nicht registrierten Kennung.
+    </p>
+  </div>
   <p>
     Verstanden werden die Formate von <b>The Things Network v3</b>, <b>ChirpStack v4</b>,
     <b>ChirpStack v3</b> &ndash; das ist auch der in Gateways eingebaute Netzserver &ndash;

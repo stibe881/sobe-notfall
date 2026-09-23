@@ -1159,6 +1159,91 @@ function SsoEinstellungen() {
   )
 }
 
+type Uplink = Awaited<ReturnType<typeof api.lorawanUplinks>>['uplinks'][number]
+
+/** Wie ein Uplink ausgegangen ist – Klartext statt Statuscode */
+const UPLINK_ERGEBNIS: Record<Uplink['ergebnis'], { text: string; farbe: 'green' | 'amber' | 'red' | 'slate'; rat?: string }> = {
+  alarm: { text: 'Alarm ausgelöst', farbe: 'green' },
+  status: { text: 'Statusmeldung', farbe: 'slate' },
+  'unbekanntes-geraet': {
+    text: 'Gerät nicht registriert', farbe: 'red',
+    rat: 'Unter «Alarmknöpfe» einen Knopf mit genau dieser Seriennummer anlegen.',
+  },
+  'ohne-decoder': {
+    text: 'ohne übersetzte Nutzlast', farbe: 'red',
+    rat: 'Im Netzserver fehlt der Payload-Decoder des Geräts – ein Knopfdruck bleibt so unerkannt.',
+  },
+  'nicht-verstanden': {
+    text: 'Format nicht verstanden', farbe: 'red',
+    rat: 'Erwartet werden TTN v3, ChirpStack v4/v3 oder { serial, event, battery, lat, lng }.',
+  },
+  'token-falsch': {
+    text: 'Token abgewiesen', farbe: 'red',
+    rat: 'Der Netzserver sendet ein anderes Token als das hier hinterlegte.',
+  },
+}
+
+/**
+ * Die letzten Uplinks.
+ *
+ * Beim Einrichten ist die entscheidende Frage, ob überhaupt etwas ankommt –
+ * und wenn ja, woran es scheitert. Ohne diese Liste sucht man den Fehler
+ * abwechselnd im Gateway und im Portal, ohne je zu sehen, wo er liegt.
+ */
+function UplinkSpur({ uplinks, kopieren, kopiert }: {
+  uplinks: Uplink[] | null
+  kopieren: (wert: string, was: string) => void
+  kopiert: string | null
+}) {
+  if (!uplinks) return null
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-3">
+      <div className="text-xs font-semibold text-slate-600 mb-1">Letzte Uplinks</div>
+      {uplinks.length === 0 ? (
+        <p className="text-xs text-slate-500">
+          Noch nichts eingetroffen. Sobald der Netzserver den ersten Uplink schickt, erscheint er hier –
+          auch dann, wenn er abgewiesen wird. Die Liste wird alle zehn Sekunden aufgefrischt und hält
+          nur die jüngsten Meldungen; sie ist eine Hilfe beim Einrichten, kein Protokoll.
+        </p>
+      ) : (
+        <ul className="divide-y divide-slate-100">
+          {uplinks.map((u, i) => {
+            const art = UPLINK_ERGEBNIS[u.ergebnis]
+            return (
+              <li key={`${u.ts}-${i}`} className="py-1.5 text-xs">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-slate-400 tabular-nums">{formatDateTime(u.ts)}</span>
+                  <Badge color={art.farbe}>{art.text}</Badge>
+                  {u.knopf && <span className="text-slate-600">{u.knopf}</span>}
+                  {u.geraet && (
+                    <>
+                      <code className="bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5">{u.geraet}</code>
+                      <button
+                        type="button"
+                        className="text-slate-400 hover:text-slate-600"
+                        onClick={() => kopieren(u.geraet!, `uplink-${u.ts}`)}
+                        aria-label="Seriennummer kopieren"
+                      >
+                        <Copy size={12} />
+                      </button>
+                      {kopiert === `uplink-${u.ts}` && <span className="text-emerald-700">kopiert</span>}
+                    </>
+                  )}
+                  {typeof u.batteryPct === 'number' && <span className="text-slate-400">{u.batteryPct} %</span>}
+                </div>
+                {art.rat && <div className="text-alarm-600 mt-0.5">{art.rat}</div>}
+                {u.felder && u.felder.length > 0 && (
+                  <div className="text-slate-400 mt-0.5">Übersetzte Felder: {u.felder.join(', ')}</div>
+                )}
+              </li>
+            )
+          })}
+        </ul>
+      )}
+    </div>
+  )
+}
+
 function LorawanEinstellungen() {
   const { state, dispatch } = useStore()
   const integ = state.integrations
@@ -1166,10 +1251,21 @@ function LorawanEinstellungen() {
   const [info, setInfo] = useState<{ url: string; token: string | null } | null>(null)
   const [fehler, setFehler] = useState<string | null>(null)
   const [kopiert, setKopiert] = useState<string | null>(null)
+  const [uplinks, setUplinks] = useState<Uplink[] | null>(null)
 
   useEffect(() => {
     if (!lorawan.enabled) return
     api.lorawanInfo().then((i) => setInfo({ url: i.url, token: i.token })).catch((f: Error) => setFehler(f.message))
+  }, [lorawan.enabled])
+
+  // Beim Einrichten alle zehn Sekunden nachsehen: So sieht man den Uplink
+  // eintreffen, während man neben dem Gerät steht.
+  useEffect(() => {
+    if (!lorawan.enabled) return
+    const holen = () => api.lorawanUplinks().then((u) => setUplinks(u.uplinks)).catch(() => {})
+    void holen()
+    const takt = setInterval(holen, 10_000)
+    return () => clearInterval(takt)
   }, [lorawan.enabled])
 
   async function neuesToken() {
@@ -1264,6 +1360,7 @@ function LorawanEinstellungen() {
               {fehler && <div className="text-xs text-alarm-600">{fehler}</div>}
             </div>
           )}
+          <UplinkSpur uplinks={uplinks} kopieren={kopieren} kopiert={kopiert} />
           <p className="text-xs text-slate-400">
             Im Netzserver einen Webhook auf den Endpunkt einrichten (Kopfzeile «Authorization: Bearer &lt;Token&gt;»).
             Der Server versteht TTN v3, ChirpStack v4 und v3 sowie generisches JSON. Statusmeldungen aktualisieren Batterie und

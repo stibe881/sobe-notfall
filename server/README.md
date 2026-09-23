@@ -289,6 +289,7 @@ Alle Endpunkte unter `/api`, Authentifizierung über `Authorization: Bearer <tok
 | POST | `/integrations` | Gateways und Webhooks (nur Administration) |
 | POST | `/integrations/sms/test`, `/integrations/teams/test`, `/integrations/telephony/test` | Verbindungstests der Gateways (nur Administration) |
 | GET/POST | `/integrations/lorawan`, `/integrations/lorawan/token` | LoRaWAN-Endpunkt: Adresse und Zugangstoken (nur Administration) |
+| GET | `/integrations/lorawan/uplinks` | Die letzten 25 Uplinks samt Ergebnis – Sichthilfe beim Einrichten, nur im Arbeitsspeicher (nur Administration) |
 | POST | `/hooks/lorawan` | Uplink der Alarmknöpfe (Token statt Anmeldung; TTN v3, ChirpStack v4/v3 oder generisches JSON) |
 | POST | `/graph/callback` | Rückrufe der Microsoft-Graph-Anrufschnittstelle |
 | POST | `/geo/report` | Geofencing: Aufenthaltsmeldung der App (nur Standort-Name oder null) |
