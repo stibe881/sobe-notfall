@@ -117,7 +117,7 @@ export default function Buttons() {
                   <div className="font-semibold text-slate-800">{b.name}</div>
                   <div className="text-xs text-slate-400">{b.serial}</div>
                   <div className="flex gap-1.5 mt-1.5 flex-wrap">
-                    <Badge color={b.type === 'lorawan' ? 'blue' : 'violet'}>{b.type === 'lorawan' ? 'LoRaWAN' : 'GSM + GPS'}</Badge>
+                    <Badge color={b.type === 'lorawan' ? 'blue' : 'violet'}>{b.type === 'lorawan' ? 'LoRaWAN' : 'Mobilfunk'}</Badge>
                     <Badge color={nieGemeldet ? 'slate' : batterieSchwach ? 'red' : 'green'}>
                       <BatteryIcon size={12} /> {nieGemeldet ? 'unbekannt' : `${b.batteryPct} %`}
                     </Badge>
@@ -171,11 +171,15 @@ function ButtonEditor({ button, onClose }: { button: AlarmButton; onClose: () =>
         <input className={inputClass} value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
       </Field>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Field label="Typ">
+        <Field label="Funkweg">
           <select className={inputClass} value={draft.type} onChange={(e) => setDraft({ ...draft, type: e.target.value as AlarmButton['type'] })}>
-            <option value="lorawan">LoRaWAN (Batterie &gt; 4 Jahre)</option>
-            <option value="gsm">GSM mit GPS-Tracking</option>
+            <option value="lorawan">LoRaWAN – über das eigene Gateway</option>
+            <option value="gsm">Mobilfunk – mit eigener SIM-Karte</option>
           </select>
+          <p className="text-xs text-slate-500 mt-1">
+            Nur zur Unterscheidung in der Liste. Batterielaufzeit und GPS hängen am Gerät,
+            nicht am Funkweg – ein LoRaWAN-Ortungsgerät hält Tage, ein einfacher Knopf Jahre.
+          </p>
         </Field>
         <Field label="DevEUI / Seriennummer">
           <input
