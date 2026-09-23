@@ -102,12 +102,29 @@ function NoWebAccess() {
   )
 }
 
+/** Wie oft im Hintergrund nachgesehen wird, ob eine Aktualisierung vorliegt */
+const UPDATE_PRUEF_INTERVALL_MS = 10 * 60_000
+
 function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const { state, dispatch, logout, serverStatus } = useStore()
   const currentUser = state.users.find((u) => u.id === state.currentUserId) ?? state.users[0]
   const activeAlarms = state.alarms.filter((a) => a.status === 'active')
   const [updateOffen, setUpdateOffen] = useState(false)
+  const [hinterher, setHinterher] = useState<number | null>(null)
   const zeigeUpdate = currentUser.role === 'admin'
+
+  // Regelmässig im Hintergrund nachsehen, ob der Server hinter origin zurückliegt –
+  // dieselbe Prüfung, die der Aktualisierungs-Dialog beim Öffnen ohnehin macht.
+  useEffect(() => {
+    if (!zeigeUpdate) return
+    let abgebrochen = false
+    const pruefen = () => {
+      api.updateStatus().then(({ version }) => { if (!abgebrochen) setHinterher(version.hinterher) }).catch(() => {})
+    }
+    pruefen()
+    const intervall = setInterval(pruefen, UPDATE_PRUEF_INTERVALL_MS)
+    return () => { abgebrochen = true; clearInterval(intervall) }
+  }, [zeigeUpdate])
 
   return (
     <div className="h-full w-72 lg:w-64 bg-slate-900 text-slate-300 flex flex-col">
@@ -189,10 +206,22 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
             className="w-full flex items-center justify-center gap-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-medium py-2.5 transition"
           >
             <Download size={15} /> Aktualisierung
+            {!!hinterher && (
+              <span className="bg-amber-500 text-slate-900 text-xs font-bold rounded-full px-1.5 py-0.5" title={`${hinterher} Commit${hinterher > 1 ? 's' : ''} verfügbar`}>
+                {hinterher}
+              </span>
+            )}
           </button>
         </div>
       )}
-      {updateOffen && <UpdateDialog onClose={() => setUpdateOffen(false)} />}
+      {updateOffen && (
+        <UpdateDialog
+          onClose={() => {
+            setUpdateOffen(false)
+            api.updateStatus().then(({ version }) => setHinterher(version.hinterher)).catch(() => {})
+          }}
+        />
+      )}
 
       <div className="px-5 py-4 border-t border-slate-800 text-xs">
         <div className="text-slate-500 mb-1">Angemeldet als</div>
