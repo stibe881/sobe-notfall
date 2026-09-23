@@ -391,16 +391,52 @@ Sie dort den Schlüssel **dieses** Geräts ein; der Schlüssel aus Schritt 6a
 gilt dann nur als Vorgabe. Zwei Geräte desselben Modells haben **verschiedene**
 AppKeys – deshalb steht die Anwendung auf `Separate Application keys`.
 
-Speichern. Dann den Knopf **anlernen**: bei den meisten Modellen ein langer
-Tastendruck von 5 bis 10 Sekunden, bis eine Leuchte blinkt. Das Datenblatt sagt
-es genau.
+Speichern. Dann den Knopf **anlernen**. Wie, sagt das Datenblatt des Modells –
+verwechseln Sie es nicht mit der Alarmauslösung:
+
+| Gerät | Anlernen (Beitritt) | Alarm auslösen |
+| --- | --- | --- |
+| **Dragino TrackerD** | **kurzer Tastendruck** – das Gerät meldet sich damit am Netz an. Es läuft, sobald der Akku geladen oder USB angeschlossen ist | rote Taste **länger als 5 Sekunden** halten |
+| **Dragino PB01** | Tastendruck | Tastendruck |
+
+Beim TrackerD zeigen die Leuchten, was geschieht:
+
+| Leuchte | Bedeutung |
+| --- | --- |
+| Grün, ein kurzes Blitzen (200 ms) | Beitrittsanfrage gesendet – das Gerät funkt |
+| **Grün, 5 Sekunden an** | **Beitritt gelungen** |
+| gar nichts | Gerät aus, Akku leer oder im Tiefschlaf |
 
 **Geprüft, wenn:** Beim Gerät `Last seen` gesetzt ist oder unter `LoRaWAN
-frames` / `Device data` ein Join-Vorgang steht.
+frames` / `Device data` ein Beitritt steht.
 
-Klappt es nicht: Der Knopf muss beim Anlernen in Reichweite sein – legen Sie ihn
-für den ersten Versuch neben das Gateway. Danach prüfen Sie den Empfang an der
-vorgesehenen Stelle.
+### Wenn «Last seen» auf «Never» bleibt
+
+Arbeiten Sie diese Reihenfolge ab – sie trennt Geräteseite von Netzserverseite:
+
+1. **Strom.** Fabrikneue Geräte sind leer. USB anschliessen; der TrackerD läuft,
+   sobald er Strom hat.
+2. **Tiefschlaf?** Der TrackerD geht schlafen, wenn man die Taste zehn Sekunden
+   hält und dann dreimal kurz drückt – beim Herumprobieren schnell passiert.
+   **Reset-Taste** drücken, dann ist er wieder wach.
+3. **Leuchtet es grün beim Tastendruck?**
+   - **Nein** → Das Gerät funkt gar nicht. Zurück zu 1 und 2.
+   - **Ja, kurz, aber kein Fünf-Sekunden-Grün** → Das Gerät funkt, bekommt aber
+     keine Antwort. Weiter mit 4.
+4. **Frequenzband.** Der TrackerD wird als EU868, US915, AU915 und AS923
+   verkauft – **das Band steckt in der Firmware und lässt sich nicht umstellen.**
+   Auf dem Etikett nachsehen: Steht dort nicht EU868, funktioniert das Gerät in
+   der Schweiz nicht.
+5. **Application Key.** Der häufigste Fehler: 32 Zeichen, und eine Verwechslung
+   von `0`/`O` oder `1`/`I` genügt. **Wurde er versehentlich mit «Autogenerate»
+   erzeugt, ist er garantiert falsch** – dann den Schlüssel vom Etikett
+   eintragen und erneut anlernen.
+6. **Funkprotokoll des Gateways** (`LoRaWAN frames`, `Live data`, `Packet
+   Logger`). Stehen dort Beitrittsanfragen, das Gerät bleibt aber «Never», ist
+   es der Schlüssel. Steht dort nichts, ist es Band, Strom oder Reichweite.
+
+Legen Sie das Gerät für den ersten Versuch **neben das Gateway**. Den Empfang am
+vorgesehenen Montageort prüfen Sie erst, wenn der Beitritt steht.
 
 ---
 
@@ -560,6 +596,10 @@ Der Alarmserver erkennt das Alarmfeld unabhängig von der Schreibweise – der
 TrackerD schreibt `ALARM` gross, der PB01 `alarm` klein.
 
 ## TrackerD – der Alarmzustand bleibt
+
+**Einschalten und anlernen:** Der TrackerD läuft, sobald der Akku geladen oder
+USB angeschlossen ist; ein **kurzer Tastendruck** meldet ihn am Netz an. Grünes
+Blitzen heisst «funkt», grünes Dauerlicht für fünf Sekunden heisst «beigetreten».
 
 **Auslösen:** rote Taste **länger als 5 Sekunden** halten.
 
