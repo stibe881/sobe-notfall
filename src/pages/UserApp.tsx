@@ -1535,7 +1535,8 @@ function ProfileTab() {
 
       <HandbuchKarte rolle={me.role} />
 
-      <PasswordCard />
+      {/* Meldet sich diese Person über Microsoft an, gibt es kein Konto-Passwort zu ändern */}
+      {state.session?.via !== 'sso' && <PasswordCard />}
 
       <button
         className="w-full rounded-2xl border border-slate-200 bg-white text-slate-600 py-3 font-semibold flex items-center justify-center gap-2 hover:bg-slate-50 transition"

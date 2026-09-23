@@ -1528,7 +1528,8 @@ export function ProfileScreen() {
         </View>
       </Card>
 
-      <PasswordCard />
+      {/* Meldet sich diese Person über Microsoft an, gibt es kein Konto-Passwort zu ändern */}
+      {state.session?.via !== 'sso' && <PasswordCard />}
 
       <Card>
         <View style={styles.row}>
