@@ -441,6 +441,23 @@ KOERPER = r"""
       Kleinschreibung sowie Bindestriche spielen keine Rolle.</li>
     <li>Mit <span class="ui">Auslösen (Test)</span> die Kette prüfen, danach am Gerät selbst.</li>
   </ol>
+  <div class="hinweis">
+    <p class="marke-klein">Haltezeit der Alarmtaste</p>
+    <p>
+      Wie lange eine Taste gedrückt werden muss, entscheidet das Gerät. Geändert
+      wird es mit einem <b>Downlink</b> &ndash; einem Funkbefehl, den der Netzserver im
+      Gateway in die Warteschlange legt. Das Portal bildet den fertigen Befehl beim
+      Knopf unter <span class="ui">Haltezeit der Alarmtaste</span>; gesendet wird er im
+      Gateway unter <span class="ui">Downlink</span>.
+    </p>
+    <p>
+      <b>Der Alarmserver kann den Befehl nicht selbst senden.</b> Das Gateway steht im
+      Haus hinter dem Router, der Alarmserver beim Hoster &ndash; alle Verbindungen
+      gehen von innen nach aussen. Genau das macht die Einrichtung einfach und
+      verschliesst zugleich den Rückweg. Und: Ein Downlink erreicht ein Gerät erst nach
+      dessen nächstem Uplink, denn es hört nur kurz nach dem eigenen Senden zu.
+    </p>
+  </div>
   <div class="hinweis hinweis--warnung">
     <p class="marke-klein">Laut oder still &ndash; eine bewusste Entscheidung</p>
     <p>

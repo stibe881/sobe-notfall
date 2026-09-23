@@ -1,10 +1,74 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { BatteryLow, BatteryMedium, BatteryFull, MapPin, Pencil, Plus, Radio, Trash2, Zap, PlugZap, Check } from 'lucide-react'
+import { BatteryLow, BatteryMedium, BatteryFull, Copy, MapPin, Pencil, Plus, Radio, Trash2, Zap, PlugZap, Check } from 'lucide-react'
 import { createAlarm, uid, useStore } from '../store'
 import { api } from '../lib/api'
+import { HALTEZEIT, haltezeitBefehl } from '../lib/geraetebefehle'
 import type { AlarmButton } from '../types'
 import { Badge, Button, Card, Field, Modal, Toggle, formatDateTime, inputClass, useConfirm } from '../components/ui'
+
+/**
+ * Haltezeit der Alarmtaste.
+ *
+ * Die Zeit steckt im Gerät, nicht im Alarmserver – und der Alarmserver kann sie
+ * nicht setzen: Das Gateway steht im Haus hinter dem Router, er beim Hoster.
+ * Alle Verbindungen gehen von innen nach aussen, ein Rückweg besteht nicht.
+ *
+ * Was das Portal abnehmen kann, ist die Rechnerei: Es bildet den fertigen
+ * Funkbefehl, der im Gateway nur noch einzufügen ist. Der Wert wird bewusst
+ * **nicht gespeichert** – das Portal weiss nicht, ob der Befehl je ankam, und
+ * eine gespeicherte Zahl sähe aus wie eine Tatsache.
+ */
+function Haltezeitrechner({ geraetetyp }: { geraetetyp?: string }) {
+  const grenzen = geraetetyp ? HALTEZEIT[geraetetyp] : undefined
+  const [wert, setWert] = useState<number>(grenzen?.werk ?? 0)
+  const [kopiert, setKopiert] = useState(false)
+  useEffect(() => { setWert(grenzen?.werk ?? 0) }, [geraetetyp])
+  if (!grenzen) return null
+  const befehl = haltezeitBefehl(geraetetyp, wert)
+  if (!befehl) return null
+
+  return (
+    <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
+      <div className="text-xs font-semibold text-slate-600 mb-1">Haltezeit der Alarmtaste</div>
+      <p className="text-xs text-slate-500 mb-2.5">
+        Wie lange gedrückt werden muss, entscheidet das Gerät. Der Alarmserver kann es nicht
+        einstellen – er erreicht das Gateway nicht. Hier entsteht der Funkbefehl dafür.
+      </p>
+      <div className="flex items-end gap-2 flex-wrap">
+        <Field label={grenzen.einheit} className="w-32">
+          <input
+            type="number" className={inputClass}
+            min={grenzen.min} max={grenzen.max} step={grenzen.schritt}
+            value={wert}
+            onChange={(e) => setWert(Number(e.target.value))}
+          />
+        </Field>
+        <div className="flex items-center gap-2 pb-1">
+          <code className="text-xs bg-white border border-slate-200 rounded px-2 py-1.5">{befehl.downlink}</code>
+          <Button
+            variant="ghost"
+            onClick={() => {
+              navigator.clipboard?.writeText(befehl.downlink).then(() => {
+                setKopiert(true)
+                setTimeout(() => setKopiert(false), 2000)
+              })
+            }}
+            aria-label="Befehl kopieren"
+          ><Copy size={13} /></Button>
+          {kopiert && <span className="text-xs text-emerald-700">kopiert</span>}
+        </div>
+      </div>
+      <p className="text-xs text-slate-500 mt-2">
+        Im Gateway beim Gerät auf <span className="font-medium">Downlink</span>, FPort <code>1</code>,
+        den Befehl bei <span className="font-medium">HEX Bytes</span> einfügen und senden.
+        <b> Er erreicht das Gerät erst nach dessen nächstem Uplink</b> – danach einmal die Taste drücken.
+        Über Kabel geht auch <code>{befehl.at}</code>.
+      </p>
+      {grenzen.vorbehalt && <p className="text-xs text-amber-700 mt-1">{grenzen.vorbehalt}</p>}
+    </div>
+  )
+}
 
 export default function Buttons() {
   const { state, dispatch } = useStore()
@@ -250,6 +314,7 @@ function ButtonEditor({ button, onClose }: { button: AlarmButton; onClose: () =>
           ))}
         </div>
       </Field>
+      <Haltezeitrechner geraetetyp={draft.geraetetyp} />
       <div className="mt-4">
         <Toggle
           checked={draft.silent ?? false}

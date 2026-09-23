@@ -643,6 +643,13 @@ zwischen 0 und 10 Sekunden einstellen:
 Der Funkweg ist der bequemere: Im Gateway beim Gerät auf den Reiter
 **`Downlink`**, dort die Hex-Bytes eintragen und senden.
 
+Den Befehl müssen Sie nicht von Hand ausrechnen: Im Portal steht beim Knopf
+unter **Haltezeit der Alarmtaste** ein Feld für die gewünschte Zeit, daneben
+die fertigen Hex-Bytes zum Kopieren. Senden müssen Sie sie weiterhin im
+Gateway – **der Alarmserver kann das nicht**, denn das Gateway steht hinter
+Ihrem Router, er beim Hoster, und alle Verbindungen gehen von innen nach
+aussen.
+
 > **Ein Downlink erreicht das Gerät erst nach dem nächsten Uplink.** Ein
 > Class-A-Gerät hört nur kurz nach dem eigenen Senden zu. Der Befehl bleibt
 > also in der Warteschlange, bis das Gerät sich das nächste Mal meldet –
