@@ -405,6 +405,9 @@ Beim TrackerD zeigen die Leuchten, was geschieht:
 | --- | --- |
 | Grün, ein kurzes Blitzen (200 ms) | Beitrittsanfrage gesendet – das Gerät funkt |
 | **Grün, 5 Sekunden an** | **Beitritt gelungen** |
+| Blau, blinkend | sucht GPS – im Gebäude meist vergeblich. Der Alarm ist da längst gesendet |
+| Grün, zweimal | Position gefunden und übertragen |
+| Rot, zweimal | keine Position gefunden – kein Fehler, nur kein Satellitenempfang |
 | gar nichts | Gerät aus, Akku leer oder im Tiefschlaf |
 
 **Geprüft, wenn:** Beim Gerät `Last seen` gesetzt ist oder unter `LoRaWAN
@@ -620,6 +623,10 @@ mit einem Alarm, der sich nicht abstellen lässt.
 
 **GPS in Gebäuden:** Der TrackerD ist ein Ortungsgerät. Der Alarm geht über
 LoRaWAN und funktioniert auch drinnen – die Position nicht oder nur veraltet.
+Nach dem Auslösen blinkt das Gerät blau und sucht Satelliten; drinnen endet das
+meist mit zweimal Rot. Für die Alarmierung spielt das keine Rolle: Sie ist zu
+diesem Zeitpunkt bereits zugestellt. Der Alarmserver wertet die Koordinaten des
+TrackerD bewusst nicht aus.
 Verlassen Sie sich im Gebäude auf den im Portal hinterlegten Standort des
 Knopfs, nicht auf die mitgeschickten Koordinaten.
 
