@@ -632,10 +632,21 @@ export function parseLorawanUplink(body: unknown): LorawanEreignis | null {
   return null
 }
 
-/** Token-Prüfung für den Uplink-Endpunkt: Authorization-Kopf oder ?token= */
+/**
+ * Token aus der Anfrage lesen: Authorization-Kopfzeile oder ?token=.
+ *
+ * Das «Bearer » davor ist geduldet, aber nicht verlangt. Manche Gateways lassen
+ * im Kopfzeilen-Wert kein Leerzeichen zu – dort lässt sich nur das nackte Token
+ * eintragen. Es deswegen abzuweisen hiesse, die Einrichtung in die Adresszeile
+ * zu drängen, wo das Token in Protokolldateien landet.
+ */
 export function lorawanTokenAusRequest(authHeader: string | undefined, queryToken: string | undefined): string {
-  if (authHeader?.startsWith('Bearer ')) return authHeader.slice(7)
-  return queryToken ?? ''
+  const kopf = authHeader?.trim() ?? ''
+  if (kopf) {
+    const ohnePraefix = /^bearer\s+/i.test(kopf) ? kopf.replace(/^bearer\s+/i, '') : kopf
+    if (ohnePraefix.trim()) return ohnePraefix.trim()
+  }
+  return queryToken?.trim() ?? ''
 }
 
 export function lorawanTokenGueltig(lorawan: LorawanSettings, token: string): boolean {

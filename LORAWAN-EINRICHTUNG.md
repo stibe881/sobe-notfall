@@ -296,28 +296,44 @@ erscheinen die Felder.
 | Uplink data URL / Event endpoint URL | `https://temp-gross-ict.ch/api/hooks/lorawan` |
 | Format, falls wählbar | **`JSON`** |
 
-Für das **Token** gibt es zwei Wege. Nehmen Sie den ersten, wenn Ihre Oberfläche
-ihn anbietet:
+Für das **Token** gibt es drei Wege, in dieser Reihenfolge zu versuchen:
 
-**Weg 1 – Kopfzeile (bevorzugt).** Gibt es einen Bereich `Headers` mit
-Schlüssel/Wert-Paaren:
+**Weg 1 – Kopfzeile.** Im Bereich `Headers`:
 
 | Header name | Header value |
 | --- | --- |
 | `Authorization` | `Bearer IHR-TOKEN` |
 
-Das Wort `Bearer`, ein Leerzeichen, dann das Token – genau so.
+**Weg 2 – Kopfzeile ohne «Bearer».** Lehnt das Formular den Wert ab, tragen Sie
+**nur das Token** ein, ohne `Bearer` und ohne Leerzeichen:
 
-**Weg 2 – in der Adresse.** Erlaubt die Oberfläche keine eigenen Kopfzeilen,
-hängen Sie das Token an die Adresse:
+| Header name | Header value |
+| --- | --- |
+| `Authorization` | `IHR-TOKEN` |
+
+Der Alarmserver akzeptiert beides. Manche Gateways prüfen Kopfzeilen-Werte gegen
+ein Muster, das kein Leerzeichen zulässt – dann scheitert Weg 1 am Leerzeichen
+hinter `Bearer`, und zwar oft mit einer Fehlermeldung, die das Feld nicht nennt.
+
+**Weg 3 – in der Adresse.** Geht die Kopfzeile gar nicht, hängen Sie das Token
+an **beide** URL-Felder:
 
 ```
 https://temp-gross-ict.ch/api/hooks/lorawan?token=IHR-TOKEN
 ```
 
-Funktioniert gleichwertig. Das Token steht dann allerdings in Protokolldateien;
-erneuern Sie es gelegentlich über **`Neues Token erzeugen`** im Portal – und
-denken Sie daran, es danach hier nachzutragen.
+Funktioniert gleichwertig, ist aber die schlechteste der drei Möglichkeiten: Das
+Token steht dann in Protokolldateien. Erneuern Sie es dann gelegentlich über
+**`Neues Token erzeugen`** im Portal – und tragen Sie es danach hier nach.
+
+> **«There are invalid fields» ohne Angabe des Feldes?**
+>
+> Schalten Sie `Enable HTTP/HTTPS Integration Parameters` probeweise aus und
+> speichern Sie. Geht es dann durch, liegt es an diesem Block – und dort zuerst
+> am Leerzeichen im Kopfzeilen-Wert (Weg 2). Lässt sich die Anwendung auch ohne
+> den Block nicht speichern, nehmen Sie Umlaute und Sonderzeichen aus Name und
+> Beschreibung: Diese Oberfläche läuft auf OpenWRT und prüft Textfelder teils
+> gegen reines ASCII.
 
 Gibt es mehrere Ereignisarten (`uplink`, `join`, `status`, `ack`, `error`): Es
 genügt **`uplink`**. Die übrigen schaden nicht, der Alarmserver ignoriert sie.

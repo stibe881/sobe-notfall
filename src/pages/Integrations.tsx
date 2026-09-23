@@ -1362,7 +1362,8 @@ function LorawanEinstellungen() {
           )}
           <UplinkSpur uplinks={uplinks} kopieren={kopieren} kopiert={kopiert} />
           <p className="text-xs text-slate-400">
-            Im Netzserver einen Webhook auf den Endpunkt einrichten (Kopfzeile «Authorization: Bearer &lt;Token&gt;»).
+            Im Netzserver einen Webhook auf den Endpunkt einrichten (Kopfzeile «Authorization: Bearer &lt;Token&gt;»;
+            lässt das Gateway im Wert kein Leerzeichen zu, genügt das nackte Token, notfalls «?token=» in der Adresse).
             Der Server versteht TTN v3, ChirpStack v4 und v3 sowie generisches JSON. Statusmeldungen aktualisieren Batterie und
             «letztes Signal» der unter «Alarmknöpfe» registrierten Geräte (Zuordnung über die Seriennummer/DevEUI);
             ein Knopfdruck löst den dort hinterlegten stillen Alarm aus. Ohne Payload-Decoder im Netzserver

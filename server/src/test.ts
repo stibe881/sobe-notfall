@@ -406,6 +406,21 @@ async function main(): Promise<void> {
     typeof nachEnde.body.alarm === 'string' && nachEnde.body.alarm !== drAlarm.body.alarm)
   await ruf(`/alarms/${nachEnde.body.alarm}/end`, { method: 'POST', token: adminToken })
 
+  // Manche Gateways lassen im Kopfzeilen-Wert kein Leerzeichen zu: Das nackte
+  // Token ohne «Bearer » muss deshalb genauso gelten.
+  const nacktesToken = await fetch(`${BASIS}/api/hooks/lorawan`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', authorization: lwToken.body.token },
+    body: JSON.stringify({ serial: 'LW-TEST-99', battery: 0.5 }),
+  })
+  pruefe('Token ohne «Bearer» in der Kopfzeile gilt auch', nacktesToken.status === 200)
+  const falschesToken = await fetch(`${BASIS}/api/hooks/lorawan`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', authorization: 'Bearer  falsch' },
+    body: JSON.stringify({ serial: 'LW-TEST-99', battery: 0.5 }),
+  })
+  pruefe('Falsches Token bleibt abgewiesen', falschesToken.status === 401)
+
   // --- Rohe Nutzlast: Der Alarmserver übersetzt bekannte Modelle selbst ---
   // Alarm & BAT des TrackerD: 1 Bit reserviert, 1 Bit Alarm, 14 Bit Millivolt.
   // 0x0FA2 = 4002 mV ohne Alarm, 0x4FA2 = dasselbe mit gesetztem Alarmbit.

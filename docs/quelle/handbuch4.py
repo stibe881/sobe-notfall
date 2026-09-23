@@ -431,7 +431,10 @@ KOERPER = r"""
       den Endpunkt einschalten und ein <b>Token erzeugen</b>. Endpunkt-Adresse und Token
       werden dort angezeigt und lassen sich kopieren.</li>
     <li>Im Netzserver einen <b>Webhook</b> auf diese Adresse einrichten und das Token als
-      <code>Authorization: Bearer …</code> mitgeben (alternativ als <code>?token=</code> in der Adresse).</li>
+      <code>Authorization: Bearer …</code> mitgeben. Lehnt die Oberfläche den Wert ab &ndash;
+      manche Gateways lassen im Kopfzeilen-Wert kein Leerzeichen zu &ndash;, genügt auch das
+      nackte Token ohne <code>Bearer</code>; als letzte Möglichkeit
+      <code>?token=</code> in der Adresse, dann steht es allerdings in Protokolldateien.</li>
     <li>Jedes Gerät im Portal unter <span class="ui">Alarmknöpfe</span> registrieren.
       Entscheidend ist die <b>Seriennummer</b>: Sie muss der Geräte-Kennung im Netzserver
       entsprechen (DevEUI bei LoRaWAN). Gross- und Kleinschreibung sowie Bindestriche
