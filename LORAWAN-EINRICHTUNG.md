@@ -630,12 +630,57 @@ TrackerD bewusst nicht aus.
 Verlassen Sie sich im Gebäude auf den im Portal hinterlegten Standort des
 Knopfs, nicht auf die mitgeschickten Koordinaten.
 
+### Haltezeit der Alarmtaste ändern
+
+Ab Werk muss die rote Taste **fünf Sekunden** gehalten werden. Das lässt sich
+zwischen 0 und 10 Sekunden einstellen:
+
+| Weg | Befehl |
+| --- | --- |
+| Über Funk (Downlink) | `BA` + ein Byte mit den Sekunden – `BA02` für zwei Sekunden |
+| Über USB-C (115200 Baud) | `AT+EAT=2` |
+
+Der Funkweg ist der bequemere: Im Gateway beim Gerät auf den Reiter
+**`Downlink`**, dort die Hex-Bytes eintragen und senden.
+
+> **Ein Downlink erreicht das Gerät erst nach dem nächsten Uplink.** Ein
+> Class-A-Gerät hört nur kurz nach dem eigenen Senden zu. Der Befehl bleibt
+> also in der Warteschlange, bis das Gerät sich das nächste Mal meldet –
+> drücken Sie danach einmal die Taste, dann kommt er an.
+
+**Welche Zeit ist richtig?** Eine Abwägung, die Ihnen gehört:
+
+- **Kurz (1–2 s):** schneller im Ernstfall, aber ein Gerät in der Hosentasche
+  löst leichter versehentlich aus.
+- **Lang (5 s):** kaum Fehlalarme, aber fünf Sekunden sind lang, wenn man
+  bedrängt wird.
+
+Zwei bis drei Sekunden sind für ein getragenes Gerät ein brauchbarer
+Mittelweg. Bedenken Sie dabei, was ein Fehlalarm kostet: Nach der eingestellten
+Zeit ohne Quittierung wird der Krisenstab aufgeboten. Ein Irrtum lässt sich in
+der App als **Fehlalarm** melden – aber erst, nachdem er alle erreicht hat.
+
 ## PB01 – der einfache Fall
 
 **Auslösen:** Taste drücken. Das Gerät sendet sofort einen Uplink mit gesetztem
 Alarmfeld – keine Wiederholung, kein Zurücksetzen nötig.
 
 Für den festen Platz an der Wand ist das das passendere Gerät.
+
+**Haltezeit:** Auch der PB01 kennt eine Mindestdauer, hier in **Millisekunden**:
+
+| Weg | Befehl |
+| --- | --- |
+| Über Funk (Downlink) | `A2` + zwei Byte – `A201F4` für 500 ms |
+| Über Kabel (9600 Baud, Passwort `123456`) | `AT+STIME=500` |
+
+Die Herstellerdokumentation nennt als Bereich 0 bis 1000 Millisekunden, also
+höchstens eine Sekunde; an anderer Stelle widerspricht sie sich. Probieren Sie
+den gewünschten Wert am Gerät aus, statt sich auf die Angabe zu verlassen.
+
+Anders als beim TrackerD geht es hier nicht um einen Notfallgriff, sondern um
+eine Entprellung: Sie verhindert, dass ein Streifen an der Wand einen Alarm
+auslöst.
 
 ---
 
