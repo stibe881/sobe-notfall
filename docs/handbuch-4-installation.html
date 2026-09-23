@@ -690,7 +690,7 @@ footer .adressfuss { margin-top: 22px; }
       <tbody>
         <tr><td><b>Knöpfe / Badges</b></td><td>Das Gerät, das gedrückt wird. LoRaWAN im Band EU868, oder GSM-Geräte mit eigener SIM-Karte.</td></tr>
         <tr><td><b>Gateways</b></td><td>Empfangen den Funkruf und leiten ihn ins Internet weiter. Mindestens eines je Standort; in Kellern, Technikräumen und Bädern meist ein zusätzliches.</td></tr>
-        <tr><td><b>Netzserver</b></td><td>The Things Stack oder ChirpStack. Verwaltet die Geräte, entschlüsselt die Funkdaten und ruft den Alarmserver auf.</td></tr>
+        <tr><td><b>Netzserver</b></td><td>The Things Stack, ChirpStack &ndash; oder der Netzserver, den viele Gateways bereits eingebaut mitbringen. Verwaltet die Geräte, entschlüsselt die Funkdaten und ruft den Alarmserver auf.</td></tr>
         <tr><td><b>Decoder</b></td><td>Kleines Skript im Netzserver, das die rohen Bytes des Geräts in lesbare Felder übersetzt. Liefert in der Regel der Hersteller.</td></tr>
       </tbody>
     </table>
@@ -720,7 +720,8 @@ footer .adressfuss { margin-top: 22px; }
     <li>Mit <span class="ui">Auslösen (Test)</span> die Kette prüfen, danach am Gerät selbst.</li>
   </ol>
   <p>
-    Verstanden werden die Formate von <b>The Things Network v3</b>, <b>ChirpStack v4</b>
+    Verstanden werden die Formate von <b>The Things Network v3</b>, <b>ChirpStack v4</b>,
+    <b>ChirpStack v3</b> &ndash; das ist auch der in Gateways eingebaute Netzserver &ndash;
     und ein generisches JSON für eigene Bridges und GSM-Knöpfe:
     <code>{ serial, event, battery, lat, lng }</code>. Als Knopfdruck gilt ein Uplink,
     dessen entschlüsselte Daten ein Feld wie <code>alarm</code>, <code>sos</code>,
@@ -728,6 +729,28 @@ footer .adressfuss { margin-top: 22px; }
     Ereignis dieses Namens melden. Reine Statusmeldungen aktualisieren nur Batteriestand
     und Zeitpunkt des letzten Signals.
   </p>
+  <div class="hinweis hinweis--warnung">
+    <p class="marke-klein">Ohne Payload-Decoder löst kein Knopf aus</p>
+    <p>
+      Fehlt im Netzserver der Decoder des Geräts, kommt der Uplink zwar an, aber
+      ohne übersetzte Nutzlast &ndash; ein Knopfdruck ist dann nicht von einer
+      Statusmeldung zu unterscheiden. Der Alarmserver weist solche Uplinks
+      ausdrücklich ab und schreibt einen Eintrag ins Ereignisprotokoll, statt sie
+      stillschweigend als Lebenszeichen zu verbuchen. Liefert der Decoder kein
+      Feld, das nach Alarm aussieht, genügt im Decoder eine Zeile wie
+      <code>data.alarm = true</code>.
+    </p>
+  </div>
+  <div class="hinweis">
+    <p class="marke-klein">Gateway hier, Alarmserver dort</p>
+    <p>
+      Das Gateway spricht nie direkt mit dem Alarmserver. Es reicht die Funkpakete
+      an den Netzserver weiter, und erst der ruft den Alarmserver auf. Alle
+      Verbindungen gehen dabei <b>von innen nach aussen</b>: Für ein Gateway im
+      Schulhaus und einen Alarmserver beim Hoster braucht es deshalb weder
+      Portfreigabe noch feste IP-Adresse noch VPN.
+    </p>
+  </div>
   <div class="hinweis hinweis--warnung">
     <p class="marke-klein">Vor dem Kauf: Funkmessung</p>
     <p>

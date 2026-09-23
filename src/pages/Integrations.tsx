@@ -1198,7 +1198,7 @@ function LorawanEinstellungen() {
               onChange={(e) => dispatch({ type: 'UPDATE_INTEGRATIONS', integrations: { ...integ, lorawan: { ...lorawan, provider: e.target.value } } })}
             >
               <option value="ttn">The Things Network / The Things Stack</option>
-              <option value="chirpstack">ChirpStack</option>
+              <option value="chirpstack">ChirpStack (auch der im Gateway eingebaute Netzserver)</option>
               <option value="generic">Generisch (eigene Bridge, GSM-Knöpfe)</option>
             </select>
           </Field>
@@ -1259,9 +1259,11 @@ function LorawanEinstellungen() {
           )}
           <p className="text-xs text-slate-400">
             Im Netzserver einen Webhook auf den Endpunkt einrichten (Kopfzeile «Authorization: Bearer &lt;Token&gt;»).
-            Der Server versteht TTN v3, ChirpStack v4 und generisches JSON. Statusmeldungen aktualisieren Batterie und
+            Der Server versteht TTN v3, ChirpStack v4 und v3 sowie generisches JSON. Statusmeldungen aktualisieren Batterie und
             «letztes Signal» der unter «Alarmknöpfe» registrierten Geräte (Zuordnung über die Seriennummer/DevEUI);
-            ein Knopfdruck löst den dort hinterlegten stillen Alarm aus.
+            ein Knopfdruck löst den dort hinterlegten stillen Alarm aus. Ohne Payload-Decoder im Netzserver
+            kommt ein Uplink ohne übersetzte Nutzlast an &ndash; er wird abgewiesen und hier im Ereignisprotokoll
+            vermerkt, denn ein Knopfdruck bliebe so unerkannt.
           </p>
         </div>
       )}

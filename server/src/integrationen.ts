@@ -367,6 +367,46 @@ export interface LorawanEreignis {
   alarm: boolean
   batteryPct?: number
   gps?: { lat: number; lng: number }
+  /**
+   * Der Uplink brachte nur rohe Bytes, keine übersetzte Nutzlast.
+   *
+   * Ohne Payload-Decoder im Netzserver kann kein Knopfdruck erkannt werden –
+   * das Gerät meldet sich, aber der Alarm bleibt aus. Für einen Alarmknopf ist
+   * das der gefährlichste denkbare Zustand, deshalb wird er ausdrücklich
+   * gemeldet statt stillschweigend als Statusmeldung verbucht.
+   */
+  ohneDecoder?: boolean
+}
+
+/**
+ * Feld case-insensitiv nachschlagen. Die Netzserver schreiben dieselbe Sache
+ * unterschiedlich: «devEUI» bei ChirpStack v3, «devEui» bei v4.
+ */
+function ausFeldern(b: Record<string, unknown>, ...namen: string[]): unknown {
+  for (const name of namen) if (b[name] !== undefined) return b[name]
+  const klein = new Map(Object.keys(b).map((k) => [k.toLowerCase(), k]))
+  for (const name of namen) {
+    const treffer = klein.get(name.toLowerCase())
+    if (treffer !== undefined) return b[treffer]
+  }
+  return undefined
+}
+
+/**
+ * Gerätekennung vereinheitlichen.
+ *
+ * Je nach Netzserver und Einstellung kommt die DevEUI als Hex-Zeichenkette
+ * oder Base64-kodiert an; im Portal steht sie als Hex auf dem Gerät. Acht Byte
+ * Base64 werden deshalb zu Hex aufgelöst, sonst fände der Server den Knopf nicht.
+ */
+function alsGeraetekennung(wert: unknown): string {
+  const text = String(wert ?? '').trim()
+  if (/^[0-9a-fA-F]{16}$/.test(text)) return text.toUpperCase()
+  if (/^[A-Za-z0-9+/]{11}=$/.test(text)) {
+    const roh = Buffer.from(text, 'base64')
+    if (roh.length === 8) return roh.toString('hex').toUpperCase()
+  }
+  return text
 }
 
 /** Seriennummern vergleichbar machen: Gross-/Kleinschreibung und Trennzeichen sind egal */
@@ -416,10 +456,17 @@ function gpsAus(nutzlast: Record<string, unknown>): { lat: number; lng: number }
   return Number.isFinite(lat) && Number.isFinite(lng) && (lat !== 0 || lng !== 0) ? { lat, lng } : undefined
 }
 
+/** Batteriestand aus einer übersetzten Nutzlast, unter allen gängigen Namen */
+function batterieAus(nutzlast: Record<string, unknown>): unknown {
+  return ausFeldern(nutzlast, 'battery', 'batteryPct', 'battery_level', 'batteryLevel', 'bat', 'batV', 'battery_percent')
+}
+
 /**
  * Uplink eines LoRaWAN-Netzservers in ein einheitliches Ereignis übersetzen.
- * Verstanden werden The Things Network (v3), ChirpStack (v4) und ein
- * generisches JSON ({ serial | devEui, event, battery, lat, lng }).
+ *
+ * Verstanden werden The Things Network (v3), ChirpStack v4, ChirpStack v3 –
+ * das ist auch der in Gateways eingebaute Netzserver, etwa beim RAK WisGate –
+ * und ein generisches JSON ({ serial | devEui, event, battery, lat, lng }).
  */
 export function parseLorawanUplink(body: unknown): LorawanEreignis | null {
   if (!body || typeof body !== 'object') return null
@@ -429,10 +476,11 @@ export function parseLorawanUplink(body: unknown): LorawanEreignis | null {
   if (b.end_device_ids?.dev_eui || b.end_device_ids?.device_id) {
     const nutzlast = (b.uplink_message?.decoded_payload ?? {}) as Record<string, unknown>
     return {
-      geraet: String(b.end_device_ids.dev_eui ?? b.end_device_ids.device_id),
+      geraet: alsGeraetekennung(b.end_device_ids.dev_eui ?? b.end_device_ids.device_id),
       alarm: istAlarmNutzlast(nutzlast),
-      batteryPct: alsProzent(nutzlast.battery ?? nutzlast.batteryPct ?? nutzlast.battery_level ?? b.uplink_message?.last_battery_percentage?.value),
+      batteryPct: alsProzent(batterieAus(nutzlast) ?? b.uplink_message?.last_battery_percentage?.value),
       gps: gpsAus(nutzlast),
+      ohneDecoder: Object.keys(nutzlast).length === 0 && Boolean(b.uplink_message?.frm_payload),
     }
   }
 
@@ -440,20 +488,36 @@ export function parseLorawanUplink(body: unknown): LorawanEreignis | null {
   if (b.deviceInfo?.devEui) {
     const nutzlast = (b.object ?? {}) as Record<string, unknown>
     return {
-      geraet: String(b.deviceInfo.devEui),
+      geraet: alsGeraetekennung(b.deviceInfo.devEui),
       alarm: istAlarmNutzlast(nutzlast),
-      batteryPct: alsProzent(nutzlast.battery ?? nutzlast.batteryPct ?? nutzlast.battery_level),
+      batteryPct: alsProzent(batterieAus(nutzlast)),
       gps: gpsAus(nutzlast),
+      ohneDecoder: Object.keys(nutzlast).length === 0 && Boolean(b.data),
+    }
+  }
+
+  // ChirpStack v3 und die in Gateways eingebauten Netzserver. Erkennbar an der
+  // DevEUI auf oberster Ebene zusammen mit einem der Felder, die nur ein
+  // Netzserver mitschickt – sonst wäre jedes generische JSON gemeint.
+  const v3 = ausFeldern(b, 'devEUI', 'devEui', 'deveui')
+  if (v3 !== undefined && (b.object !== undefined || b.rxInfo !== undefined || b.applicationID !== undefined)) {
+    const nutzlast = (b.object ?? {}) as Record<string, unknown>
+    return {
+      geraet: alsGeraetekennung(v3),
+      alarm: istAlarmNutzlast(nutzlast),
+      batteryPct: alsProzent(batterieAus(nutzlast)),
+      gps: gpsAus(nutzlast),
+      ohneDecoder: Object.keys(nutzlast).length === 0 && Boolean(b.data),
     }
   }
 
   // Generisches JSON (GSM-Knöpfe, eigene Bridges)
-  const geraet = b.serial ?? b.devEui ?? b.deviceId ?? b.device
-  if (geraet) {
+  const geraet = ausFeldern(b, 'serial', 'devEui', 'devEUI', 'deviceId', 'device')
+  if (geraet !== undefined && String(geraet).trim()) {
     return {
-      geraet: String(geraet),
+      geraet: alsGeraetekennung(geraet),
       alarm: istAlarmNutzlast(b),
-      batteryPct: alsProzent(b.battery ?? b.batteryPct ?? b.battery_level),
+      batteryPct: alsProzent(batterieAus(b)),
       gps: gpsAus(b),
     }
   }

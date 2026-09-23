@@ -376,6 +376,38 @@ async function main(): Promise<void> {
   pruefe('Knopf-Alarm beendet',
     (await ruf(`/alarms/${gedrueckt.body.alarm}/end`, { method: 'POST', token: adminToken })).status === 200)
 
+  // --- Netzserver im Gateway (ChirpStack v3): DevEUI oben, Nutzlast in «object» ---
+  const v3Status = await ruf('/hooks/lorawan', {
+    method: 'POST', token: lwToken.body.token,
+    body: JSON.stringify({ applicationID: '1', devEUI: 'LWTEST99', rxInfo: [], object: { battery: 61 } }),
+  })
+  pruefe('ChirpStack-v3-Uplink verstanden', v3Status.status === 200 && v3Status.body.alarm === null)
+  pruefe('ChirpStack v3 aktualisiert die Batterie',
+    (await ruf('/state', { token: adminToken })).body.buttons.find((b: any) => b.serial === 'LW-TEST-99')?.batteryPct === 61)
+
+  // Base64-DevEUI (0x0102030405060708) muss auf denselben Knopf zeigen
+  await ruf('/buttons', {
+    method: 'POST', token: adminToken,
+    body: JSON.stringify({
+      id: 'btn-b64', name: 'Knopf Base64', type: 'lorawan', serial: '0102030405060708', batteryPct: 100, lastSeen: Date.now(),
+      messageTemplate: 'Test', targetGroupIds: ['gr-sicherheit'], escalateToEmergencyServicesAfterMin: 5,
+    }),
+  })
+  const b64 = await ruf('/hooks/lorawan', {
+    method: 'POST', token: lwToken.body.token,
+    body: JSON.stringify({ deviceInfo: { devEui: 'AQIDBAUGBwg=' }, object: { battery: 55 } }),
+  })
+  pruefe('Base64-DevEUI wird dem Knopf zugeordnet', b64.status === 200 && b64.body.ok === true)
+
+  // Ohne Payload-Decoder kommen nur rohe Bytes – ein Knopfdruck bliebe unerkannt
+  const ohneDecoder = await ruf('/hooks/lorawan', {
+    method: 'POST', token: lwToken.body.token,
+    body: JSON.stringify({ applicationID: '1', devEUI: 'LWTEST99', rxInfo: [], data: 'AQ==' }),
+  })
+  pruefe('Fehlender Payload-Decoder wird als Fehler gemeldet', ohneDecoder.status === 422)
+  pruefe('Fehlender Payload-Decoder steht im Ereignisprotokoll',
+    (await ruf('/state', { token: adminToken })).body.audit.some((e: any) => String(e.message).includes('Payload-Decoder')))
+
   // --- Uplink-Erkennung: herstellerspezifische Feldnamen ---
   const erkannt = async (nutzlast: Record<string, unknown>) => {
     const antwort = await ruf('/hooks/lorawan', {

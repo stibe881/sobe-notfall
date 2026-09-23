@@ -837,6 +837,16 @@ router.post('/integrations/lorawan/token', auth, adminOnly, (req: AuthRequest, r
 const KNOPF_DEBOUNCE_MS = 2 * 60_000
 
 /**
+ * Wann zuletzt gemeldet wurde, dass ein Gerät ohne Payload-Decoder sendet.
+ *
+ * Die Meldung gehört ins Ereignisprotokoll, aber nicht bei jedem Uplink –
+ * sonst ertränkt ein einziges falsch eingerichtetes Gerät das Protokoll. Nach
+ * einem Serverneustart kommt sie einmal erneut; das ist verschmerzbar.
+ */
+const decoderGemeldet = new Map<string, number>()
+const DECODER_WARNUNG_MS = 24 * 60 * 60_000
+
+/**
  * Uplink-Endpunkt für das LoRaWAN-Netz (TTN, ChirpStack) oder GSM-Bridges.
  * Statusmeldungen aktualisieren Batterie und «letztes Signal»; ein Knopfdruck
  * löst den Alarm gemäss der Konfiguration des Knopfs aus.
@@ -870,6 +880,24 @@ router.post('/hooks/lorawan', async (req, res) => {
     gps: ereignis.gps ?? knopf.gps,
   }
   upsertDoc('buttons', knopf.id, aktualisiert)
+
+  // Ein Uplink ohne übersetzte Nutzlast kann keinen Knopfdruck zeigen: Im
+  // Netzserver fehlt der Payload-Decoder. Der Knopf meldet sich also, löst aber
+  // nie aus – das muss die Administration erfahren, nicht erst im Ernstfall.
+  if (ereignis.ohneDecoder) {
+    const zuletzt = decoderGemeldet.get(knopf.id) ?? 0
+    if (Date.now() - zuletzt > DECODER_WARNUNG_MS) {
+      decoderGemeldet.set(knopf.id, Date.now())
+      addAudit('system', `Alarmknopf ${knopf.name} (${knopf.serial}) sendet ohne übersetzte Nutzlast – im Netzserver fehlt der Payload-Decoder. Ein Knopfdruck löst so keinen Alarm aus.`)
+    }
+    broadcast('state')
+    res.status(422).json({
+      ok: false,
+      alarm: null,
+      error: 'Uplink ohne übersetzte Nutzlast. Hinterlegen Sie im Netzserver den Payload-Decoder des Geräts – ohne ihn ist ein Knopfdruck nicht von einer Statusmeldung zu unterscheiden.',
+    })
+    return
+  }
 
   if (!ereignis.alarm) {
     broadcast('state')

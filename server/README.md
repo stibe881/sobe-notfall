@@ -289,7 +289,7 @@ Alle Endpunkte unter `/api`, Authentifizierung über `Authorization: Bearer <tok
 | POST | `/integrations` | Gateways und Webhooks (nur Administration) |
 | POST | `/integrations/sms/test`, `/integrations/teams/test`, `/integrations/telephony/test` | Verbindungstests der Gateways (nur Administration) |
 | GET/POST | `/integrations/lorawan`, `/integrations/lorawan/token` | LoRaWAN-Endpunkt: Adresse und Zugangstoken (nur Administration) |
-| POST | `/hooks/lorawan` | Uplink der Alarmknöpfe (Token statt Anmeldung; TTN v3, ChirpStack v4 oder generisches JSON) |
+| POST | `/hooks/lorawan` | Uplink der Alarmknöpfe (Token statt Anmeldung; TTN v3, ChirpStack v4/v3 oder generisches JSON) |
 | POST | `/graph/callback` | Rückrufe der Microsoft-Graph-Anrufschnittstelle |
 | POST | `/geo/report` | Geofencing: Aufenthaltsmeldung der App (nur Standort-Name oder null) |
 | GET | `/auth/sso/start`, `/auth/sso/callback` | Single Sign-On über Microsoft Entra ID (`?target=web` oder `app`) |
@@ -347,8 +347,12 @@ Administrationsportal unter **Integrationen** konfiguriert:
   gelöscht – es entsteht keine Bewegungshistorie. Die Bereitschaftsübersicht
   zeigt pro Standort, wie viele Personen laut App vor Ort sind.
 - **LoRaWAN-Netz / Alarmknöpfe** – der Endpunkt `/api/hooks/lorawan` nimmt
-  Uplinks von The Things Network (v3), ChirpStack (v4) oder generischem JSON
-  entgegen, geschützt durch ein Zugangstoken aus dem Portal. Statusmeldungen
+  Uplinks von The Things Network (v3), ChirpStack (v4 und v3 – letzteres auch
+  der in Gateways eingebaute Netzserver) oder generischem JSON
+  entgegen, geschützt durch ein Zugangstoken aus dem Portal. Ein Uplink ohne
+  übersetzte Nutzlast wird mit 422 abgewiesen und einmal je Tag im
+  Ereignisprotokoll gemeldet: Ohne Payload-Decoder im Netzserver bliebe ein
+  Knopfdruck unerkannt. Statusmeldungen
   aktualisieren Batterie und «letztes Signal» der registrierten Knöpfe
   (Zuordnung über Seriennummer/DevEUI); ein Knopfdruck löst den am Knopf
   hinterlegten stillen Alarm mit Eskalation aus, doppelte Drücke werden
