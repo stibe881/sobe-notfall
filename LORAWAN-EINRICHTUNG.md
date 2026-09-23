@@ -132,14 +132,34 @@ Verbindung zum Alarmserver hängt.
 
 **Wo:** `Network Server` → `Applications` → `Add` / `Create`.
 
-| Feld | Eintrag |
-| --- | --- |
-| Name | `sobe-notfall` |
-| Beschreibung | `Alarmknöpfe SOBE Notfall` |
+> **Achtung, hier weicht WisGateOS von ChirpStack ab.** Der Payload-Decoder
+> (Schritt 6b) und die HTTP-Integration (Schritt 8) hängen bei diesem Gateway
+> **an der Anwendung**, nicht am Geräteprofil und nicht in einem eigenen
+> Integrations-Reiter. Sie finden beides im selben Formular, das Sie jetzt vor
+> sich haben. Die Schritte 6b und 8 verweisen darauf zurück.
+
+| Bereich | Feld | Eintrag |
+| --- | --- | --- |
+| Application settings | Application name | `sobe_notfall` |
+| Application settings | Application description | `Alarmknöpfe SOBE Notfall` |
+| Application settings | Application Type | die einfachste Auswahl für gewöhnliche LoRaWAN-Geräte |
+| Payload format | **Payload type** | **nicht `None`** – die Auswahl, mit der sich ein eigener Decoder hinterlegen lässt (Schritt 6b) |
+| Payload format | **Only forward data object** | **aus** – siehe Kasten |
+| Integration Parameters | Decode Type | `Base 64` |
+| Integration Parameters | Report LoRa® Radio Information | **ein** |
+| Integration Parameters | Enable HTTP/HTTPS Integration Parameters | **ein** – öffnet die Felder aus Schritt 8 |
+
+> **«Only forward data object» muss ausgeschaltet bleiben.**
+>
+> Eingeschaltet schickt das Gateway nur die übersetzten Messwerte – ohne den
+> Umschlag, in dem die **DevEUI** steht. Genau daran erkennt der Alarmserver
+> aber, *welcher* Knopf gedrückt wurde. Ohne Umschlag kommt zwar etwas an, aber
+> es lässt sich keinem Gerät zuordnen; in «Letzte Uplinks» stünde
+> «Format nicht verstanden».
 
 Speichern.
 
-**Geprüft, wenn:** `sobe-notfall` in der Anwendungsliste steht.
+**Geprüft, wenn:** `sobe_notfall` in der Anwendungsliste steht.
 
 Eine Anwendung genügt für alle Knöpfe aller drei Standorte – die Zuordnung zum
 Standort machen Sie später im Portal, nicht hier.
@@ -170,12 +190,18 @@ Schritt 9 nicht, und die Fehlermeldung sagt Ihnen nicht warum.
 
 ### 6b – Den Decoder eintragen
 
-Im selben Geräteprofil gibt es einen Reiter **`Codec`** / **`Payload Codec`** /
-**`Application Payload Codec`**.
+**Nicht im Geräteprofil**, sondern in der Anwendung aus Schritt 5: Bereich
+**`Payload format`**, Feld **`Payload type`**.
 
-1. Als Art **`Custom JavaScript codec functions`** wählen.
+1. Statt `None` die Auswahl treffen, mit der sich ein eigener Decoder
+   hinterlegen lässt (je nach Firmware `Custom`, `JavaScript` oder ähnlich).
 2. Den Decoder des Herstellers vollständig hineinkopieren.
-3. Speichern.
+3. **`Only forward data object`** ausgeschaltet lassen.
+4. Speichern.
+
+Bleibt `Payload type` auf `None`, kommen beim Alarmserver nur rohe Bytes an:
+«Letzte Uplinks» meldet dann «ohne übersetzte Nutzlast», und ein Knopfdruck
+bleibt unerkannt.
 
 ### 6c – Die Übersetzungszeile
 
@@ -249,13 +275,14 @@ dem Hinweis, dass noch nichts eingetroffen ist.
 
 **Ziel:** Der Netzserver im Gateway schickt jeden Uplink an den Alarmserver.
 
-**Wo:** `Network Server` → `Applications` → `sobe-notfall` → Reiter
-**`Integrations`** → **`HTTP`** hinzufügen.
+**Wo:** In der Anwendung aus Schritt 5, Bereich **`Integration Parameters`**,
+Schalter **`Enable HTTP/HTTPS Integration Parameters`** einschalten. Darunter
+erscheinen die Felder.
 
 | Feld | Eintrag |
 | --- | --- |
-| Payload marshaler / Format | **`JSON`** |
 | Uplink data URL / Event endpoint URL | `https://temp-gross-ict.ch/api/hooks/lorawan` |
+| Format, falls wählbar | **`JSON`** |
 
 Für das **Token** gibt es zwei Wege. Nehmen Sie den ersten, wenn Ihre Oberfläche
 ihn anbietet:
