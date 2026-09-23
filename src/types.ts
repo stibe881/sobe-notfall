@@ -331,6 +331,11 @@ export interface SsoSettings {
 export interface OrganizationSettings {
   /** Vollständiger Name, z. B. «Muster AG» – erscheint in Portal und App */
   name: string
+  /**
+   * Name der Anwendung selbst (Titel neben dem Logo in Portal, App und
+   * Anmeldemaske) – standardmässig «SOBE Notfall». Leer: Standardname.
+   */
+  appName?: string
   /** Kurzname für SMS-Absender und knappe Anzeigen (max. 11 Zeichen, A–Z/0–9) */
   shortName: string
   /** Akzentfarbe (#rrggbb) – färbt die Hausfarbe; das Alarmrot bleibt fest */

@@ -24,7 +24,7 @@ import UserApp from './pages/UserApp'
 import LoginScreen, { ForcePasswordChange } from './components/LoginScreen'
 import UpdateDialog from './components/UpdateDialog'
 import { api, logoUrl } from './lib/api'
-import { wendeAkzentfarbeAn } from './lib/branding'
+import { anwendungsname, wendeAkzentfarbeAn } from './lib/branding'
 import { Button, Field, Modal, inputClass } from './components/ui'
 
 /**
@@ -64,6 +64,7 @@ const NAV = [
 function NoWebAccess() {
   const { state, logout } = useStore()
   const currentUser = state.users.find((u) => u.id === state.currentUserId) ?? state.users[0]
+  const name = anwendungsname(state.integrations.organization?.appName)
 
   return (
     <div className="min-h-screen bg-slate-900 flex items-center justify-center p-6">
@@ -77,7 +78,7 @@ function NoWebAccess() {
         </p>
         <div className="mt-6 rounded-2xl bg-slate-800 p-5 text-left">
           <div className="flex items-center gap-2.5 text-white font-semibold">
-            <Smartphone size={18} className="text-brand-500" /> SOBE Notfall-App verwenden
+            <Smartphone size={18} className="text-brand-500" /> {name}-App verwenden
           </div>
           <p className="text-sm text-slate-400 mt-2">
             Als Mitarbeiter:in nutzen Sie die App auf dem iPhone: SOS-Alarm, Handlungsanweisungen zu allen
@@ -119,7 +120,7 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           ) : (
             <AlertTriangle className="text-brand-500" size={22} />
           )}
-          SOBE Notfall
+          {anwendungsname(state.integrations.organization?.appName)}
         </div>
         <div className="text-xs text-slate-500 mt-0.5">
           {state.integrations.organization?.name || 'Notfall- & Krisenmanagement'}
@@ -354,7 +355,7 @@ export default function App() {
             <Menu size={22} />
           </button>
           <span className="font-bold flex items-center gap-1.5">
-            <AlertTriangle className="text-brand-500" size={18} /> SOBE Notfall
+            <AlertTriangle className="text-brand-500" size={18} /> {anwendungsname(state.integrations.organization?.appName)}
           </span>
           {activeAlarms.length > 0 && location.pathname !== '/monitor' && (
             <NavLink to="/monitor" className="ml-auto bg-alarm-600 text-white text-xs font-semibold rounded-full px-2.5 py-1 alarm-pulse">

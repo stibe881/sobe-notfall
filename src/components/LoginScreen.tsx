@@ -4,7 +4,7 @@ import { useStore } from '../store'
 import { LIVE_INITIAL_PASSWORD } from '../data/seed'
 import { MIN_PASSWORD_LENGTH, passwordProblem } from '../lib/auth'
 import { ApiError, DEFAULT_SERVER_URL, api, logoUrl, serverUrl, setServerUrl, ssoStartAdresse, type SetupInfo } from '../lib/api'
-import { wendeAkzentfarbeAn } from '../lib/branding'
+import { anwendungsname, wendeAkzentfarbeAn } from '../lib/branding'
 import type { User } from '../types'
 
 const fieldClass =
@@ -32,7 +32,7 @@ function Shell({ children, subtitle, showModeSwitch = false, logo = null }: {
               <AlertTriangle size={30} />
             </div>
           )}
-          <h1 className="text-xl font-bold text-white">SOBE Notfall</h1>
+          <h1 className="text-xl font-bold text-white">{anwendungsname(state.integrations.organization?.appName)}</h1>
           <p className="text-sm text-slate-500 mt-1">{subtitle}</p>
         </div>
 

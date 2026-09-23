@@ -175,7 +175,7 @@ function Root() {
           <Siren size={20} color={colors.brandLight} />
         )}
         <View style={{ flex: 1 }}>
-          <Text style={styles.headerTitle}>SOBE Notfall</Text>
+          <Text style={styles.headerTitle}>{state.integrations?.organization?.appName?.trim() || 'SOBE Notfall'}</Text>
           <View style={styles.headerSubRow}>
             <Text style={styles.headerSub}>{me.firstName} {me.lastName} · </Text>
             <MapPin size={10} color="#94a3b8" />

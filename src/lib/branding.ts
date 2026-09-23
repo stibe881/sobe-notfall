@@ -7,6 +7,11 @@
  * auch die Petrol-Vorgabe abbildet. Das Alarmrot bleibt unangetastet.
  */
 
+/** Name der Anwendung selbst – neben dem Logo in Portal, App und Anmeldemaske */
+export function anwendungsname(appName: string | undefined): string {
+  return appName?.trim() || 'SOBE Notfall'
+}
+
 const STUFEN: { stufe: number; mischung: number }[] = [
   // > 0: Anteil Weiss · < 0: Anteil Schwarz · 0: die Kundenfarbe selbst (600)
   { stufe: 50, mischung: 0.93 },

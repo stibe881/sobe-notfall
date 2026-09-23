@@ -31,7 +31,7 @@ function Shell({ subtitle, children, logoVersion = null }: {
           </View>
         )}
         <View style={s.titleRow}>
-          <Text style={s.title}>SOBE Notfall</Text>
+          <Text style={s.title}>{state.integrations?.organization?.appName?.trim() || 'SOBE Notfall'}</Text>
         </View>
         <Text style={s.subtitle}>{subtitle}</Text>
 

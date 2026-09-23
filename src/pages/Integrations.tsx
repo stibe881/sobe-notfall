@@ -431,6 +431,7 @@ function OrganisationEinstellungen() {
         organization: {
           ...org,
           name: entwurf.name.trim(),
+          appName: entwurf.appName?.trim() || undefined,
           shortName: entwurf.shortName.trim().slice(0, 11),
           color: /^#[0-9a-fA-F]{6}$/.test(farbe) ? farbe : undefined,
         },
@@ -449,6 +450,12 @@ function OrganisationEinstellungen() {
           <input className={inputClass} maxLength={11} placeholder="MUSTER" value={entwurf.shortName} onChange={(e) => patch({ shortName: e.target.value })} />
         </Field>
       </div>
+      <Field label="Anwendungsname – steht neben dem Logo in Portal, App und Anmeldemaske">
+        <input
+          className={inputClass} placeholder="SOBE Notfall"
+          value={entwurf.appName ?? ''} onChange={(e) => patch({ appName: e.target.value })}
+        />
+      </Field>
       <Field label="Akzentfarbe – färbt Navigation, Knöpfe und Akzente in Portal und App">
         <div className="flex items-center gap-2">
           <input
