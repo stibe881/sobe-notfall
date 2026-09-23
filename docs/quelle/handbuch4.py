@@ -441,6 +441,18 @@ KOERPER = r"""
       Kleinschreibung sowie Bindestriche spielen keine Rolle.</li>
     <li>Mit <span class="ui">Auslösen (Test)</span> die Kette prüfen, danach am Gerät selbst.</li>
   </ol>
+  <div class="hinweis hinweis--warnung">
+    <p class="marke-klein">Ein Gerät, das plötzlich verstummt</p>
+    <p>
+      Bleibt im Netzserver <span class="ui">Last seen</span> beim letzten Alarm stehen,
+      sendet das Gerät nicht mehr &ndash; dann hilft kein Suchen im Portal. Bei tragbaren
+      Geräten ist die häufigste Ursache ein versehentlich ausgelöster <b>Tiefschlaf</b>:
+      Bei manchen Modellen liegt dieser Handgriff nahe bei dem, mit dem man den
+      Alarmzustand verlässt. Die <b>Reset-Taste</b> weckt das Gerät wieder. Die zweite
+      Ursache ist ein leerer Akku &ndash; eine Alarmauslösung mit Positionssuche kostet
+      ein Vielfaches einer gewöhnlichen Meldung.
+    </p>
+  </div>
   <div class="hinweis">
     <p class="marke-klein">Haltezeit der Alarmtaste</p>
     <p>

@@ -504,7 +504,8 @@ Eintrag. Was dort steht, sagt Ihnen genau, wo Sie stehen:
 | **ohne übersetzte Nutzlast** | Niemand hat die Bytes übersetzt. | Bei den Dragino-Geräten: In Schritt 10 das **Modell** auswählen. Sonst: Decoder im Netzserver, Schritt 6b. |
 | **Token abgewiesen** | Das Gateway sendet ein anderes Token. | Zurück zu Schritt 8, Token neu kopieren. |
 | **Format nicht verstanden** | Die Integration schickt kein JSON. | In Schritt 8 Payload marshaler auf `JSON` stellen. |
-| **gar nichts** | Der Uplink hat den Alarmserver nie erreicht. | Nicht im Portal suchen. Im Gateway nachsehen: Kommt der Uplink beim Netzserver an? Was meldet die HTTP-Integration als Antwort? Erscheint dort gar kein Uplink, ist es Funk oder Frequenzplan (Schritt 3). |
+| **zum laufenden Alarm gezählt** | Der Alarm dieses Knopfs läuft noch. | Gewollt – ein zweiter Alarm entsteht erst nach dem Beenden in der Alarmzentrale. |
+| **gar nichts** | Der Uplink hat den Alarmserver nie erreicht. | Nicht im Portal suchen. Im Gateway nachsehen: Steht «Last seen» beim letzten Alarm still, sendet das Gerät nicht mehr – Tiefschlaf oder leerer Akku, siehe Anhang D. Sonst: Was meldet die HTTP-Integration als Antwort? |
 
 Steht **Alarm ausgelöst**, läuft im Portal ein stiller Alarm, die alarmierten
 Personen bekommen ihn aufs Telefon, und im **Ereignisprotokoll** steht
@@ -617,6 +618,24 @@ Das ist kein Fehler, sondern gewollt – aber es heisst:
 - **Beim Entwarnen deshalb zuerst das Gerät zurücksetzen:** rote Taste
   **zehnmal schnell** drücken. Die rote Leuchte bleibt fünf Sekunden an – dann
   ist der Alarmzustand verlassen. Erst danach den Alarm im Portal beenden.
+
+> **Vorsicht, zwei Handgriffe liegen gefährlich nahe beieinander.**
+>
+> | Ziel | Handgriff |
+> | --- | --- |
+> | Alarm auslösen | Taste **über 5 Sekunden** halten |
+> | Alarmzustand verlassen | **zehnmal kurz** drücken – **ohne vorher zu halten** |
+> | **Tiefschlaf** (Gerät verstummt ganz) | Taste **10 Sekunden** halten, **dann** kurz drücken |
+>
+> Wer die Taste zum Auslösen zu lange hält und danach die schnellen Drücke
+> folgen lässt, schickt das Gerät in den **Tiefschlaf** statt aus dem
+> Alarmzustand. Es sendet dann gar nichts mehr, und im Gateway bleibt
+> «Last seen» beim letzten Alarm stehen.
+>
+> **Abhilfe: die Reset-Taste drücken.** Danach meldet sich das Gerät wieder.
+> Lassen Sie beim Auslösen die Taste los, sobald der Alarm gesendet ist –
+> länger als nötig zu halten bringt nichts und kostet im schlimmsten Fall das
+> ganze Gerät für den Moment.
 
 Nehmen Sie diesen Handgriff in die Einweisung auf. Wer ihn nicht kennt, endet
 mit einem Alarm, der sich nicht abstellen lässt.
