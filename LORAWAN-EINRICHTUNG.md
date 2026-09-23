@@ -166,27 +166,43 @@ Standort machen Sie später im Portal, nicht hier.
 
 ---
 
-## Schritt 6 – Geräteprofil mit Payload-Decoder
+## Schritt 6 – Gerätegruppe und Payload-Decoder
 
-**Ziel:** Der Netzserver weiss, wie Ihr Knopfmodell funkt und wie seine Bytes zu
-lesen sind. **Das ist der Schritt, an dem es erfahrungsgemäss klemmt.**
+**Ziel:** Der Netzserver weiss, wie Ihr Knopfmodell funkt.
 
-**Wo:** `Network Server` → `Device Profiles` → `Add` / `Create`.
+> **Kein eigenes Geräteprofil.** Anders als ChirpStack kennt der eingebaute
+> Netzserver des WisGate keine Profile als eigene Objekte. Stattdessen legen Sie
+> eine **Gerätegruppe** an, und die Profilangaben stehen in deren Formular. Die
+> Gruppe ist also das Profil: **eine Gruppe je Modell.**
+
+**Wo:** `Network Server` → `Applications` → `sobe_notfall` → Geräte →
+**`New end device`**. Der Assistent hat zwei Schritte; Schritt 6a ist die
+erste Seite, Schritt 9 die zweite.
 
 ### 6a – Die Funkeigenschaften
 
-Diese Angaben stehen im Datenblatt des Knopfs:
-
-| Feld | Üblicher Wert |
+| Feld | Eintrag |
 | --- | --- |
-| Name | Modellbezeichnung, z. B. `SOS-Knopf Modell X` |
-| LoRaWAN MAC version | `1.0.3` (bei neueren Geräten `1.1.0`) |
-| Regional Parameters revision | `A` oder `B` – **wie im Datenblatt** |
-| Join (OTAA/ABP) | **OTAA** |
-| Class | `A` |
+| Activation Mode | **`OTAA`** |
+| End device (group) name | Modellbezeichnung, z. B. `dragino-trackerd` – ohne Umlaute |
+| End device description | optional, leer lassen genügt |
+| Enable LPTP | **aus** |
+| **Application Key** | **den AppKey vom Etikett des Geräts eintippen** – siehe Kasten |
+| Class | **`Class A`** |
+| Frame Counter Width | `32 bit` |
+| **LoRaWAN MAC Version** | **`1.0.3`** (bei neueren Geräten `1.1.0` – laut Datenblatt) |
 
-Raten Sie hier nicht. Stimmt die MAC-Version nicht, gelingt das Anlernen in
-Schritt 9 nicht, und die Fehlermeldung sagt Ihnen nicht warum.
+> **Finger weg von «Autogenerate».**
+>
+> Der Knopf erzeugt einen neuen, zufälligen Schlüssel. Ihr Gerät kennt ihn
+> nicht – es hat seinen eigenen ab Werk, aufgedruckt oder im Beipackzettel.
+> Mit einem erzeugten Schlüssel gelingt das Anlernen nie, und die Fehlersuche
+> führt in die Irre, weil alles andere richtig aussieht. «Autogenerate» ist für
+> Geräte gedacht, die man selbst programmiert.
+
+Raten Sie bei der MAC-Version nicht. Stimmt sie nicht, gelingt das Anlernen in
+Schritt 9 nicht, und die Fehlermeldung sagt Ihnen nicht warum. Für den
+**Dragino TrackerD** und den **PB01** ist es `1.0.3`, Class A, OTAA.
 
 ### 6b – Den Decoder: wer übersetzt?
 
@@ -364,20 +380,16 @@ Sie erst in Schritt 11 – oder sofort über Anhang A.
 
 **Ziel:** Der Knopf hat sich beim Netzserver angemeldet.
 
-**Wo:** `Network Server` → `Applications` → `sobe-notfall` → `Devices` → `Add`.
+**Wo:** Zweite Seite desselben Assistenten – `Adding end devices`.
 
-| Feld | Eintrag |
-| --- | --- |
-| Device name | Ort, an den der Knopf kommt, z. B. `Eingang Weststrasse` |
-| Device EUI (DevEUI) | vom Etikett |
-| Device profile | das Profil aus Schritt 6 |
+Hier kommen die **DevEUI** der Geräte hinein, die zu dieser Gruppe gehören.
+Mehrere Geräte desselben Modells lassen sich in einem Zug erfassen oder aus
+einer CSV-Datei einlesen.
 
-Speichern. Danach erscheint ein Reiter für die **Schlüssel** (`Keys (OTAA)`):
-
-| Feld | Eintrag |
-| --- | --- |
-| Application key (AppKey) | vom Etikett |
-| Application EUI / Join EUI | vom Etikett – falls das Feld vorhanden ist |
+Bietet die Seite je Gerät ein eigenes Feld für den **Application Key**, tragen
+Sie dort den Schlüssel **dieses** Geräts ein; der Schlüssel aus Schritt 6a
+gilt dann nur als Vorgabe. Zwei Geräte desselben Modells haben **verschiedene**
+AppKeys – deshalb steht die Anwendung auf `Separate Application keys`.
 
 Speichern. Dann den Knopf **anlernen**: bei den meisten Modellen ein langer
 Tastendruck von 5 bis 10 Sekunden, bis eine Leuchte blinkt. Das Datenblatt sagt
