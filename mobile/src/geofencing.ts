@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import * as Location from 'expo-location'
 import * as TaskManager from 'expo-task-manager'
 import AsyncStorage from '@react-native-async-storage/async-storage'
@@ -27,6 +28,51 @@ export interface GeofenceRegion {
 
 /** Regionen, in denen sich das Gerät laut den letzten Ereignissen befindet */
 const innerhalb = new Set<string>()
+
+/**
+ * Zuletzt festgestellter Aufenthaltsort – derselbe Wert, den die App dem
+ * Alarmserver meldet.
+ *
+ * null bedeutet «kein erfasster Standort oder noch nicht bestimmt». Für die
+ * Anzeige und für ausgelöste Alarme gilt dann – genau wie auf dem Server – der
+ * Profilstandort.
+ */
+const AUFENTHALT_KEY = 'sonnenberg-geofence-aufenthalt-v1'
+let aufenthalt: string | null = null
+const zuhoerende = new Set<(id: string | null) => void>()
+
+function setzeAufenthalt(id: string | null): void {
+  if (aufenthalt === id) return
+  aufenthalt = id
+  AsyncStorage.setItem(AUFENTHALT_KEY, id ?? '').catch(() => {})
+  for (const melde of zuhoerende) melde(id)
+}
+
+/** Aufenthalt des letzten App-Laufs übernehmen (beim Start aufrufen) */
+export async function ladeAufenthalt(): Promise<void> {
+  try {
+    const roh = await AsyncStorage.getItem(AUFENTHALT_KEY)
+    if (roh !== null) setzeAufenthalt(roh || null)
+  } catch {
+    // Ohne gespeicherten Wert gilt der Profilstandort
+  }
+}
+
+/**
+ * Aufenthaltsort für die Anzeige. Ändert er sich – auch durch ein
+ * Geofence-Ereignis im Hintergrund –, zeichnet die Oberfläche neu.
+ */
+export function useAufenthalt(): string | null {
+  const [id, setId] = useState<string | null>(aufenthalt)
+  useEffect(() => {
+    setId(aufenthalt)
+    zuhoerende.add(setId)
+    return () => {
+      zuhoerende.delete(setId)
+    }
+  }, [])
+  return id
+}
 
 /**
  * Zuletzt bekannte Umrisse.
@@ -97,6 +143,7 @@ TaskManager.defineTask(GEOFENCE_TASK, async ({ data, error }) => {
     if (await wirklichDrin(id)) innerhalb.add(id)
     else innerhalb.delete(id)
   } else innerhalb.delete(id)
+  setzeAufenthalt(innerhalb.size > 0 ? [...innerhalb][0] : null)
   // Beim Hintergrund-Start ist der Gerätespeicher noch nicht geladen
   if (!authToken()) await loadApiSettings()
   if (!authToken()) return
@@ -135,12 +182,14 @@ export async function syncGeofencing(aktiv: boolean, regionen: GeofenceRegion[])
         await Location.stopGeofencingAsync(GEOFENCE_TASK)
       }
       innerhalb.clear()
+      setzeAufenthalt(null)
       return
     }
 
     const vordergrund = await Location.requestForegroundPermissionsAsync()
     if (!vordergrund.granted) {
       letzteKonfig = ''
+      setzeAufenthalt(null)
       return
     }
     // «Immer» ist für Ereignisse im Hintergrund nötig; wird es verweigert,
@@ -171,6 +220,7 @@ export async function syncGeofencing(aktiv: boolean, regionen: GeofenceRegion[])
     })
     innerhalb.clear()
     if (dort) innerhalb.add(dort.id)
+    setzeAufenthalt(dort?.id ?? null)
     if (authToken()) await api.geoReport(dort?.id ?? null)
   } catch {
     // Beim nächsten Abgleich erneut versuchen
@@ -182,6 +232,7 @@ export async function syncGeofencing(aktiv: boolean, regionen: GeofenceRegion[])
 export async function stopGeofencing(): Promise<void> {
   letzteKonfig = ''
   innerhalb.clear()
+  setzeAufenthalt(null)
   umrisse = []
   AsyncStorage.removeItem(UMRISS_KEY).catch(() => {})
   try {

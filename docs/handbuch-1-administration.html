@@ -859,6 +859,24 @@ footer .adressfuss { margin-top: 22px; }
     </p>
   </div>
   <div class="hinweis">
+    <p class="marke-klein">Profilstandort und Aufenthalt</p>
+    <p>
+      Im Benutzerprofil steht, an welchem Standort jemand angestellt ist. Der
+      <b>Aufenthalt</b> ist etwas anderes: Er kommt vom Geofence und sagt, wo die
+      Person gerade ist. Solange der Geofence etwas meldet, gilt der Aufenthalt
+      &ndash; die App zeigt ihn oben und im Profil (dort mit dem Vermerk
+      <span class="ui">vor Ort</span> und dem abweichenden Profilstandort darunter),
+      und ein SOS oder eine Alleinarbeit gilt für diesen Standort.
+    </p>
+    <p>
+      Ohne Meldung &ndash; Geofencing ausgeschaltet, Ortungsfreigabe verweigert, kein
+      Umriss beim Standort hinterlegt oder die Person an keinem erfassten Standort
+      &ndash; bleibt es beim Profilstandort. Zeigt die App dauerhaft den falschen
+      Standort, ist das die Ursache: Dann stimmt entweder der Standort im Profil
+      nicht, oder der Geofence meldet nichts.
+    </p>
+  </div>
+  <div class="hinweis">
     <p class="marke-klein">Wenn die Karte grau bleibt</p>
     <p>
       Kartenbilder und Adresssuche kommen von OpenStreetMap und werden vom
@@ -899,7 +917,6 @@ footer .adressfuss { margin-top: 22px; }
         <tr><td>Single Sign-On</td><td>Anmeldung mit E-Mail-Adresse und Passwort</td></tr>
         <tr><td>Synchronisation mit dem Personalsystem</td><td>Konten werden von Hand oder per Import gepflegt</td></tr>
         <tr><td>Mehrsprachige App-Inhalte</td><td>Alle Inhalte sind deutsch; die Sprache im Benutzerprofil ist eine Vormerkung</td></tr>
-        <tr><td>Geofencing</td><td>Alarmiert wird nach dem Standort im Profil; die App überträgt keinen Standort</td></tr>
         <tr><td>Eingehende Webhooks</td><td>Der Server nimmt keine Auslösung von aussen entgegen (z. B. Brandmeldeanlage)</td></tr>
         <tr><td>Zugangscodes</td><td>Die App kennt keine Codes; Mitarbeitende melden sich mit E-Mail und Passwort an</td></tr>
         <tr><td>Physische Alarmknöpfe</td><td>Geräte sind nicht angebunden; die Einträge dienen der Planung</td></tr>

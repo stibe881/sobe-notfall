@@ -4,6 +4,7 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
 import { StatusBar } from 'expo-status-bar'
 import { BellRing, BookOpen, CheckCircle2, MapPin, Phone, Siren, Timer, User } from 'lucide-react-native'
 import { StoreProvider, useStore } from './src/store'
+import { useAufenthalt } from './src/geofencing'
 import { ensurePermissions, onNotificationTap, setAppBadge, type PushDaten } from './src/notifications'
 import { alleinarbeitAbgleichen } from './src/liveActivity'
 import { alleinarbeitAndroidAbgleichen } from './src/androidTimer'
@@ -143,7 +144,10 @@ function Root() {
     const abo = Linking.addEventListener('url', (e) => oeffne(e.url))
     return () => abo.remove()
   }, [uebernehmeServerLink])
-  const myLocation = state.locations.find((l) => l.id === me.locationId)
+  const aufenthalt = useAufenthalt()
+  // Wo die Person gerade ist (Geofencing) geht dem Profilstandort vor – genau
+  // wie beim Server, der Alarme nach dem gemeldeten Aufenthalt zustellt.
+  const myLocation = state.locations.find((l) => l.id === (aufenthalt ?? me.locationId))
   const myAlarms = state.alarms.filter(
     (a) => a.status === 'active' && (a.deliveries.some((d) => d.userId === me.id) || a.triggeredByUserId === me.id),
   )

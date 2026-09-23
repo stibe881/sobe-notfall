@@ -10,6 +10,7 @@ import Constants from 'expo-constants'
 import { ensurePermissions } from './notifications'
 import { androidCountdownVerfuegbar } from './androidTimer'
 import { serverUrl } from './api'
+import { useAufenthalt } from './geofencing'
 import { LONE_WORK_DEFAULT_GROUPS, type Alarm, type LoneWorkSession, type Scenario, type User } from './types'
 import { Badge, Card, HoldButton, colors, formatDuration, formatRelative } from './ui'
 import { MIN_PASSWORD_LENGTH, passwordProblem } from './auth'
@@ -97,6 +98,10 @@ const ENTWARNUNG_SICHTBAR_MS = 12 * 60 * 60_000
 export function StartScreen({ onOpenScenario }: { onOpenScenario: (s: Scenario, alarm: Alarm, modus?: 'empfaenger' | 'entwarnung') => void }) {
   const { state, dispatch } = useStore()
   const me = state.users.find((u) => u.id === state.currentUserId) ?? state.users[0]
+  // Ein SOS gilt dort, wo die Person gerade ist – nicht dort, wo ihr Profil sie
+  // führt. Ohne Geofence-Meldung bleibt es beim Profilstandort.
+  const aufenthalt = useAufenthalt()
+  const standortId = aufenthalt ?? me.locationId
   const mySos = state.alarms.filter((a) => a.status === 'active' && a.triggeredByUserId === me.id)
   const myAlarms = state.alarms.filter(
     (a) => a.status === 'active' && a.triggeredByUserId !== me.id && a.deliveries.some((d) => d.userId === me.id),
@@ -112,7 +117,7 @@ export function StartScreen({ onOpenScenario }: { onOpenScenario: (s: Scenario, 
   const hotline = state.integrations?.hotline
 
   function sos() {
-    const location = state.locations.find((l) => l.id === me.locationId)
+    const location = state.locations.find((l) => l.id === standortId)
     // Der im Admin-Portal beim Szenario «SOS – Hilferuf» hinterlegte Alarmplan
     // bestimmt Empfänger:innen, Kanäle und Eskalation; ohne Plan gelten die
     // bisherigen Standardwerte.
@@ -126,7 +131,7 @@ export function StartScreen({ onOpenScenario }: { onOpenScenario: (s: Scenario, 
         requireAck: plan?.requireAck ?? true,
         channels: plan?.channels ?? ['push', 'sms', 'voice'],
         groupIds: plan?.groupIds ?? ['gr-ersthelfer', 'gr-sicherheit'],
-        locationIds: [me.locationId],
+        locationIds: [standortId],
         triggeredByUserId: me.id,
         triggeredVia: 'app',
         escalation: plan?.escalation ?? [{ afterMinutes: 3, channels: ['voice'], groupIds: ['gr-krisenstab'], notifyEmergencyServices: true }],
@@ -406,7 +411,9 @@ export function ScenarioDetailScreen({
   const [notifiedUserIds, setNotifiedUserIds] = useState<string[]>([])
 
   const me = state.users.find((u) => u.id === state.currentUserId) ?? state.users[0]
-  const [alarmLocationIds, setAlarmLocationIds] = useState<string[]>([me.locationId])
+  // Vorausgewählt ist der Standort, an dem die auslösende Person gerade ist
+  const aufenthalt = useAufenthalt()
+  const [alarmLocationIds, setAlarmLocationIds] = useState<string[]>([aufenthalt ?? me.locationId])
   const contacts = state.contacts.filter((c) => scenario.contactIds.includes(c.id))
   // Hinweise zum Notruf gehören in die Phase «Alarmieren» – deshalb stehen sie
   // nicht mehr in den Sofortmassnahmen.
@@ -1098,6 +1105,9 @@ function FormAbschnitt({ text, rechts }: { text: string; rechts?: string }) {
 export function LoneWorkScreen() {
   const { state, dispatch } = useStore()
   const me = state.users.find((u) => u.id === state.currentUserId) ?? state.users[0]
+  // Eine Alleinarbeit läuft dort, wo die Person gerade ist
+  const aufenthalt = useAufenthalt()
+  const standortId = aufenthalt ?? me.locationId
   const [activity, setActivity] = useState('')
   const [durationMin, setDurationMin] = useState(30)
   const [silent, setSilent] = useState(false)
@@ -1132,12 +1142,12 @@ export function LoneWorkScreen() {
     })
     .sort((a, b) => a.lastName.localeCompare(b.lastName, 'de'))
   const vorschau = alleinarbeitEmpfaenger(state.users, {
-    id: '', userId: me.id, locationId: me.locationId, activity: '', startedAt: 0, durationMin, expiresAt: 0, silent, status: 'running',
+    id: '', userId: me.id, locationId: standortId, activity: '', startedAt: 0, durationMin, expiresAt: 0, silent, status: 'running',
     alertGroupIds, alertUserIds,
   })
   const anzahlEmpfaenger = vorschau.recipientUserIds
     ? vorschau.recipientUserIds.length
-    : resolveRecipients(state.users, vorschau.groupIds, [me.locationId]).filter((u) => u.id !== me.id).length
+    : resolveRecipients(state.users, vorschau.groupIds, [standortId]).filter((u) => u.id !== me.id).length
   const toggle = (liste: string[], id: string) => (liste.includes(id) ? liste.filter((x) => x !== id) : [...liste, id])
   const nameVon = (id: string) => {
     const u = state.users.find((x) => x.id === id)
@@ -1154,7 +1164,7 @@ export function LoneWorkScreen() {
     const session: LoneWorkSession = {
       id: uid('lw'),
       userId: me.id,
-      locationId: me.locationId,
+      locationId: standortId,
       activity: activity || 'Alleinarbeit',
       startedAt: Date.now(),
       durationMin,
@@ -1484,7 +1494,13 @@ function PushStatusCard() {
 export function ProfileScreen() {
   const { state, dispatch, logout, serverStatus } = useStore()
   const me = state.users.find((u) => u.id === state.currentUserId) ?? state.users[0]
-  const myLocation = state.locations.find((l) => l.id === me.locationId)
+  // Der Profilstandort sagt, wo jemand angestellt ist – der Aufenthalt, wo die
+  // Person gerade wirklich ist. Weichen sie voneinander ab, zeigt das Profil
+  // beides: Alarme gelten nach dem Aufenthalt.
+  const aufenthalt = useAufenthalt()
+  const profilStandort = state.locations.find((l) => l.id === me.locationId)
+  const vorOrt = aufenthalt ? state.locations.find((l) => l.id === aufenthalt) : undefined
+  const myLocation = vorOrt ?? profilStandort
   const myGroups = state.groups.filter((g) => me.groupIds.includes(g.id))
 
   return (
@@ -1501,8 +1517,12 @@ export function ProfileScreen() {
         </View>
         <View style={[styles.row, { marginTop: 10 }]}>
           <MapPin size={14} color={colors.faint} />
-          <Text style={styles.body}>{myLocation?.name}</Text>
+          <Text style={styles.body}>{myLocation?.name ?? 'kein Standort'}</Text>
+          {vorOrt ? <Badge label="vor Ort" color="green" /> : null}
         </View>
+        {vorOrt && vorOrt.id !== me.locationId ? (
+          <Text style={[styles.faint, { marginTop: 4 }]}>Profilstandort: {profilStandort?.name ?? 'keiner'}</Text>
+        ) : null}
         <View style={[styles.row, { marginTop: 8, flexWrap: 'wrap', gap: 6 }]}>
           {myGroups.map((g) => <Badge key={g.id} label={g.name} />)}
         </View>

@@ -5,7 +5,7 @@ import { CHANNEL_LABELS, LONE_WORK_DEFAULT_GROUPS } from './types'
 import { LIVE_INITIAL_PASSWORD, SCENARIO_CONTENT_VERSION, SEED_SCENARIOS, SEED_USERS } from './seed'
 import { hashPassword, randomSalt } from './auth'
 import { criticalAlertsGranted, getPushToken, notifyNow } from './notifications'
-import { stopGeofencing, syncGeofencing, type GeofenceRegion } from './geofencing'
+import { ladeAufenthalt, stopGeofencing, syncGeofencing, type GeofenceRegion } from './geofencing'
 import { ApiError, api, authToken, loadApiSettings, merkeServerInfo, setAuthToken, setFallbackUrl, setServerUrl, type ServerData } from './api'
 
 /** Erhöhen, wenn gespeicherte Passwortdaten einmalig korrigiert werden müssen */
@@ -640,6 +640,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   )
 
   useEffect(() => {
+    void ladeAufenthalt()
     loadApiSettings()
       .then(() => ladeZustand())
       .then((loaded) => rawDispatch({ type: 'HYDRATE', state: loaded }))
