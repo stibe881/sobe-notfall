@@ -376,6 +376,10 @@ export interface LorawanEreignis {
    * gemeldet statt stillschweigend als Statusmeldung verbucht.
    */
   ohneDecoder?: boolean
+  /** Rohe Nutzlast, wie der Netzserver sie schickt – Base64 oder Hex */
+  daten?: string
+  /** LoRaWAN-Port; viele Geräte unterscheiden daran die Art der Meldung */
+  fPort?: number
   /**
    * Namen der übersetzten Felder. Nur für die Inbetriebnahme: Daran ist zu
    * sehen, ob der Payload-Decoder greift und wie er den Knopfdruck nennt.
@@ -486,6 +490,14 @@ function alsProzent(wert: unknown): number | undefined {
   return pct <= 100 ? Math.round(pct) : undefined
 }
 
+/**
+ * Zellspannung in Millivolt in einen Prozentwert schätzen – für die Modelle,
+ * deren Nutzlast der Alarmserver selbst übersetzt.
+ */
+export function alsBatterieProzent(millivolt: number | undefined): number | undefined {
+  return millivolt === undefined ? undefined : alsProzent(millivolt)
+}
+
 function ausSpannung(volt: number): number {
   const anteil = (volt - ZELLE_LEER_V) / (ZELLE_VOLL_V - ZELLE_LEER_V)
   return Math.round(Math.min(1, Math.max(0, anteil)) * 100)
@@ -567,6 +579,8 @@ export function parseLorawanUplink(body: unknown): LorawanEreignis | null {
       batteryPct: alsProzent(batterieAus(nutzlast) ?? b.uplink_message?.last_battery_percentage?.value),
       gps: gpsAus(nutzlast),
       felder: Object.keys(nutzlast),
+      daten: typeof b.uplink_message?.frm_payload === 'string' ? b.uplink_message.frm_payload : undefined,
+      fPort: Number.isFinite(Number(b.uplink_message?.f_port)) ? Number(b.uplink_message.f_port) : undefined,
       ohneDecoder: Object.keys(nutzlast).length === 0 && Boolean(b.uplink_message?.frm_payload),
     }
   }
@@ -580,6 +594,8 @@ export function parseLorawanUplink(body: unknown): LorawanEreignis | null {
       batteryPct: alsProzent(batterieAus(nutzlast) ?? batterieAusStatus(b)),
       gps: gpsAus(nutzlast),
       felder: Object.keys(nutzlast),
+      daten: typeof b.data === 'string' ? b.data : undefined,
+      fPort: Number.isFinite(Number(b.fPort ?? b.fport)) ? Number(b.fPort ?? b.fport) : undefined,
       ohneDecoder: Object.keys(nutzlast).length === 0 && Boolean(b.data),
     }
   }
@@ -596,6 +612,8 @@ export function parseLorawanUplink(body: unknown): LorawanEreignis | null {
       batteryPct: alsProzent(batterieAus(nutzlast) ?? batterieAusStatus(b)),
       gps: gpsAus(nutzlast),
       felder: Object.keys(nutzlast),
+      daten: typeof b.data === 'string' ? b.data : undefined,
+      fPort: Number.isFinite(Number(b.fPort ?? b.fport)) ? Number(b.fPort ?? b.fport) : undefined,
       ohneDecoder: Object.keys(nutzlast).length === 0 && Boolean(b.data),
     }
   }

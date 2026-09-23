@@ -353,7 +353,11 @@ Administrationsportal unter **Integrationen** konfiguriert:
   entgegen, geschützt durch ein Zugangstoken aus dem Portal. Ein Uplink ohne
   übersetzte Nutzlast wird mit 422 abgewiesen und einmal je Tag im
   Ereignisprotokoll gemeldet: Ohne Payload-Decoder im Netzserver bliebe ein
-  Knopfdruck unerkannt. Statusmeldungen
+  Knopfdruck unerkannt – es sei denn, beim Knopf ist ein **Modell** hinterlegt
+  (`geraetetyp`): Für die in `geraetedecoder.ts` geführten Geräte übersetzt der
+  Server die rohe Nutzlast selbst. Das ist nötig, weil der in Gateways
+  eingebaute Netzserver meist keinen eigenen Payload-Decoder aufnehmen kann.
+  Statusmeldungen
   aktualisieren Batterie und «letztes Signal» der registrierten Knöpfe
   (Zuordnung über Seriennummer/DevEUI); ein Knopfdruck löst den am Knopf
   hinterlegten stillen Alarm mit Eskalation aus, doppelte Drücke werden

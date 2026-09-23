@@ -223,6 +223,11 @@ export interface AlarmButton {
   escalateToEmergencyServicesAfterMin: number
   /** Szenario des ausgelösten Alarms; ohne Angabe Gewalt/Bedrohung */
   scenarioId?: string
+  /**
+   * Modell des Geräts. Bei bekannten Modellen übersetzt der Alarmserver die
+   * Nutzlast selbst – nötig, wenn der Netzserver keinen Payload-Decoder kennt.
+   */
+  geraetetyp?: string
   /** Wann der Server zuletzt wegen Stille bzw. schwacher Batterie gewarnt hat */
   gewarnt?: { stillAt?: number; batterieAt?: number }
 }

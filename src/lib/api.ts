@@ -259,6 +259,9 @@ export const api = {
   lorawanInfo: () =>
     anfrage<{ url: string; token: string | null; enabled: boolean; provider: string }>('/integrations/lorawan'),
   lorawanNewToken: () => anfrage<{ token: string }>('/integrations/lorawan/token', { method: 'POST' }),
+  /** Modelle, deren Nutzlast der Alarmserver selbst übersetzen kann */
+  lorawanGeraetetypen: () =>
+    anfrage<{ typen: { id: string; name: string; hinweis: string }[] }>('/integrations/lorawan/geraetetypen'),
   /** Die letzten Uplinks – Sichthilfe beim Einrichten des Netzservers */
   lorawanUplinks: () =>
     anfrage<{ uplinks: {

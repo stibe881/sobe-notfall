@@ -406,6 +406,77 @@ async function main(): Promise<void> {
     typeof nachEnde.body.alarm === 'string' && nachEnde.body.alarm !== drAlarm.body.alarm)
   await ruf(`/alarms/${nachEnde.body.alarm}/end`, { method: 'POST', token: adminToken })
 
+  // --- Rohe Nutzlast: Der Alarmserver übersetzt bekannte Modelle selbst ---
+  // Alarm & BAT des TrackerD: 1 Bit reserviert, 1 Bit Alarm, 14 Bit Millivolt.
+  // 0x0FA2 = 4002 mV ohne Alarm, 0x4FA2 = dasselbe mit gesetztem Alarmbit.
+  const alsB64 = (hex: string) => Buffer.from(hex, 'hex').toString('base64')
+
+  await ruf('/buttons', {
+    method: 'POST', token: adminToken,
+    body: JSON.stringify({
+      id: 'btn-roh', name: 'TrackerD Test', type: 'lorawan', serial: 'A84041000181D2C7',
+      geraetetyp: 'dragino-trackerd', batteryPct: 100, lastSeen: Date.now(),
+      messageTemplate: 'Test', targetGroupIds: ['gr-sicherheit'], escalateToEmergencyServicesAfterMin: 5,
+    }),
+  })
+  const rohStatus = await ruf('/hooks/lorawan', {
+    method: 'POST', token: lwToken.body.token,
+    body: JSON.stringify({ applicationID: '1', devEUI: 'A84041000181D2C7', rxInfo: [], fPort: 7, data: alsB64('0FA200') }),
+  })
+  pruefe('Rohe Nutzlast wird ohne Netzserver-Decoder übersetzt',
+    rohStatus.status === 200 && rohStatus.body.alarm === null)
+  // 4002 mV auf der Lithium-Kennlinie: (4,002 - 3,0) / (4,2 - 3,0) = 83 %
+  pruefe('Millivolt aus der rohen Nutzlast ergeben Prozent',
+    (await ruf('/state', { token: adminToken })).body.buttons.find((b: any) => b.id === 'btn-roh')?.batteryPct === 83)
+
+  const rohAlarm = await ruf('/hooks/lorawan', {
+    method: 'POST', token: lwToken.body.token,
+    body: JSON.stringify({ applicationID: '1', devEUI: 'A84041000181D2C7', rxInfo: [], fPort: 7, data: alsB64('4FA200') }),
+  })
+  pruefe('Alarmbit in der rohen Nutzlast löst aus', typeof rohAlarm.body.alarm === 'string')
+  await ruf(`/alarms/${rohAlarm.body.alarm}/end`, { method: 'POST', token: adminToken })
+
+  // Port 3: Standardbetrieb, Alarm & BAT liegen hinter den acht Positionsbytes
+  const port3 = await ruf('/hooks/lorawan', {
+    method: 'POST', token: lwToken.body.token,
+    body: JSON.stringify({
+      applicationID: '1', devEUI: 'A84041000181D2C7', rxInfo: [], fPort: 3,
+      data: alsB64('0000000000000000' + '4FA2' + '00'),
+    }),
+  })
+  pruefe('TrackerD Port 3: Alarm an der richtigen Stelle gelesen', typeof port3.body.alarm === 'string')
+  await ruf(`/alarms/${port3.body.alarm}/end`, { method: 'POST', token: adminToken })
+
+  // PB01: Spannung (2), Ton (1), Alarm (1), Temperatur (2), Feuchte (2)
+  await ruf('/buttons', {
+    method: 'POST', token: adminToken,
+    body: JSON.stringify({
+      id: 'btn-pb01', name: 'PB01 Test', type: 'lorawan', serial: 'A840410001820000',
+      geraetetyp: 'dragino-pb01', batteryPct: 100, lastSeen: Date.now(),
+      messageTemplate: 'Test', targetGroupIds: ['gr-sicherheit'], escalateToEmergencyServicesAfterMin: 5,
+    }),
+  })
+  const pbRuhe = await ruf('/hooks/lorawan', {
+    method: 'POST', token: lwToken.body.token,
+    body: JSON.stringify({ applicationID: '1', devEUI: 'A840410001820000', rxInfo: [], fPort: 2, data: alsB64('0CEA000000000000') }),
+  })
+  pruefe('PB01 ohne Tastendruck löst nicht aus', pbRuhe.status === 200 && pbRuhe.body.alarm === null)
+  pruefe('PB01 meldet 3306 mV als Prozent',
+    (await ruf('/state', { token: adminToken })).body.buttons.find((b: any) => b.id === 'btn-pb01')?.batteryPct === 26)
+  const pbDruck = await ruf('/hooks/lorawan', {
+    method: 'POST', token: lwToken.body.token,
+    body: JSON.stringify({ applicationID: '1', devEUI: 'A840410001820000', rxInfo: [], fPort: 2, data: alsB64('0CEA000100000000') }),
+  })
+  pruefe('PB01 Tastendruck löst aus', typeof pbDruck.body.alarm === 'string')
+  await ruf(`/alarms/${pbDruck.body.alarm}/end`, { method: 'POST', token: adminToken })
+
+  // Ohne hinterlegtes Modell bleibt es beim Hinweis auf den fehlenden Decoder
+  const ohneModell = await ruf('/hooks/lorawan', {
+    method: 'POST', token: lwToken.body.token,
+    body: JSON.stringify({ applicationID: '1', devEUI: 'LWTEST99', rxInfo: [], fPort: 2, data: alsB64('0CEA000100000000') }),
+  })
+  pruefe('Ohne hinterlegtes Modell weiterhin «ohne übersetzte Nutzlast»', ohneModell.status === 422)
+
   // Gerätestatus des Netzservers: Batterie im Umschlag statt in der Nutzlast
   const status = await ruf('/hooks/lorawan', {
     method: 'POST', token: lwToken.body.token,

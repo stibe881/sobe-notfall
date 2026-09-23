@@ -9,10 +9,11 @@ import { addClient } from './events.js'
 import { broadcast } from './events.js'
 import { UEBUNG, alarmPush, ausgehendeWebhooks, entwarnungPush, lagemeldungPush, pruefeAlarmknoepfe, testPush } from './engine.js'
 import {
-  erstelleKonferenz, graphToken, letzteUplinks, lorawanTokenAusRequest, lorawanTokenGueltig, merkeUplink,
+  alsBatterieProzent, erstelleKonferenz, graphToken, letzteUplinks, lorawanTokenAusRequest, lorawanTokenGueltig, merkeUplink,
   mergeIntegrationen, neuesLorawanToken, normierteSerie, parseLorawanUplink, sendeSms, sendeTeamsKarte,
 } from './integrationen.js'
 import { sendeAlarmKanaele, sendeInfoKanaele } from './kanaele.js'
+import { GERAETETYPEN, dekodiere } from './geraetedecoder.js'
 import { rolleAusGruppen, ssoAbbruch, ssoCallback, ssoKonfiguriert, ssoStartUrl, ssoTest, ssoZiel } from './sso.js'
 import { geraeteProPerson, letzterTestpush, pushDienstStatus, registerPushToken, removePushToken } from './push.js'
 import { readFileSync, readdirSync, statSync } from 'node:fs'
@@ -856,6 +857,10 @@ const unbekanntGemeldet = new Map<string, number>()
  * Die letzten Uplinks – Sichthilfe für die Inbetriebnahme. Nur Administration,
  * denn daraus sind Gerätekennungen und Meldeverhalten ablesbar.
  */
+router.get('/integrations/lorawan/geraetetypen', auth, (_req, res) => {
+  res.json({ typen: GERAETETYPEN })
+})
+
 router.get('/integrations/lorawan/uplinks', auth, adminOnly, (_req, res) => {
   res.json({ uplinks: letzteUplinks() })
 })
@@ -900,6 +905,22 @@ router.post('/hooks/lorawan', async (req, res) => {
     gps: ereignis.gps ?? knopf.gps,
   }
   upsertDoc('buttons', knopf.id, aktualisiert)
+
+  // Kennt der Netzserver keinen Payload-Decoder, übersetzt der Alarmserver die
+  // Nutzlast der hinterlegten Modelle selbst. Das ist beim eingebauten
+  // Netzserver vieler Gateways der Regelfall – dort gibt es gar keinen Platz
+  // für einen eigenen Decoder.
+  if (ereignis.ohneDecoder && ereignis.daten && knopf.geraetetyp && knopf.geraetetyp !== 'auto') {
+    const roh = dekodiere(knopf.geraetetyp, ereignis.daten, ereignis.fPort)
+    if (roh) {
+      ereignis.alarm = roh.alarm
+      ereignis.batteryPct = alsBatterieProzent(roh.batterieMv)
+      ereignis.ohneDecoder = false
+      ereignis.felder = ['alarm', 'batterieMv']
+      aktualisiert.batteryPct = ereignis.batteryPct ?? aktualisiert.batteryPct
+      upsertDoc('buttons', knopf.id, aktualisiert)
+    }
+  }
 
   // Ein Uplink ohne übersetzte Nutzlast kann keinen Knopfdruck zeigen: Im
   // Netzserver fehlt der Payload-Decoder. Der Knopf meldet sich also, löst aber

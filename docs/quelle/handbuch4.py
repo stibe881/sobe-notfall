@@ -439,6 +439,18 @@ KOERPER = r"""
     <li>Mit <span class="ui">Auslösen (Test)</span> die Kette prüfen, danach am Gerät selbst.</li>
   </ol>
   <div class="hinweis">
+    <p class="marke-klein">Wenn der Netzserver nicht übersetzen kann</p>
+    <p>
+      Der in Gateways eingebaute Netzserver nimmt oft keinen eigenen
+      Payload-Decoder auf &ndash; beim RAK WisGate stehen als Payload-Format nur
+      <span class="ui">None</span> und <span class="ui">CayenneLPP</span> zur Auswahl.
+      Für die im Portal unter <span class="ui">Alarmknöpfe &rsaquo; Modell</span> aufgeführten
+      Geräte übersetzt der Alarmserver die Nutzlast dann selbst; im Netzserver ist
+      nichts zu hinterlegen. Für alle übrigen Geräte bleibt nur ein externer
+      Netzserver mit eigenem Decoder.
+    </p>
+  </div>
+  <div class="hinweis">
     <p class="marke-klein">Beim Einrichten: Letzte Uplinks</p>
     <p>
       Unter <span class="ui">Integrationen &rsaquo; LoRaWAN-Netz / Alarmknöpfe</span> steht

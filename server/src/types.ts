@@ -217,6 +217,12 @@ export interface AlarmButton {
   /** Szenario des ausgelösten Alarms; ohne Angabe Gewalt/Bedrohung */
   scenarioId?: string
   /**
+   * Modell des Geräts. Bei bekannten Modellen übersetzt der Alarmserver die
+   * Nutzlast selbst – nötig, wenn der Netzserver keinen Payload-Decoder kennt.
+   * Ohne Angabe gilt die Übersetzung des Netzservers.
+   */
+  geraetetyp?: string
+  /**
    * Wann zuletzt wegen Stille bzw. schwacher Batterie gewarnt wurde. Verhindert,
    * dass derselbe Zustand alle zehn Minuten erneut gemeldet wird; meldet sich
    * der Knopf wieder oder wird die Batterie gewechselt, wird der Eintrag

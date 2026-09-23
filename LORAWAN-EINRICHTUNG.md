@@ -143,7 +143,7 @@ Verbindung zum Alarmserver hängt.
 | Application settings | Application name | `sobe_notfall` |
 | Application settings | Application description | `Alarmknöpfe SOBE Notfall` |
 | Application settings | Application Type | **`Separate Application keys`** – jeder Knopf bringt seinen eigenen AppKey ab Werk mit. `Unified Application key` gäbe allen Geräten denselben Schlüssel und setzte voraus, dass Sie die Knöpfe selbst umprogrammieren |
-| Payload format | **Payload type** | **nicht `None`** – die Auswahl, mit der sich ein eigener Decoder hinterlegen lässt (Schritt 6b) |
+| Payload format | **Payload type** | `None` für die Dragino-Geräte – siehe Schritt 6b |
 | Payload format | **Only forward data object** | **aus** – siehe Kasten |
 | Integration Parameters | Decode Type | `Base 64` |
 | Integration Parameters | Report LoRa® Radio Information | **ein** |
@@ -188,20 +188,32 @@ Diese Angaben stehen im Datenblatt des Knopfs:
 Raten Sie hier nicht. Stimmt die MAC-Version nicht, gelingt das Anlernen in
 Schritt 9 nicht, und die Fehlermeldung sagt Ihnen nicht warum.
 
-### 6b – Den Decoder eintragen
+### 6b – Den Decoder: wer übersetzt?
 
-**Nicht im Geräteprofil**, sondern in der Anwendung aus Schritt 5: Bereich
-**`Payload format`**, Feld **`Payload type`**.
+In der Anwendung aus Schritt 5, Bereich **`Payload format`**, Feld
+**`Payload type`**. Zur Auswahl stehen dort beim WisGate nur **`None`** und
+**`CayenneLPP`** – einen eigenen Decoder kann dieser Netzserver **nicht**
+aufnehmen.
 
-1. Statt `None` die Auswahl treffen, mit der sich ein eigener Decoder
-   hinterlegen lässt (je nach Firmware `Custom`, `JavaScript` oder ähnlich).
-2. Den Decoder des Herstellers vollständig hineinkopieren.
-3. **`Only forward data object`** ausgeschaltet lassen.
-4. Speichern.
+Das ist kein Hindernis, sondern verschiebt nur die Zuständigkeit:
 
-Bleibt `Payload type` auf `None`, kommen beim Alarmserver nur rohe Bytes an:
-«Letzte Uplinks» meldet dann «ohne übersetzte Nutzlast», und ein Knopfdruck
-bleibt unerkannt.
+| Ihr Gerät | Payload type | Wer übersetzt |
+| --- | --- | --- |
+| **Dragino TrackerD, Dragino PB01** | **`None`** | der Alarmserver – Modell in Schritt 10 auswählen |
+| Gerät, das CayenneLPP spricht | `CayenneLPP` | der Netzserver |
+| Anderes Gerät | `None` | niemand – dann geht es nur über einen externen Netzserver (Anhang B) |
+
+Zusätzlich:
+
+- **`Only forward data object`** ausgeschaltet lassen.
+- **`Decode Type`** auf **`Base 64`** – der Alarmserver versteht auch
+  `HEX string`, aber Base 64 ist das übliche Format.
+
+Für die beiden Dragino-Geräte ist hier also **nichts einzutragen**: `None`
+stehen lassen und weiter. Die Übersetzung übernimmt der Alarmserver, sobald in
+Schritt 10 das Modell hinterlegt ist. Ein Decoder weniger, der gepflegt werden
+muss – und er gilt unverändert weiter, falls das Netz später über einen anderen
+Netzserver läuft.
 
 ### 6c – Die Übersetzungszeile
 
@@ -365,6 +377,7 @@ vorgesehenen Stelle.
 | --- | --- |
 | **Bezeichnung** | derselbe Ort wie im Netzserver, z. B. `Eingang Weststrasse` |
 | **Typ** | `LoRaWAN` |
+| **Modell** | `Dragino TrackerD` bzw. `Dragino PB01`. Damit übersetzt der Alarmserver die Nutzlast selbst – nötig, weil der Netzserver im Gateway das nicht kann. Für Geräte mit Decoder im Netzserver bleibt es bei `Netzserver übersetzt` |
 | **Seriennummer** | **die DevEUI** – kopiert aus «Letzte Uplinks» oder vom Etikett. Gross-/Kleinschreibung und Bindestriche sind egal |
 | **Standort** | der Standort, für den der Alarm gilt |
 | **Zugewiesene Person** | nur bei einem tragbaren Knopf; beim fest montierten leer lassen |
@@ -398,7 +411,7 @@ Eintrag. Was dort steht, sagt Ihnen genau, wo Sie stehen:
 | **Alarm ausgelöst** | Die Kette steht. | Weiter mit Schritt 12. |
 | **Statusmeldung** mit aufgeführten Feldern | Der Uplink kam an, aber kein Feld sah nach Alarm aus. | Die angezeigten Feldnamen ablesen und in Schritt 6c die Übersetzungszeile eintragen. |
 | **Gerät nicht registriert** | Die DevEUI im Portal weicht ab. | Kennung aus der Liste kopieren und in Schritt 10 als Seriennummer eintragen. |
-| **ohne übersetzte Nutzlast** | Der Payload-Decoder fehlt oder wirft einen Fehler. | Zurück zu Schritt 6b. |
+| **ohne übersetzte Nutzlast** | Niemand hat die Bytes übersetzt. | Bei den Dragino-Geräten: In Schritt 10 das **Modell** auswählen. Sonst: Decoder im Netzserver, Schritt 6b. |
 | **Token abgewiesen** | Das Gateway sendet ein anderes Token. | Zurück zu Schritt 8, Token neu kopieren. |
 | **Format nicht verstanden** | Die Integration schickt kein JSON. | In Schritt 8 Payload marshaler auf `JSON` stellen. |
 | **gar nichts** | Der Uplink hat den Alarmserver nie erreicht. | Nicht im Portal suchen. Im Gateway nachsehen: Kommt der Uplink beim Netzserver an? Was meldet die HTTP-Integration als Antwort? Erscheint dort gar kein Uplink, ist es Funk oder Frequenzplan (Schritt 3). |

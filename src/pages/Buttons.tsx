@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { BatteryLow, BatteryMedium, BatteryFull, MapPin, Pencil, Plus, Radio, Trash2, Zap, PlugZap, Check } from 'lucide-react'
 import { createAlarm, uid, useStore } from '../store'
+import { api } from '../lib/api'
 import type { AlarmButton } from '../types'
 import { Badge, Button, Card, Field, Modal, formatDateTime, inputClass, useConfirm } from '../components/ui'
 
@@ -148,6 +149,13 @@ export default function Buttons() {
 function ButtonEditor({ button, onClose }: { button: AlarmButton; onClose: () => void }) {
   const { state, dispatch } = useStore()
   const [draft, setDraft] = useState<AlarmButton>({ ...button })
+  // Welche Modelle der Alarmserver selbst übersetzen kann, weiss nur er
+  const [typen, setTypen] = useState<{ id: string; name: string; hinweis: string }[]>([
+    { id: 'auto', name: 'Netzserver übersetzt (Standard)', hinweis: '' },
+  ])
+  useEffect(() => {
+    api.lorawanGeraetetypen().then((a) => setTypen(a.typen)).catch(() => {})
+  }, [])
 
   return (
     <Modal title={button.name ? `Alarmknopf: ${button.name}` : 'Alarmknopf registrieren'} onClose={onClose}>
@@ -165,6 +173,18 @@ function ButtonEditor({ button, onClose }: { button: AlarmButton; onClose: () =>
           <input className={inputClass} value={draft.serial} onChange={(e) => setDraft({ ...draft, serial: e.target.value })} />
         </Field>
       </div>
+      <Field label="Modell">
+        <select
+          className={inputClass}
+          value={draft.geraetetyp ?? 'auto'}
+          onChange={(e) => setDraft({ ...draft, geraetetyp: e.target.value })}
+        >
+          {typen.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+        </select>
+        <p className="text-xs text-slate-500 mt-1">
+          {typen.find((t) => t.id === (draft.geraetetyp ?? 'auto'))?.hinweis}
+        </p>
+      </Field>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Field label="Standort">
           <select className={inputClass} value={draft.locationId ?? ''} onChange={(e) => setDraft({ ...draft, locationId: e.target.value || undefined })}>
