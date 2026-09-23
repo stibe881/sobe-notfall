@@ -540,6 +540,22 @@ function gpsAus(nutzlast: Record<string, unknown>): { lat: number; lng: number }
   return Number.isFinite(lat) && Number.isFinite(lng) && (lat !== 0 || lng !== 0) ? { lat, lng } : undefined
 }
 
+/**
+ * Trägt diese Meldung überhaupt eine Funknutzlast?
+ *
+ * Manche Gateways verlangen, dass für Beitritt, Quittung und Gerätezustand
+ * dieselbe Adresse hinterlegt wird wie für die Uplinks – beim RAK WisGate
+ * lässt sich die Anwendung sonst gar nicht speichern. An diesem Endpunkt
+ * treffen dann Meldungen ein, die nie von einem Tastendruck stammen können.
+ *
+ * Ein Alarm darf nur aus einer echten Funknutzlast entstehen. Was weder
+ * übersetzte noch rohe Daten mitbringt, gilt als Lebenszeichen – auch wenn im
+ * Umschlag zufällig ein Feld steht, das nach Alarm klingt.
+ */
+function istFunkmeldung(b: Record<string, unknown>): boolean {
+  return b.object !== undefined || b.data !== undefined
+}
+
 /** Batteriestand aus einer übersetzten Nutzlast, unter allen gängigen Namen */
 function batterieAus(nutzlast: Record<string, unknown>): unknown {
   return ausFeldern(nutzlast, 'battery', 'batteryPct', 'battery_level', 'batteryLevel', 'bat', 'batV', 'battery_percent')
@@ -575,7 +591,7 @@ export function parseLorawanUplink(body: unknown): LorawanEreignis | null {
     const nutzlast = (b.uplink_message?.decoded_payload ?? {}) as Record<string, unknown>
     return {
       geraet: alsGeraetekennung(b.end_device_ids.dev_eui ?? b.end_device_ids.device_id),
-      alarm: istAlarmNutzlast(nutzlast),
+      alarm: b.uplink_message !== undefined && istAlarmNutzlast(nutzlast),
       batteryPct: alsProzent(batterieAus(nutzlast) ?? b.uplink_message?.last_battery_percentage?.value),
       gps: gpsAus(nutzlast),
       felder: Object.keys(nutzlast),
@@ -590,7 +606,7 @@ export function parseLorawanUplink(body: unknown): LorawanEreignis | null {
     const nutzlast = (b.object ?? {}) as Record<string, unknown>
     return {
       geraet: alsGeraetekennung(b.deviceInfo.devEui),
-      alarm: istAlarmNutzlast(nutzlast),
+      alarm: istFunkmeldung(b) && istAlarmNutzlast(nutzlast),
       batteryPct: alsProzent(batterieAus(nutzlast) ?? batterieAusStatus(b)),
       gps: gpsAus(nutzlast),
       felder: Object.keys(nutzlast),
@@ -608,7 +624,7 @@ export function parseLorawanUplink(body: unknown): LorawanEreignis | null {
     const nutzlast = (b.object ?? {}) as Record<string, unknown>
     return {
       geraet: alsGeraetekennung(v3),
-      alarm: istAlarmNutzlast(nutzlast),
+      alarm: istFunkmeldung(b) && istAlarmNutzlast(nutzlast),
       batteryPct: alsProzent(batterieAus(nutzlast) ?? batterieAusStatus(b)),
       gps: gpsAus(nutzlast),
       felder: Object.keys(nutzlast),

@@ -406,6 +406,20 @@ async function main(): Promise<void> {
     typeof nachEnde.body.alarm === 'string' && nachEnde.body.alarm !== drAlarm.body.alarm)
   await ruf(`/alarms/${nachEnde.body.alarm}/end`, { method: 'POST', token: adminToken })
 
+  // Beitritts-, Quittungs- und Zustandsmeldungen treffen am selben Endpunkt ein,
+  // weil manche Gateways für alle vier Ereignisarten dieselbe Adresse verlangen.
+  // Aus ihnen darf nie ein Alarm entstehen, auch nicht bei verfänglichen Feldern.
+  const beitritt = await ruf('/hooks/lorawan', {
+    method: 'POST', token: lwToken.body.token,
+    body: JSON.stringify({ applicationID: '1', devEUI: 'LWTEST99', devAddr: '01020304', type: 'alarm', alarm: true }),
+  })
+  pruefe('Beitrittsmeldung löst keinen Alarm aus', beitritt.status === 200 && beitritt.body.alarm === null)
+  const quittung = await ruf('/hooks/lorawan', {
+    method: 'POST', token: lwToken.body.token,
+    body: JSON.stringify({ applicationID: '1', devEUI: 'LWTEST99', acknowledged: true, fCnt: 12, sos: 1 }),
+  })
+  pruefe('Quittungsmeldung löst keinen Alarm aus', quittung.status === 200 && quittung.body.alarm === null)
+
   // Manche Gateways lassen im Kopfzeilen-Wert kein Leerzeichen zu: Das nackte
   // Token ohne «Bearer » muss deshalb genauso gelten.
   const nacktesToken = await fetch(`${BASIS}/api/hooks/lorawan`, {

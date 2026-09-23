@@ -293,8 +293,23 @@ erscheinen die Felder.
 
 | Feld | Eintrag |
 | --- | --- |
-| Uplink data URL / Event endpoint URL | `https://temp-gross-ict.ch/api/hooks/lorawan` |
-| Format, falls wählbar | **`JSON`** |
+| **Uplink data URL** | `https://temp-gross-ict.ch/api/hooks/lorawan` |
+| **Join notification URL** | **dieselbe Adresse** |
+| **Ack notification URL** | **dieselbe Adresse** |
+| **Device-status notification URL** | **dieselbe Adresse** |
+| Maximum number of concurrent connections / queue | `16` / `64` so lassen |
+
+> **Alle vier Adressfelder ausfüllen – auch die, die Sie nicht brauchen.**
+>
+> Bleibt eines leer, weist das WisGate-Formular die ganze Anwendung mit
+> «There are invalid fields» ab, **ohne zu sagen, welches Feld es meint**. Man
+> sucht dann stundenlang bei der Kopfzeile, beim Namen oder bei der Adresse.
+>
+> Die zusätzlichen Meldungen schaden nicht: Der Alarmserver verbucht Beitritt,
+> Quittung und Gerätezustand als Lebenszeichen. Ein Alarm kann daraus nicht
+> entstehen – dafür braucht es eine echte Funknutzlast. Die Meldung über den
+> **Gerätezustand** ist sogar nützlich: Sie liefert den Batteriestand, ohne dass
+> ihn das Gerät in seiner Nutzlast mitschicken müsste.
 
 Für das **Token** gibt es drei Wege, in dieser Reihenfolge zu versuchen:
 
