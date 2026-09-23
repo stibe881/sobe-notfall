@@ -228,6 +228,8 @@ export interface AlarmButton {
    * Nutzlast selbst – nötig, wenn der Netzserver keinen Payload-Decoder kennt.
    */
   geraetetyp?: string
+  /** Still alarmieren: Mitteilung ohne Ton und ohne Vibration. Ohne Angabe laut. */
+  silent?: boolean
   /** Wann der Server zuletzt wegen Stille bzw. schwacher Batterie gewarnt hat */
   gewarnt?: { stillAt?: number; batterieAt?: number }
 }

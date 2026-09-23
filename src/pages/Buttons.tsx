@@ -4,7 +4,7 @@ import { BatteryLow, BatteryMedium, BatteryFull, MapPin, Pencil, Plus, Radio, Tr
 import { createAlarm, uid, useStore } from '../store'
 import { api } from '../lib/api'
 import type { AlarmButton } from '../types'
-import { Badge, Button, Card, Field, Modal, formatDateTime, inputClass, useConfirm } from '../components/ui'
+import { Badge, Button, Card, Field, Modal, Toggle, formatDateTime, inputClass, useConfirm } from '../components/ui'
 
 export default function Buttons() {
   const { state, dispatch } = useStore()
@@ -38,7 +38,7 @@ export default function Buttons() {
     const alarm = createAlarm(state, {
       scenarioId: button.scenarioId ?? 'sc-gewalt',
       message: `${button.messageTemplate} (Knopf: ${button.name}, ${button.serial}${button.gps ? `, GPS ${button.gps.lat.toFixed(4)}/${button.gps.lng.toFixed(4)}` : ''})`,
-      silent: true,
+      silent: button.silent ?? false,
       requireAck: true,
       channels: ['push', 'sms'],
       groupIds: button.targetGroupIds,
@@ -49,7 +49,7 @@ export default function Buttons() {
         { afterMinutes: button.escalateToEmergencyServicesAfterMin, channels: ['voice', 'sms'], groupIds: ['gr-krisenstab'], notifyEmergencyServices: true },
       ],
     })
-    dispatch({ type: 'TRIGGER_ALARM', alarm, audit: `Alarmknopf ausgelöst: ${button.name} (${button.type.toUpperCase()}) – stille Alarmierung mit Standortübertragung` })
+    dispatch({ type: 'TRIGGER_ALARM', alarm, audit: `Alarmknopf ausgelöst: ${button.name} (${button.type.toUpperCase()}) – ${alarm.silent ? 'stille' : 'laute'} Alarmierung` })
     navigate('/monitor')
   }
 
@@ -121,6 +121,7 @@ export default function Buttons() {
                     <Badge color={nieGemeldet ? 'slate' : batterieSchwach ? 'red' : 'green'}>
                       <BatteryIcon size={12} /> {nieGemeldet ? 'unbekannt' : `${b.batteryPct} %`}
                     </Badge>
+                    {b.silent && <Badge color="violet">still</Badge>}
                     {nieGemeldet && <Badge color="amber">noch nie gemeldet</Badge>}
                     {stummSeit && <Badge color="amber">ohne Signal</Badge>}
                   </div>
@@ -249,6 +250,18 @@ function ButtonEditor({ button, onClose }: { button: AlarmButton; onClose: () =>
           ))}
         </div>
       </Field>
+      <div className="mt-4">
+        <Toggle
+          checked={draft.silent ?? false}
+          onChange={(v) => setDraft({ ...draft, silent: v })}
+          label="Still alarmieren"
+        />
+        <p className="text-xs text-slate-500 mt-1 pl-11">
+          {draft.silent
+            ? 'Die Mitteilung kommt ohne Ton und ohne Vibration an. Richtig, wenn Aufsehen selbst gefährlich wäre – wer gerade unterrichtet oder das Telefon in der Tasche hat, bemerkt den Alarm aber nicht.'
+            : 'Die Mitteilung gibt Ton, auch wenn das Telefon stummgeschaltet ist. Das ist für einen Notfallknopf die Regel: Die Alarmierten sind meist woanders, und ein unbemerkter Alarm hilft niemandem.'}
+        </p>
+      </div>
       <Field label={`Krisenstab aufbieten nach ${draft.escalateToEmergencyServicesAfterMin} Min. ohne Quittierung`}>
         <input
           type="range" min={1} max={30} className="w-full"

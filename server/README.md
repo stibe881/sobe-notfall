@@ -360,7 +360,8 @@ Administrationsportal unter **Integrationen** konfiguriert:
   Statusmeldungen
   aktualisieren Batterie und «letztes Signal» der registrierten Knöpfe
   (Zuordnung über Seriennummer/DevEUI); ein Knopfdruck löst den am Knopf
-  hinterlegten stillen Alarm mit Eskalation aus, doppelte Drücke werden
+  hinterlegten Alarm mit Eskalation aus – still oder laut je nach dem Feld
+  `silent` des Knopfs, voreingestellt laut –, doppelte Drücke werden
   zusammengefasst.
 
 Geheimnisse (Gateway-Passwörter, Webhook-URL, Client Secret, Token) speichert

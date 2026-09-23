@@ -223,6 +223,15 @@ export interface AlarmButton {
    */
   geraetetyp?: string
   /**
+   * Alarmiert dieser Knopf still?
+   *
+   * Still heisst: Die Mitteilung erreicht die Empfangenden ohne Ton und ohne
+   * Vibration. Das schützt Menschen, die neben dem Ereignis stehen – kostet
+   * aber alle anderen die Aufmerksamkeit, denn ein stummes Telefon in der
+   * Tasche bemerkt in einer Lektion niemand. Ohne Angabe wird laut alarmiert.
+   */
+  silent?: boolean
+  /**
    * Wann zuletzt wegen Stille bzw. schwacher Batterie gewarnt wurde. Verhindert,
    * dass derselbe Zustand alle zehn Minuten erneut gemeldet wird; meldet sich
    * der Knopf wieder oder wird die Batterie gewechselt, wird der Eintrag

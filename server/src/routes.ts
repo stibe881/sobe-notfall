@@ -973,7 +973,11 @@ router.post('/hooks/lorawan', async (req, res) => {
     message: `${knopf.messageTemplate} (Knopf: ${knopf.name}, ${knopf.serial}${
       aktualisiert.gps ? `, GPS ${aktualisiert.gps.lat.toFixed(4)}/${aktualisiert.gps.lng.toFixed(4)}` : ''
     })`,
-    silent: true,
+    // Laut, sofern der Knopf nichts anderes sagt: Ein stiller Alarm erreicht die
+    // Empfangenden ohne Ton und ohne Vibration – wer gerade unterrichtet,
+    // bemerkt ihn nicht. Still ist nur dort richtig, wo Aufsehen selbst
+    // gefährlich wäre.
+    silent: knopf.silent ?? false,
     requireAck: true,
     channels: ['push', 'sms'],
     groupIds: knopf.targetGroupIds,
@@ -989,7 +993,7 @@ router.post('/hooks/lorawan', async (req, res) => {
     geraet: ereignis.geraet, ergebnis: 'alarm', knopf: knopf.name,
     felder: ereignis.felder, batteryPct: aktualisiert.batteryPct,
   })
-  addAudit('alarm', `Alarmknopf ausgelöst: ${knopf.name} (${knopf.serial}) – stille Alarmierung`, knopf.assignedUserId)
+  addAudit('alarm', `Alarmknopf ausgelöst: ${knopf.name} (${knopf.serial}) – ${alarm.silent ? 'stille' : 'laute'} Alarmierung`, knopf.assignedUserId)
   broadcast('state')
   res.json({ ok: true, alarm: alarm.id })
   await alarmPush(alarm)

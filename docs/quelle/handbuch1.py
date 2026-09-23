@@ -416,7 +416,8 @@ KOERPER = r"""
   </figure>
   <p>
     Sobald ein LoRaWAN- oder GSM-Netz angebunden ist, löst ein Knopfdruck einen
-    stillen Alarm mit Quittierpflicht aus. Die Anbindung beschreibt
+    Alarm mit Quittierpflicht aus &ndash; laut oder still, je nach dem Schalter
+    <span class="ui">Still alarmieren</span> beim Knopf. Die Anbindung beschreibt
     Handbuch&nbsp;4, Abschnitt «Alarmknöpfe anbinden».
   </p>
   <p>

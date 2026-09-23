@@ -385,9 +385,9 @@ KOERPER = r"""
   <h2 class="abschnitt"><span class="zahl">9</span> Alarmknöpfe anbinden</h2>
   <p>
     Alarmknöpfe und tragbare Notrufgeräte melden sich über ein Funknetz beim
-    Alarmserver. Ein Knopfdruck löst einen <b>stillen Alarm mit Quittierpflicht</b>
-    aus &ndash; quittiert innerhalb der eingestellten Zeit niemand, wird der
-    <b>Krisenstab</b> per Sprachanruf und SMS aufgeboten.
+    Alarmserver. Ein Knopfdruck löst den beim Knopf hinterlegten Alarm <b>mit
+    Quittierpflicht</b> aus &ndash; quittiert innerhalb der eingestellten Zeit
+    niemand, wird der <b>Krisenstab</b> per Sprachanruf und SMS aufgeboten.
   </p>
   <div class="hinweis hinweis--warnung">
     <p class="marke-klein">Kein automatischer Notruf</p>
@@ -441,6 +441,22 @@ KOERPER = r"""
       Kleinschreibung sowie Bindestriche spielen keine Rolle.</li>
     <li>Mit <span class="ui">Auslösen (Test)</span> die Kette prüfen, danach am Gerät selbst.</li>
   </ol>
+  <div class="hinweis hinweis--warnung">
+    <p class="marke-klein">Laut oder still &ndash; eine bewusste Entscheidung</p>
+    <p>
+      Jeder Knopf trägt den Schalter <span class="ui">Still alarmieren</span>.
+      <b>Still</b> heisst: Die Mitteilung erreicht die Empfangenden ohne Ton und ohne
+      Vibration. Das schützt, wer neben dem Ereignis steht &ndash; kostet aber alle
+      anderen die Aufmerksamkeit. Wer gerade unterrichtet und das Telefon in der
+      Tasche hat, bemerkt einen stillen Alarm nicht.
+    </p>
+    <p>
+      Voreingestellt ist deshalb <b>laut</b>: Ton auch bei stummgeschaltetem Telefon.
+      Die Alarmierten sind in aller Regel woanders, und ein unbemerkter Alarm hilft
+      niemandem. Still ist die Ausnahme &ndash; für Geräte, bei denen Aufsehen selbst
+      gefährlich wäre.
+    </p>
+  </div>
   <div class="hinweis hinweis--warnung">
     <p class="marke-klein">Den Schlüssel nie erzeugen lassen</p>
     <p>

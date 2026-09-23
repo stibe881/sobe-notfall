@@ -369,12 +369,24 @@ async function main(): Promise<void> {
   const gedrueckt = await ruf('/hooks/lorawan', { method: 'POST', token: lwToken.body.token, body: JSON.stringify(ttnUplink) })
   pruefe('Knopfdruck löst Alarm aus', gedrueckt.status === 200 && typeof gedrueckt.body.alarm === 'string')
   const knopfAlarm = (await ruf('/state', { token: adminToken })).body.alarms.find((a: any) => a.id === gedrueckt.body.alarm)
-  pruefe('Knopf-Alarm still, via Knopf, mit Eskalation',
-    knopfAlarm?.silent === true && knopfAlarm?.triggeredVia === 'button' && knopfAlarm?.escalation?.length === 1)
+  pruefe('Knopf-Alarm laut voreingestellt, via Knopf, mit Eskalation',
+    knopfAlarm?.silent === false && knopfAlarm?.triggeredVia === 'button' && knopfAlarm?.escalation?.length === 1)
   const doppel = await ruf('/hooks/lorawan', { method: 'POST', token: lwToken.body.token, body: JSON.stringify(ttnUplink) })
   pruefe('Doppeldruck löst keinen zweiten Alarm aus', doppel.body.merged === true && doppel.body.alarm === gedrueckt.body.alarm)
   pruefe('Knopf-Alarm beendet',
     (await ruf(`/alarms/${gedrueckt.body.alarm}/end`, { method: 'POST', token: adminToken })).status === 200)
+
+  // Ein Knopf, der still alarmieren soll, tut es auch – und nur dann
+  const stillerKnopf = (await ruf('/state', { token: adminToken })).body.buttons.find((b: any) => b.serial === 'LW-TEST-99')
+  await ruf('/buttons', { method: 'POST', token: adminToken, body: JSON.stringify({ ...stillerKnopf, silent: true }) })
+  const stillAusgeloest = await ruf('/hooks/lorawan', {
+    method: 'POST', token: lwToken.body.token,
+    body: JSON.stringify({ end_device_ids: { dev_eui: 'LWTEST99' }, uplink_message: { decoded_payload: { alarm: true } } }),
+  })
+  const stillerAlarm = (await ruf('/state', { token: adminToken })).body.alarms.find((a: any) => a.id === stillAusgeloest.body.alarm)
+  pruefe('Knopf mit stiller Einstellung alarmiert still', stillerAlarm?.silent === true)
+  await ruf(`/alarms/${stillAusgeloest.body.alarm}/end`, { method: 'POST', token: adminToken })
+  await ruf('/buttons', { method: 'POST', token: adminToken, body: JSON.stringify({ ...stillerKnopf, silent: false }) })
 
   // --- Netzserver im Gateway (ChirpStack v3): DevEUI oben, Nutzlast in «object» ---
   const v3Status = await ruf('/hooks/lorawan', {
