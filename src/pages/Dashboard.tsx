@@ -74,7 +74,6 @@ export default function Dashboard() {
           <ul className="space-y-1 text-sm">
             <StatusRow label="Alarmserver" ok detail="Alarmserver" to="/integrationen#int-redundanz" />
             <StatusRow label="Push-Dienst (Critical Alerts)" ok detail="iOS über Expo – Stand unter Bereitschaft" to="/dashboard#bereitschaft" />
-            <StatusRow label="Interne Notfallnummer" ok={state.integrations.hotline.enabled} detail={state.integrations.hotline.number} to="/integrationen#int-organisation-auftritt" />
             <StatusRow label="SMS-Gateway" ok={state.integrations.smsGateway.enabled} detail={state.integrations.smsGateway.enabled ? state.integrations.smsGateway.provider : undefined} to="/integrationen#int-sms" />
             <StatusRow label="Sprachanrufe / Telefonkonferenz" ok={state.integrations.telephony.enabled} detail={state.integrations.telephony.enabled ? 'über Microsoft Teams' : undefined} to="/integrationen#int-telefonie" />
             <StatusRow label="Microsoft Teams" ok={state.integrations.teams.enabled} detail={state.integrations.teams.tenant || undefined} to="/integrationen#int-teams" />

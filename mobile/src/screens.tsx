@@ -114,7 +114,6 @@ export function StartScreen({ onOpenScenario }: { onOpenScenario: (s: Scenario, 
     )
     .sort((a, b) => (b.endedAt ?? 0) - (a.endedAt ?? 0))
     .slice(0, 3)
-  const hotline = state.integrations?.hotline
 
   function sos() {
     const location = state.locations.find((l) => l.id === standortId)
@@ -141,16 +140,6 @@ export function StartScreen({ onOpenScenario }: { onOpenScenario: (s: Scenario, 
 
   return (
     <ScrollView contentContainerStyle={styles.screen}>
-      {hotline?.enabled && hotline.number.trim() !== '' && (
-        <Pressable style={styles.contactRow} onPress={() => Linking.openURL(`tel:${hotline.number.replace(/\s/g, '')}`)}>
-          <Phone size={18} color={colors.brand} />
-          <View style={{ flex: 1 }}>
-            <Text style={styles.cardTitle}>Interne Notfallnummer</Text>
-            <Text style={styles.faint}>Alarmauslösung per Anruf</Text>
-          </View>
-          <Text style={styles.contactNumber}>{hotline.number}</Text>
-        </Pressable>
-      )}
       {mySos.map((a) => {
         const delivered = a.deliveries.filter((d) => d.status === 'delivered').length
         const helpers = [...new Set(a.deliveries.filter((d) => d.ack === 'acknowledged').map((d) => d.userId))]

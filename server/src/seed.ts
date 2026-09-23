@@ -1037,14 +1037,14 @@ export const SEED_BUTTONS: AlarmButton[] = [
 ]
 
 export const SEED_CONTACTS: EmergencyContact[] = [
-  { id: 'ec-117', name: 'Polizei', number: '117', description: 'Polizeinotruf Schweiz' },
-  { id: 'ec-118', name: 'Feuerwehr', number: '118', description: 'Feuerwehrnotruf Schweiz' },
-  { id: 'ec-144', name: 'Sanität', number: '144', description: 'Sanitätsnotruf Schweiz' },
-  { id: 'ec-112', name: 'Europäischer Notruf', number: '112', description: 'Internationale Notrufnummer' },
-  { id: 'ec-145', name: 'Tox Info Suisse', number: '145', description: 'Vergiftungs- und Medikamentennotfälle' },
-  { id: 'ec-1414', name: 'Rega', number: '1414', description: 'Rettungsflugwacht' },
-  { id: 'ec-143', name: 'Dargebotene Hand', number: '143', description: 'Telefonseelsorge für Erwachsene' },
-  { id: 'ec-147', name: 'Pro Juventute', number: '147', description: 'Beratung für Kinder und Jugendliche' },
+  { id: 'ec-117', name: 'Polizei', number: '117', description: 'Polizeinotruf Schweiz', order: 0 },
+  { id: 'ec-118', name: 'Feuerwehr', number: '118', description: 'Feuerwehrnotruf Schweiz', order: 1 },
+  { id: 'ec-144', name: 'Sanität', number: '144', description: 'Sanitätsnotruf Schweiz', order: 2 },
+  { id: 'ec-112', name: 'Europäischer Notruf', number: '112', description: 'Internationale Notrufnummer', order: 3 },
+  { id: 'ec-145', name: 'Tox Info Suisse', number: '145', description: 'Vergiftungs- und Medikamentennotfälle', order: 4 },
+  { id: 'ec-1414', name: 'Rega', number: '1414', description: 'Rettungsflugwacht', order: 5 },
+  { id: 'ec-143', name: 'Dargebotene Hand', number: '143', description: 'Telefonseelsorge für Erwachsene', order: 6 },
+  { id: 'ec-147', name: 'Pro Juventute', number: '147', description: 'Beratung für Kinder und Jugendliche', order: 7 },
 ]
 
 export const SEED_INTEGRATIONS: IntegrationSettings = {

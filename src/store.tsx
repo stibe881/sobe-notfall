@@ -48,7 +48,7 @@ export type Action =
   | { type: 'UPSERT_WEBHOOK'; webhook: Webhook }
   | { type: 'DELETE_WEBHOOK'; webhookId: string }
   | { type: 'ADD_ACCESS_CODE'; locationId: string }
-  | { type: 'ADD_CONTACT'; contact: AppState['contacts'][number] }
+  | { type: 'UPSERT_CONTACT'; contact: AppState['contacts'][number] }
   | { type: 'DELETE_CONTACT'; contactId: string }
   | { type: 'AUDIT'; entryType: string; message: string; userId?: string }
   | { type: 'ADOPT_SERVER'; data: ServerData; session: Session | null }
@@ -427,8 +427,14 @@ function reducer(state: AppState, action: Action): AppState {
         audit: audit(state, 'integration', `Zugangscode für Rollout erstellt: ${code}`),
       }
     }
-    case 'ADD_CONTACT':
-      return { ...state, contacts: [...state.contacts, action.contact], audit: audit(state, 'admin', `Notfallkontakt hinzugefügt: ${action.contact.name}`) }
+    case 'UPSERT_CONTACT': {
+      const exists = state.contacts.some((c) => c.id === action.contact.id)
+      return {
+        ...state,
+        contacts: exists ? state.contacts.map((c) => (c.id === action.contact.id ? action.contact : c)) : [...state.contacts, action.contact],
+        audit: audit(state, 'admin', `Notfallkontakt ${exists ? 'aktualisiert' : 'hinzugefügt'}: ${action.contact.name}`),
+      }
+    }
     case 'DELETE_CONTACT':
       return { ...state, contacts: state.contacts.filter((c) => c.id !== action.contactId), audit: audit(state, 'admin', 'Notfallkontakt gelöscht') }
     case 'AUDIT':
@@ -526,7 +532,7 @@ function toastForAction(action: Action): Toast['message'] | { message: string; k
       return 'Webhook gelöscht'
     case 'ADD_ACCESS_CODE':
       return 'Zugangscode erstellt'
-    case 'ADD_CONTACT':
+    case 'UPSERT_CONTACT':
       return 'Notfallkontakt gespeichert'
     case 'DELETE_CONTACT':
       return 'Notfallkontakt gelöscht'
@@ -647,7 +653,7 @@ async function serverEffekt(action: Action, state: AppState): Promise<boolean | 
     case 'DELETE_BUTTON':
       await api.deleteDoc('buttons', action.buttonId)
       return true
-    case 'ADD_CONTACT':
+    case 'UPSERT_CONTACT':
       await api.saveDoc('contacts', action.contact)
       return true
     case 'DELETE_CONTACT':

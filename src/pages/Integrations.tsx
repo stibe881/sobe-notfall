@@ -77,7 +77,7 @@ export default function Integrations() {
       icon: Building2,
       suchbegriffe: 'name logo farbe kurzname notfallnummer hotline branding',
       status: integ.organization?.name
-        ? { art: 'info', text: `${integ.organization.name}${integ.hotline.enabled ? ` · Notfallnummer ${integ.hotline.number}` : ''}` }
+        ? { art: 'info', text: integ.organization.name }
         : { art: 'inaktiv', text: 'Name und Auftritt noch nicht erfasst' },
       inhalt: <OrganisationEinstellungen />,
     },
@@ -495,7 +495,7 @@ function OrganisationEinstellungen() {
         />
         {integ.hotline.enabled && (
           <div className="mt-2 pl-11">
-            <Field label="Nummer – erscheint auf der Startseite der App">
+            <Field label="Nummer – reine Konfiguration, wird nirgends in Portal oder App angezeigt">
               <div className="flex items-center gap-2">
                 <Phone size={14} className="text-slate-500 shrink-0" />
                 <input

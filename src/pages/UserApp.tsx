@@ -270,19 +270,6 @@ function StartTab({ onOpenScenario }: { onOpenScenario: (s: Scenario, alarm: Ala
     <div className="space-y-4">
       {confirmEl}
       {promptEl}
-      {state.integrations.hotline.enabled && (
-        <a
-          href={`tel:${state.integrations.hotline.number.replace(/\s/g, '')}`}
-          className="flex items-center gap-3 rounded-2xl bg-white border border-slate-200 p-4"
-        >
-          <Phone size={20} className="text-brand-600" />
-          <div className="flex-1">
-            <div className="text-sm font-semibold text-slate-800">Interne Notfallnummer</div>
-            <div className="text-xs text-slate-400">Alarmauslösung per Anruf</div>
-          </div>
-          <span className="font-bold text-brand-600">{state.integrations.hotline.number}</span>
-        </a>
-      )}
       {mySos.map((a) => {
         const delivered = a.deliveries.filter((d) => d.status === 'delivered').length
         const helpers = [...new Set(a.deliveries.filter((d) => d.ack === 'acknowledged').map((d) => d.userId))]

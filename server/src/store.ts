@@ -76,7 +76,9 @@ export function allLocations(): Location[] {
 
 export const allScenarios = (): Scenario[] => docRows<Scenario>('scenarios')
 export const allPlans = (): AlarmPlan[] => docRows<AlarmPlan>('plans')
-export const allContacts = (): EmergencyContact[] => docRows<EmergencyContact>('contacts')
+/** Reihenfolge kommt von order (tiefere Zahl zuerst); ohne Angabe zuletzt, stabil bei Gleichstand */
+export const allContacts = (): EmergencyContact[] =>
+  docRows<EmergencyContact>('contacts').sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity))
 export const allButtons = (): AlarmButton[] => docRows<AlarmButton>('buttons')
 export const allAlarms = (): Alarm[] => docRows<Alarm>('alarms', 'ORDER BY triggeredAt DESC LIMIT 200')
 export const allLoneWork = (): LoneWorkSession[] => docRows<LoneWorkSession>('lone_work')

@@ -289,6 +289,8 @@ export interface EmergencyContact {
   name: string
   number: string
   description: string
+  /** Reihenfolge in Listen und in der App – tiefere Zahl zuerst; ohne Angabe zuletzt */
+  order?: number
 }
 
 export interface AuditEntry {
