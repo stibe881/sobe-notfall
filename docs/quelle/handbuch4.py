@@ -436,9 +436,9 @@ KOERPER = r"""
       nackte Token ohne <code>Bearer</code>; als letzte Möglichkeit
       <code>?token=</code> in der Adresse, dann steht es allerdings in Protokolldateien.</li>
     <li>Jedes Gerät im Portal unter <span class="ui">Alarmknöpfe</span> registrieren.
-      Entscheidend ist die <b>Seriennummer</b>: Sie muss der Geräte-Kennung im Netzserver
-      entsprechen (DevEUI bei LoRaWAN). Gross- und Kleinschreibung sowie Bindestriche
-      spielen keine Rolle.</li>
+      Entscheidend ist die <b>DevEUI</b> aus dem Netzserver &ndash; nicht die aufs Gehäuse
+      gedruckte Seriennummer, die der Netzserver gar nicht kennt. Gross- und
+      Kleinschreibung sowie Bindestriche spielen keine Rolle.</li>
     <li>Mit <span class="ui">Auslösen (Test)</span> die Kette prüfen, danach am Gerät selbst.</li>
   </ol>
   <div class="hinweis hinweis--warnung">

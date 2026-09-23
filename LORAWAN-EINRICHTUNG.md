@@ -408,6 +408,14 @@ vorgesehenen Stelle.
 
 **Ziel:** Der Alarmserver weiss, was beim Druck auf diesen Knopf geschehen soll.
 
+> **Nicht die aufgedruckte Seriennummer.**
+>
+> Auf dem Gehäuse steht meist eine Artikel- oder Seriennummer wie
+> `TRAC6270727`. Die kennt der Netzserver nicht – er meldet ausschliesslich die
+> **DevEUI**, sechzehn Hex-Zeichen, im Gateway unter `EUI` zu sehen. Steht im
+> Portal etwas anderes, findet der Alarmserver den Knopf nicht, und «Letzte
+> Uplinks» meldet «Gerät nicht registriert».
+
 > **Kleiner Umweg, der Ihnen Tippfehler erspart:** Drücken Sie den Knopf **jetzt
 > schon einmal**. Der Uplink wird abgewiesen – aber unter **«Letzte Uplinks»**
 > im Portal steht dann «Gerät nicht registriert» und **daneben die exakte
@@ -421,7 +429,7 @@ vorgesehenen Stelle.
 | **Bezeichnung** | derselbe Ort wie im Netzserver, z. B. `Eingang Weststrasse` |
 | **Typ** | `LoRaWAN` |
 | **Modell** | `Dragino TrackerD` bzw. `Dragino PB01`. Damit übersetzt der Alarmserver die Nutzlast selbst – nötig, weil der Netzserver im Gateway das nicht kann. Für Geräte mit Decoder im Netzserver bleibt es bei `Netzserver übersetzt` |
-| **Seriennummer** | **die DevEUI** – kopiert aus «Letzte Uplinks» oder vom Etikett. Gross-/Kleinschreibung und Bindestriche sind egal |
+| **DevEUI / Seriennummer** | **die DevEUI** aus dem Netzserver – kopiert aus «Letzte Uplinks» oder aus der Geräteliste des Gateways. Gross-/Kleinschreibung und Bindestriche sind egal |
 | **Standort** | der Standort, für den der Alarm gilt |
 | **Zugewiesene Person** | nur bei einem tragbaren Knopf; beim fest montierten leer lassen |
 | **Individuelle Alarmnachricht** | was die Empfangenden lesen. Schreiben Sie, **wo** und **was** – nicht «Alarm», sondern `Stiller Alarm Eingang Weststrasse – bitte sofort hingehen` |

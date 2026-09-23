@@ -24,8 +24,12 @@ export default function Buttons() {
 
   function newButton(): AlarmButton {
     return {
-      id: uid('btn'), name: '', type: 'lorawan', serial: `LW-${Math.floor(1000 + Math.random() * 9000)}-X${Math.floor(Math.random() * 10)}`,
-      batteryPct: 100, lastSeen: Date.now(), messageTemplate: 'Alarmknopf ausgelöst – bitte Lage prüfen.',
+      // Weder Seriennummer noch Signal erfinden: Eine vorgegebene Nummer
+      // verleitet dazu, sie durch die aufgedruckte statt durch die DevEUI zu
+      // ersetzen, und ein gesetztes «letztes Signal» liesse einen Knopf
+      // lebendig aussehen, von dem noch nie etwas angekommen ist.
+      id: uid('btn'), name: '', type: 'lorawan', serial: '',
+      batteryPct: 100, lastSeen: 0, messageTemplate: 'Alarmknopf ausgelöst – bitte Lage prüfen.',
       targetGroupIds: ['gr-sicherheit'], escalateToEmergencyServicesAfterMin: 5,
     }
   }
@@ -101,7 +105,10 @@ export default function Buttons() {
           // hier steht es dort, wo man den Knopf ohnehin verwaltet
           const stundenStill = (Date.now() - b.lastSeen) / 3600_000
           const stummSeit = b.lastSeen > 0 && stundenStill > (state.integrations?.lorawan?.stilleWarnungStunden ?? 36)
-          const batterieSchwach = b.batteryPct < schwelleBatterie
+          // Ohne je empfangenes Signal ist der Batteriestand nicht bekannt –
+          // «100 %» wäre eine Behauptung, die niemand geprüft hat
+          const nieGemeldet = b.lastSeen === 0
+          const batterieSchwach = !nieGemeldet && b.batteryPct < schwelleBatterie
           return (
             <Card key={b.id} className={stummSeit || batterieSchwach ? 'border-amber-300' : ''}>
               <div className="flex items-start gap-3">
@@ -111,9 +118,10 @@ export default function Buttons() {
                   <div className="text-xs text-slate-400">{b.serial}</div>
                   <div className="flex gap-1.5 mt-1.5 flex-wrap">
                     <Badge color={b.type === 'lorawan' ? 'blue' : 'violet'}>{b.type === 'lorawan' ? 'LoRaWAN' : 'GSM + GPS'}</Badge>
-                    <Badge color={batterieSchwach ? 'red' : 'green'}>
-                      <BatteryIcon size={12} /> {b.batteryPct} %
+                    <Badge color={nieGemeldet ? 'slate' : batterieSchwach ? 'red' : 'green'}>
+                      <BatteryIcon size={12} /> {nieGemeldet ? 'unbekannt' : `${b.batteryPct} %`}
                     </Badge>
+                    {nieGemeldet && <Badge color="amber">noch nie gemeldet</Badge>}
                     {stummSeit && <Badge color="amber">ohne Signal</Badge>}
                   </div>
                 </div>
@@ -169,8 +177,17 @@ function ButtonEditor({ button, onClose }: { button: AlarmButton; onClose: () =>
             <option value="gsm">GSM mit GPS-Tracking</option>
           </select>
         </Field>
-        <Field label="Seriennummer">
-          <input className={inputClass} value={draft.serial} onChange={(e) => setDraft({ ...draft, serial: e.target.value })} />
+        <Field label="DevEUI / Seriennummer">
+          <input
+            className={inputClass}
+            placeholder="z. B. A840410000000F07"
+            value={draft.serial}
+            onChange={(e) => setDraft({ ...draft, serial: e.target.value })}
+          />
+          <p className="text-xs text-slate-500 mt-1">
+            Bei LoRaWAN die <b>DevEUI</b> aus dem Netzserver – nicht die aufs Gehäuse gedruckte
+            Seriennummer. Nur über die DevEUI findet der Alarmserver den Knopf.
+          </p>
         </Field>
       </div>
       <Field label="Modell">

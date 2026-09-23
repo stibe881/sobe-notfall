@@ -385,6 +385,21 @@ async function main(): Promise<void> {
   pruefe('ChirpStack v3 aktualisiert die Batterie',
     (await ruf('/state', { token: adminToken })).body.buttons.find((b: any) => b.serial === 'LW-TEST-99')?.batteryPct === 61)
 
+  // Ein nie gemeldeter Knopf gilt weder als stumm noch als batterieschwach –
+  // sein Zustand ist unbekannt, nicht schlecht.
+  await ruf('/buttons', {
+    method: 'POST', token: adminToken,
+    body: JSON.stringify({
+      id: 'btn-neu', name: 'Frisch erfasst', type: 'lorawan', serial: 'A840410000009999',
+      batteryPct: 5, lastSeen: 0, messageTemplate: 'Test',
+      targetGroupIds: ['gr-sicherheit'], escalateToEmergencyServicesAfterMin: 5,
+    }),
+  })
+  await ruf('/wartung/knoepfe-pruefen', { method: 'POST', token: adminToken })
+  const frisch = (await ruf('/state', { token: adminToken })).body.buttons.find((b: any) => b.id === 'btn-neu')
+  pruefe('Nie gemeldeter Knopf löst keine Batterie- oder Stillewarnung aus',
+    !frisch?.gewarnt?.batterieAt && !frisch?.gewarnt?.stillAt)
+
   // --- Dragino TrackerD: «ALARM» gross, «BAT» in Volt, Alarm bleibt gesetzt ---
   const dragino = (alarm: boolean, bat: number) => JSON.stringify({
     applicationID: '1', devEUI: 'LWTEST99', rxInfo: [],

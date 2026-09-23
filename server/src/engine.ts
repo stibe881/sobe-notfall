@@ -269,7 +269,8 @@ export async function pruefeAlarmknoepfe(jetzt = Date.now()): Promise<void> {
       delete neuGewarnt.stillAt
     }
 
-    const istSchwach = knopf.batteryPct < schwelleBatterie
+    // Ohne je empfangenes Signal ist der Batteriestand unbekannt, nicht voll
+    const istSchwach = knopf.lastSeen > 0 && knopf.batteryPct < schwelleBatterie
     if (istSchwach && !gewarnt.batterieAt) {
       schwach.push(`${knopf.name} (${knopf.serial}, ${knopf.batteryPct} %)`)
       neuGewarnt.batterieAt = jetzt
