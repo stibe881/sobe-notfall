@@ -390,7 +390,8 @@ export interface LorawanEreignis {
 // ---------- Inbetriebnahme: die letzten Uplinks nachvollziehen ----------
 
 export type UplinkErgebnis =
-  | 'alarm' | 'status' | 'unbekanntes-geraet' | 'ohne-decoder' | 'nicht-verstanden' | 'token-falsch'
+  | 'alarm' | 'zusammengefasst' | 'status' | 'unbekanntes-geraet' | 'ohne-decoder'
+  | 'nicht-verstanden' | 'token-falsch'
 
 export interface UplinkSpur {
   ts: number

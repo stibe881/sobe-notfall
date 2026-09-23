@@ -963,6 +963,13 @@ router.post('/hooks/lorawan', async (req, res) => {
     (a) => a.status === 'active' && a.triggeredVia === 'button' && a.message.includes(knopf.serial),
   )
   if (laufend) {
+    // Auch das gehört in die Spur: Sonst sieht die Einrichtung einen
+    // Tastendruck, der nichts auslöst, und findet dafür nirgends eine
+    // Erklärung – gerade dann, wenn sie eine bräuchte.
+    merkeUplink({
+      geraet: ereignis.geraet, ergebnis: 'zusammengefasst', knopf: knopf.name,
+      felder: ereignis.felder, batteryPct: aktualisiert.batteryPct,
+    })
     broadcast('state')
     res.json({ ok: true, alarm: laufend.id, merged: true })
     return

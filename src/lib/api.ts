@@ -267,7 +267,7 @@ export const api = {
     anfrage<{ uplinks: {
       ts: number
       geraet?: string
-      ergebnis: 'alarm' | 'status' | 'unbekanntes-geraet' | 'ohne-decoder' | 'nicht-verstanden' | 'token-falsch'
+      ergebnis: 'alarm' | 'zusammengefasst' | 'status' | 'unbekanntes-geraet' | 'ohne-decoder' | 'nicht-verstanden' | 'token-falsch'
       knopf?: string
       felder?: string[]
       batteryPct?: number

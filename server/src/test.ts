@@ -373,6 +373,9 @@ async function main(): Promise<void> {
     knopfAlarm?.silent === false && knopfAlarm?.triggeredVia === 'button' && knopfAlarm?.escalation?.length === 1)
   const doppel = await ruf('/hooks/lorawan', { method: 'POST', token: lwToken.body.token, body: JSON.stringify(ttnUplink) })
   pruefe('Doppeldruck löst keinen zweiten Alarm aus', doppel.body.merged === true && doppel.body.alarm === gedrueckt.body.alarm)
+  pruefe('Zusammengefasster Druck hinterlässt eine Spur',
+    (await ruf('/integrations/lorawan/uplinks', { token: adminToken })).body.uplinks
+      .some((u: any) => u.ergebnis === 'zusammengefasst'))
   pruefe('Knopf-Alarm beendet',
     (await ruf(`/alarms/${gedrueckt.body.alarm}/end`, { method: 'POST', token: adminToken })).status === 200)
 

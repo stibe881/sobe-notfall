@@ -1164,6 +1164,10 @@ type Uplink = Awaited<ReturnType<typeof api.lorawanUplinks>>['uplinks'][number]
 /** Wie ein Uplink ausgegangen ist – Klartext statt Statuscode */
 const UPLINK_ERGEBNIS: Record<Uplink['ergebnis'], { text: string; farbe: 'green' | 'amber' | 'red' | 'slate'; rat?: string }> = {
   alarm: { text: 'Alarm ausgelöst', farbe: 'green' },
+  zusammengefasst: {
+    text: 'zum laufenden Alarm gezählt', farbe: 'amber',
+    rat: 'Solange der Alarm dieses Knopfs läuft, löst ein weiterer Druck keinen zweiten aus. Erst nach dem Beenden in der Alarmzentrale wieder.',
+  },
   status: { text: 'Statusmeldung', farbe: 'slate' },
   'unbekanntes-geraet': {
     text: 'Gerät nicht registriert', farbe: 'red',
