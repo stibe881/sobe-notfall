@@ -484,9 +484,9 @@ async function main(): Promise<void> {
   })
   pruefe('Rohe Nutzlast wird ohne Netzserver-Decoder übersetzt',
     rohStatus.status === 200 && rohStatus.body.alarm === null)
-  // 4002 mV auf der Lithium-Kennlinie: (4,002 - 3,0) / (4,2 - 3,0) = 83 %
+  // 4002 mV auf der Lithium-Kennlinie: (4002 - 3000) / (4200 - 3000) = 84 %
   pruefe('Millivolt aus der rohen Nutzlast ergeben Prozent',
-    (await ruf('/state', { token: adminToken })).body.buttons.find((b: any) => b.id === 'btn-roh')?.batteryPct === 83)
+    (await ruf('/state', { token: adminToken })).body.buttons.find((b: any) => b.id === 'btn-roh')?.batteryPct === 84)
 
   const rohAlarm = await ruf('/hooks/lorawan', {
     method: 'POST', token: lwToken.body.token,
@@ -520,8 +520,20 @@ async function main(): Promise<void> {
     body: JSON.stringify({ applicationID: '1', devEUI: 'A840410001820000', rxInfo: [], fPort: 2, data: alsB64('0CEA000000000000') }),
   })
   pruefe('PB01 ohne Tastendruck löst nicht aus', pbRuhe.status === 200 && pbRuhe.body.alarm === null)
-  pruefe('PB01 meldet 3306 mV als Prozent',
-    (await ruf('/state', { token: adminToken })).body.buttons.find((b: any) => b.id === 'btn-pb01')?.batteryPct === 26)
+  // 3306 mV auf der AAA-Kennlinie (2,1 V leer bis 3,2 V voll) sind volle 100 %.
+  // Mit der Lithium-Kennlinie wären es 26 % gewesen – dieselbe Zelle, frisch
+  // gekauft, hätte wie eine fast leere ausgesehen.
+  pruefe('PB01: frische AAA-Zellen ergeben keinen Notstand',
+    (await ruf('/state', { token: adminToken })).body.buttons.find((b: any) => b.id === 'btn-pb01')?.batteryPct === 100)
+  // Beim PB01 zeigt sich die Kennlinie am deutlichsten: 3060 mV, also frische
+  // AAA-Zellen, dürfen nicht als «fast leer» durchgehen
+  await ruf('/hooks/lorawan', {
+    method: 'POST', token: lwToken.body.token,
+    body: JSON.stringify({ applicationID: '1', devEUI: 'A840410001820000', rxInfo: [], fPort: 2, data: alsB64('0BF4000000000000') }),
+  })
+  const pbFrisch = (await ruf('/state', { token: adminToken })).body.buttons.find((b: any) => b.id === 'btn-pb01')?.batteryPct
+  pruefe('PB01: 3060 mV sind rund 87 %, nicht 5 %', pbFrisch !== undefined && pbFrisch > 80)
+
   const pbDruck = await ruf('/hooks/lorawan', {
     method: 'POST', token: lwToken.body.token,
     body: JSON.stringify({ applicationID: '1', devEUI: 'A840410001820000', rxInfo: [], fPort: 2, data: alsB64('0CEA000100000000') }),

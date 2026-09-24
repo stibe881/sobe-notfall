@@ -528,14 +528,6 @@ function alsProzent(wert: unknown): number | undefined {
   return pct <= 100 ? Math.round(pct) : undefined
 }
 
-/**
- * Zellspannung in Millivolt in einen Prozentwert schätzen – für die Modelle,
- * deren Nutzlast der Alarmserver selbst übersetzt.
- */
-export function alsBatterieProzent(millivolt: number | undefined): number | undefined {
-  return millivolt === undefined ? undefined : alsProzent(millivolt)
-}
-
 function ausSpannung(volt: number): number {
   const anteil = (volt - ZELLE_LEER_V) / (ZELLE_VOLL_V - ZELLE_LEER_V)
   return Math.round(Math.min(1, Math.max(0, anteil)) * 100)

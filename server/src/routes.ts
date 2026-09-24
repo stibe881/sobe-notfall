@@ -9,7 +9,7 @@ import { addClient } from './events.js'
 import { broadcast } from './events.js'
 import { UEBUNG, alarmPush, ausgehendeWebhooks, entwarnungPush, lagemeldungPush, pruefeAlarmknoepfe, testPush } from './engine.js'
 import {
-  alsBatterieProzent, erstelleKonferenz, graphToken, letzteUplinks, lorawanTokenAusRequest, lorawanTokenGueltig, merkeUplink,
+  erstelleKonferenz, graphToken, letzteUplinks, lorawanTokenAusRequest, lorawanTokenGueltig, merkeUplink,
   mergeIntegrationen, neuesLorawanToken, normierteSerie, parseLorawanUplink, sendeSms, sendeTeamsKarte,
 } from './integrationen.js'
 import { sendeAlarmKanaele, sendeInfoKanaele } from './kanaele.js'
@@ -928,7 +928,7 @@ router.post('/hooks/lorawan', async (req, res) => {
     const roh = dekodiere(knopf.geraetetyp, ereignis.daten, ereignis.fPort)
     if (roh) {
       ereignis.alarm = roh.alarm
-      ereignis.batteryPct = alsBatterieProzent(roh.batterieMv)
+      ereignis.batteryPct = roh.batteriePct
       ereignis.ohneDecoder = false
       ereignis.felder = ['alarm', 'batterieMv']
       selbstUebersetzt = roh.batterieMv

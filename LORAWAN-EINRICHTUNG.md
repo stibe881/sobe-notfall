@@ -590,11 +590,19 @@ in Prozent: der TrackerD im Feld `BAT` in Volt, der PB01 in Millivolt. Der
 Alarmserver rechnet das um; ohne diese Umrechnung stünde im Portal dauerhaft
 «4 %» und eine Batteriewarnung, die nie verstummt.
 
-> **Zur Prozentangabe:** Sie ist aus der Spannung geschätzt, und die
-> Entladekurve hängt an der Zelle. Beim PB01 wird der angezeigte Wert deshalb
-> **zu tief** liegen. Für die Frage «bald wechseln?» reicht es trotzdem: Leer
-> ist bei beiden Zelltypen um 3,0 V, und dort landet die Warnschwelle richtig.
-> Als Restlaufzeit taugt der Wert nicht.
+> **Zur Prozentangabe:** Sie ist aus der Spannung geschätzt, und die Kennlinie
+> hängt an der Zelle – der Alarmserver kennt sie je Modell:
+>
+> | Gerät | Zelle | leer | voll |
+> | --- | --- | --- | --- |
+> | TrackerD | Lithium-Akku | 3,0 V | 4,2 V |
+> | PB01 | 2 × AAA (LR03) | 2,1 V | 3,2 V |
+>
+> Die 2,1 V beim PB01 sind Draginos eigene Wechselschwelle. Eine gemeinsame
+> Kennlinie für beide gäbe es nicht: Mit der Lithium-Kurve gerechnet, sähe ein
+> **frisches** AAA-Paar mit 3,06 V wie eine fast leere Batterie aus – 5 statt
+> 87 Prozent. Als Restlaufzeit taugt der Wert trotzdem nicht, für die Frage
+> «bald wechseln?» genügt er.
 
 Der Alarmserver erkennt das Alarmfeld unabhängig von der Schreibweise – der
 TrackerD schreibt `ALARM` gross, der PB01 `alarm` klein.

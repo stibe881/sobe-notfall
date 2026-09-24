@@ -50,8 +50,32 @@ export const GERAETETYPEN: GeraeteTyp[] = [
 
 export interface RohErgebnis {
   alarm: boolean
-  /** Zellspannung in Millivolt – die Umrechnung in Prozent macht der Aufrufer */
+  /** Gemessene Spannung in Millivolt – der ehrliche Wert */
   batterieMv?: number
+  /** Daraus geschätzter Ladestand, nach der Kennlinie **dieses** Gerätetyps */
+  batteriePct?: number
+}
+
+/**
+ * Spannungsbereich je Gerät – von leer bis voll, in Millivolt.
+ *
+ * Eine einzige Kennlinie für alle Geräte geht nicht: Der TrackerD trägt eine
+ * Lithium-Zelle (4,2 V voll, 3,0 V leer), der PB01 zwei AAA-Zellen (rund 3,2 V
+ * voll, 2,1 V leer – letzteres nennt Dragino selbst als Wechselschwelle). Mit
+ * der Lithium-Kennlinie gerechnet, sähe ein frisches AAA-Paar wie eine fast
+ * leere Batterie aus: 3,06 V ergäben 5 statt 87 Prozent.
+ */
+const ZELLE: Record<string, { leerMv: number; vollMv: number }> = {
+  'dragino-trackerd': { leerMv: 3000, vollMv: 4200 },
+  'dragino-pb01': { leerMv: 2100, vollMv: 3200 },
+}
+
+/** Ladestand aus der Spannung schätzen – grob, aber für «bald wechseln?» genug */
+function ladestand(typ: string, millivolt: number | undefined): number | undefined {
+  const zelle = ZELLE[typ]
+  if (!zelle || millivolt === undefined || millivolt <= 0) return undefined
+  const anteil = (millivolt - zelle.leerMv) / (zelle.vollMv - zelle.leerMv)
+  return Math.round(Math.min(1, Math.max(0, anteil)) * 100)
 }
 
 /**
@@ -130,10 +154,10 @@ function pb01(bytes: number[], fPort?: number): RohErgebnis | null {
  */
 export function dekodiere(typ: string | undefined, daten: string, fPort?: number): RohErgebnis | null {
   const geraet = typ === 'dragino-trackerd' ? trackerD : typ === 'dragino-pb01' ? pb01 : null
-  if (!geraet) return null
+  if (!geraet || !typ) return null
   for (const bytes of bytesAus(daten)) {
     const ergebnis = geraet(bytes, fPort)
-    if (ergebnis) return ergebnis
+    if (ergebnis) return { ...ergebnis, batteriePct: ladestand(typ, ergebnis.batterieMv) }
   }
   return null
 }
