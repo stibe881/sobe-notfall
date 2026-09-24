@@ -18,7 +18,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "SOBE Notfall nutzt den Standort nur, um zu erkennen, ob Sie sich an einem Firmenstandort aufhalten – für die Alarmierung der richtigen Personen. Es wird nie eine GPS-Position übertragen, nur der Standort-Name.",
+          "locationWhenInUsePermission": "SOBE Notfall nutzt den Standort, um zu erkennen, an welchem Firmenstandort und in welchem Raum Sie sich befinden – damit Alarme die richtigen Personen erreichen und Helfende Sie finden. Die Position im Gebäude wird nur mit einem Alarm übermittelt.",
           "locationAlwaysAndWhenInUsePermission": "SOBE Notfall erkennt auch im Hintergrund, ob Sie einen Firmenstandort betreten oder verlassen, damit Alarme die Personen vor Ort erreichen. Übertragen wird nur der Standort-Name, nie eine GPS-Position.",
           "isIosBackgroundLocationEnabled": true,
           "isAndroidBackgroundLocationEnabled": true
@@ -29,10 +29,15 @@
         {
           "android": {
             "enableMinifyInReleaseBuilds": true,
-            "enableShrinkResourcesInReleaseBuilds": true
+            "enableShrinkResourcesInReleaseBuilds": true,
+            "minSdkVersion": 30
+          },
+          "ios": {
+            "deploymentTarget": "16.0"
           }
         }
-      ]
+      ],
+      "./modules/meridian-indoor/app.plugin.js"
     ],
     "userInterfaceStyle": "light",
     "backgroundColor": "#0f172a",

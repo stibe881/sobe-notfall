@@ -1,6 +1,6 @@
 import { randomBytes } from 'node:crypto'
 import { getSetting, setSetting } from './db.js'
-import type { IntegrationSettings, LorawanSettings, SmsGatewaySettings, TeamsSettings, TelephonySettings } from './types.js'
+import type { IntegrationSettings, LorawanSettings, MeridianKarte, MeridianSettings, SmsGatewaySettings, TeamsSettings, TelephonySettings } from './types.js'
 
 /**
  * Grundlagen der Integrationen: Vorgaben, Geheimnis-Maskierung und die reinen
@@ -15,6 +15,7 @@ export const INTEGRATION_VORGABEN: IntegrationSettings = {
   teams: { enabled: false, tenant: '', webhookUrl: '' },
   lorawan: { enabled: false, provider: 'ttn', token: '', stilleWarnungStunden: 36, batterieWarnungProzent: 20 },
   sso: { enabled: false, tenantId: '', clientId: '', clientSecret: '', adminGroupId: '', krisenstabGroupId: '', autoCreate: true },
+  meridian: { enabled: false, region: 'eu', appId: '', sdkToken: '', apiToken: '', karten: [] },
   hrSync: { enabled: false, system: '' },
   hotline: { enabled: true, number: '' },
   multiLanguage: true,
@@ -39,6 +40,7 @@ export function mitVorgaben(roh: Partial<IntegrationSettings> | null | undefined
     teams: { ...INTEGRATION_VORGABEN.teams, ...r.teams },
     lorawan: { ...INTEGRATION_VORGABEN.lorawan, ...r.lorawan },
     sso: { ...INTEGRATION_VORGABEN.sso, ...r.sso },
+    meridian: { ...INTEGRATION_VORGABEN.meridian, ...r.meridian, karten: r.meridian?.karten ?? [] },
     hrSync: { ...INTEGRATION_VORGABEN.hrSync, ...r.hrSync },
     hotline: { ...INTEGRATION_VORGABEN.hotline, ...r.hotline },
     webhooks: r.webhooks ?? [],
@@ -62,6 +64,7 @@ const GEHEIME_FELDER = [
   ['teams', 'webhookUrl'],
   ['lorawan', 'token'],
   ['sso', 'clientSecret'],
+  ['meridian', 'apiToken'],
 ] as const
 
 export function maskiereIntegrationen(integ: IntegrationSettings): IntegrationSettings {
@@ -89,7 +92,31 @@ export function mergeIntegrationen(neu: Partial<IntegrationSettings>, alt: Integ
   if (ergebnis.organization.color && !/^#[0-9a-fA-F]{6}$/.test(ergebnis.organization.color)) {
     ergebnis.organization.color = alt.organization.color
   }
+  ergebnis.meridian = bereinigeMeridian(ergebnis.meridian)
   return ergebnis
+}
+
+/**
+ * Meridian-Einstellungen bereinigen: Kennungen ohne Leerraum, nur bekannte
+ * Regionen, jede Karte höchstens einmal und nur mit Kennung.
+ */
+function bereinigeMeridian(m: MeridianSettings): MeridianSettings {
+  const gesehen = new Set<string>()
+  const karten: MeridianKarte[] = []
+  for (const k of Array.isArray(m.karten) ? m.karten : []) {
+    const mapId = String(k?.mapId ?? '').trim()
+    if (!mapId || gesehen.has(mapId)) continue
+    gesehen.add(mapId)
+    karten.push({ mapId, name: String(k.name ?? '').trim(), locationId: k.locationId ? String(k.locationId) : undefined })
+  }
+  return {
+    enabled: Boolean(m.enabled),
+    region: m.region === 'us' ? 'us' : 'eu',
+    appId: String(m.appId ?? '').trim(),
+    sdkToken: String(m.sdkToken ?? '').trim(),
+    apiToken: String(m.apiToken ?? '').trim(),
+    karten,
+  }
 }
 
 // ---------- Lesen und Schreiben ----------

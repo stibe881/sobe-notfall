@@ -258,6 +258,9 @@ export const api = {
   /** LoRaWAN-Endpunkt: Adresse und Zugangstoken für die Konfiguration im Netzserver */
   lorawanInfo: () =>
     anfrage<{ url: string; token: string | null; enabled: boolean; provider: string }>('/integrations/lorawan'),
+  /** Zugang für die Grundrissanzeige (Aruba Meridian) – das Lese-Token ist im Datenbestand maskiert */
+  meridianZugang: () =>
+    anfrage<{ enabled: boolean; region: 'us' | 'eu'; appId: string; apiToken: string | null }>('/integrations/meridian'),
   lorawanNewToken: () => anfrage<{ token: string }>('/integrations/lorawan/token', { method: 'POST' }),
   /** Modelle, deren Nutzlast der Alarmserver selbst übersetzen kann */
   lorawanGeraetetypen: () =>

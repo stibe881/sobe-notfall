@@ -2,14 +2,15 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useLocation } from 'react-router-dom'
 import qrcode from 'qrcode-generator'
 import {
-  Building2, CheckCircle2, ChevronDown, Copy, KeyRound, Link2, Loader2, MapPin, MessageSquare, Phone, PhoneCall,
+  Building2, CheckCircle2, ChevronDown, Copy, KeyRound, Link2, Loader2, LocateFixed, MapPin, MessageSquare, Phone, PhoneCall,
   Plus, QrCode, Radio, RefreshCw, Search, ServerCog, Smartphone, Trash2, Users, XCircle, type LucideIcon,
 } from 'lucide-react'
 import { api, logoUrl, serverUrl, type RedundanzConfig, type RedundanzStatus } from '../lib/api'
 import { uid, useStore } from '../store'
-import type { IntegrationSettings, Webhook } from '../types'
+import type { IntegrationSettings, MeridianKarte, Webhook } from '../types'
 import { Badge, Button, Card, Field, Modal, Toggle, VORBEREITET, Vorbereitet, formatDateTime, inputClass } from '../components/ui'
 import { useSprungziel } from '../lib/sprungziel'
+import { ladeMeridianSdk, vergissMeridianZugang } from '../components/IndoorKarte'
 
 /**
  * Die Themenbereiche der Seite – in der Reihenfolge, in der man einen neuen
@@ -100,6 +101,17 @@ export default function Integrations() {
         ? { art: 'aktiv', text: 'Alarmiert wird nach dem gemeldeten Aufenthaltsort' }
         : { art: 'inaktiv', text: 'Aus – alarmiert wird nach dem Standort im Profil' },
       inhalt: <GeofencingEinstellungen />,
+    },
+    {
+      id: 'int-indoor',
+      bereich: 'int-app',
+      titel: 'Indoor-Ortung (Aruba Meridian)',
+      icon: LocateFixed,
+      suchbegriffe: 'beacon bluetooth access point aruba meridian raum stockwerk grundriss innen',
+      status: integ.meridian.enabled
+        ? { art: 'aktiv', text: `Position im Gebäude wird mit Alarmen übermittelt · ${integ.meridian.karten.length} Stockwerke benannt` }
+        : { art: 'inaktiv', text: 'Aus – Alarme nennen nur den Standort' },
+      inhalt: <IndoorEinstellungen />,
     },
     {
       id: 'int-zugangscodes',
@@ -609,6 +621,149 @@ function GeofencingEinstellungen() {
         alarmiert; ohne aktuelle Ortsmeldung gilt der Profilstandort. Radius je Standort unter
         «Standorte»; die Mitarbeitenden müssen der Standortfreigabe in der App zustimmen.
       </p>
+    </div>
+  )
+}
+
+/**
+ * Indoor-Ortung über Aruba Meridian: Die Access Points senden Bluetooth-Beacons,
+ * das Meridian-SDK in der App bestimmt daraus Stockwerk und Position. Hier
+ * stehen die Zugangsdaten und die Klarnamen der Stockwerke für Alarmtexte.
+ */
+function IndoorEinstellungen() {
+  const { state, dispatch } = useStore()
+  const integ = state.integrations
+  const meridian = integ.meridian
+  const [entwurf, patch, geaendert, gespeichert] = useEntwurf(meridian)
+  const [laden, setLaden] = useState<TestStatus>(null)
+
+  function speichern() {
+    dispatch({ type: 'UPDATE_INTEGRATIONS', integrations: { ...integ, meridian: { ...entwurf, enabled: meridian.enabled } } })
+    vergissMeridianZugang()
+    gespeichert()
+  }
+
+  function karteAendern(index: number, aenderung: Partial<MeridianKarte>) {
+    patch({ karten: entwurf.karten.map((k, i) => (i === index ? { ...k, ...aenderung } : k)) })
+  }
+
+  /** Stockwerke aus dem Meridian Editor übernehmen – bestehende Namen und Standorte bleiben */
+  async function kartenLaden() {
+    setLaden({ laeuft: true })
+    try {
+      const zugang = await api.meridianZugang()
+      if (!zugang.apiToken || !zugang.appId) throw new Error('Zuerst Location-ID und Lese-Token speichern.')
+      const sdk = await ladeMeridianSdk()
+      const meridianApi = new sdk.API({ token: zugang.apiToken, environment: zugang.region === 'eu' ? 'eu' : 'production' })
+      // Ohne Zeitlimit bliebe die Anzeige bei einem hängenden Netz ewig auf «läuft»
+      const stockwerke = await Promise.race([
+        meridianApi.fetchFloorsByLocation(zugang.appId),
+        new Promise<never>((_, abbruch) => setTimeout(() => abbruch(new Error('Meridian antwortet nicht – Netz oder Rechenzentrum prüfen.')), 20_000)),
+      ])
+      const bekannt = new Set(entwurf.karten.map((k) => k.mapId))
+      const neu = stockwerke
+        .filter((f) => f.id && !bekannt.has(f.id))
+        .map((f): MeridianKarte => ({
+          mapId: String(f.id),
+          name: [f.group_name, f.name].filter((t) => typeof t === 'string' && t.trim()).join(', '),
+        }))
+      if (neu.length > 0) patch({ karten: [...entwurf.karten, ...neu] })
+      setLaden({ ok: true, text: `${stockwerke.length} Stockwerke gefunden, ${neu.length} neu – bitte prüfen und speichern.` })
+    } catch (fehler) {
+      setLaden({ ok: false, text: (fehler as Error).message })
+    }
+  }
+
+  return (
+    <div className="space-y-3">
+      <Toggle
+        checked={meridian.enabled}
+        onChange={(v) => dispatch({ type: 'UPDATE_INTEGRATIONS', integrations: { ...integ, meridian: { ...meridian, enabled: v } } })}
+        label="Position im Gebäude mit Alarmen übermitteln"
+      />
+      <p className={`text-xs pl-11 ${meridian.enabled ? 'text-slate-500' : 'text-slate-400'}`}>
+        Die Aruba-Access-Points senden Bluetooth-Beacons; die App bestimmt daraus Stockwerk und Position auf dem
+        Grundriss. Übermittelt wird die Position nur mit einem Alarm – beim Auslösen und, solange der eigene Alarm
+        läuft, bei Bewegung. Alarmtexte nennen das Stockwerk, die Alarmzentrale zeigt den Grundriss mit Markierung.
+      </p>
+      {meridian.enabled && (
+        <div className="pl-11 space-y-3">
+          <div className="grid sm:grid-cols-2 gap-x-4">
+            <Field label="Rechenzentrum">
+              <select className={inputClass} value={entwurf.region} onChange={(e) => patch({ region: e.target.value === 'us' ? 'us' : 'eu' })}>
+                <option value="eu">Europa – edit-eu.meridianapps.com</option>
+                <option value="us">USA – edit.meridianapps.com</option>
+              </select>
+            </Field>
+            <Field label="Location-ID (Meridian Editor)">
+              <input className={inputClass} placeholder="z. B. 5809862863224832" value={entwurf.appId} onChange={(e) => patch({ appId: e.target.value })} />
+            </Field>
+          </div>
+          <Field label="Application Token für die App (Permissions → Application Token)">
+            <input className={inputClass} value={entwurf.sdkToken} onChange={(e) => patch({ sdkToken: e.target.value })} />
+          </Field>
+          <Field label="Lese-Token für die Grundrissanzeige (API-Token, nur Lesen)">
+            <input className={inputClass} type="password" value={entwurf.apiToken} onChange={(e) => patch({ apiToken: e.target.value })} placeholder="gespeichert – zum Ändern neu eingeben" />
+          </Field>
+
+          <div>
+            <div className="text-sm font-medium text-slate-600 mb-1">Stockwerke</div>
+            <p className="text-xs text-slate-500 mb-2">
+              Jede Karte im Meridian Editor ist ein Stockwerk. Der Name erscheint in Alarmtexten («Hauptgebäude, 2. OG»);
+              der Standort sorgt dafür, dass ein SOS aus diesem Stockwerk die Personen dieses Standorts alarmiert.
+            </p>
+            <div className="space-y-2">
+              {entwurf.karten.map((k, i) => (
+                <div key={i} className="grid grid-cols-[1fr_1.4fr_1fr_auto] gap-2 items-center">
+                  <input className={inputClass} placeholder="Map-ID" value={k.mapId} onChange={(e) => karteAendern(i, { mapId: e.target.value })} />
+                  <input className={inputClass} placeholder="Name, z. B. Hauptgebäude, 2. OG" value={k.name} onChange={(e) => karteAendern(i, { name: e.target.value })} />
+                  <select className={inputClass} value={k.locationId ?? ''} onChange={(e) => karteAendern(i, { locationId: e.target.value || undefined })}>
+                    <option value="">– kein Standort –</option>
+                    {state.locations.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
+                  </select>
+                  <button
+                    type="button"
+                    className="p-2 text-slate-400 hover:text-alarm-600"
+                    title="Stockwerk entfernen"
+                    onClick={() => patch({ karten: entwurf.karten.filter((_, j) => j !== i) })}
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center gap-2 flex-wrap mt-2">
+              <Button variant="secondary" onClick={() => patch({ karten: [...entwurf.karten, { mapId: '', name: '' }] })}>
+                <Plus size={14} /> Stockwerk
+              </Button>
+              <Button variant="secondary" onClick={kartenLaden} disabled={geaendert}>
+                <RefreshCw size={14} /> Aus Meridian übernehmen
+              </Button>
+              <TestErgebnis status={laden} />
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button onClick={speichern} disabled={!geaendert}>Speichern</Button>
+          </div>
+
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-3.5 text-xs text-slate-600 space-y-2">
+            <div className="font-semibold text-slate-700">Einrichtung in Kürze</div>
+            <ol className="list-decimal pl-4 space-y-1">
+              <li>Aruba Central mit dem Meridian-Abonnement verknüpfen; die Beacons der AP505 werden dabei aktiviert.</li>
+              <li>Im Meridian Editor die Grundrisse hochladen und die Access Points auf den Karten platzieren.</li>
+              <li>
+                Unter <b>Permissions</b> ein <b>Application Token</b> (für die App) und ein <b>API-Token nur mit
+                Leserecht</b> (für die Grundrisse hier) erzeugen und oben eintragen, dazu die Location-ID aus der
+                Adresse des Editors.
+              </li>
+              <li>Speichern, «Aus Meridian übernehmen», die Namen prüfen und die Standorte zuordnen.</li>
+              <li>Im Profil der App zeigt «Im Gebäude: …», ob die Ortung greift.</li>
+            </ol>
+            <p>Ausführlich: <code>MERIDIAN-EINRICHTUNG.md</code> im Projektverzeichnis.</p>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

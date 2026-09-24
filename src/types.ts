@@ -193,6 +193,8 @@ export interface Alarm {
   endNote?: string
   /** Übung: gleiche Abläufe, aber als solche gekennzeichnet und im Protokoll getrennt */
   drill?: boolean
+  /** Letzte Position der auslösenden Person im Gebäude (Indoor-Ortung) */
+  indoor?: IndoorPosition
   /** Lagemeldungen des Krisenstabs, weitere Meldungen zum selben Ereignis, Fehlalarm-Meldungen */
   updates?: AlarmUpdate[]
   escalationStage: number
@@ -201,12 +203,28 @@ export interface Alarm {
   log: AlarmLogEntry[]
 }
 
+/**
+ * Position im Gebäude laut Meridian-SDK. x/y sind Pixel auf dem Grundriss der
+ * Karte – dasselbe Koordinatensystem, in dem das Portal die Markierung zeichnet.
+ */
+export interface IndoorPosition {
+  mapId: string
+  x: number
+  y: number
+  /** Maximaler Fehler in Metern, soweit das SDK ihn angibt */
+  genauigkeitM?: number
+  /** Wann das Gerät die Position bestimmt hat */
+  ermitteltAt: number
+  /** Woraus das SDK sie errechnet hat: Beacons oder WLAN der Access Points, sonst Ortung des Betriebssystems */
+  quelle?: 'beacons' | 'wlan' | 'system' | 'unbekannt'
+}
+
 export interface AlarmUpdate {
   ts: number
   message: string
   byUserId?: string
   /** lage: Krisenstab informiert · meldung: zweite Auslösung zusammengeführt · fehlalarm: Auslösende:r meldet Irrtum */
-  kind: 'lage' | 'meldung' | 'fehlalarm'
+  kind: 'lage' | 'meldung' | 'fehlalarm' | 'standort'
 }
 
 export interface AlarmButton {
@@ -351,6 +369,37 @@ export interface OrganizationSettings {
   logoVersion?: string
 }
 
+/** Eine Karte (ein Stockwerk) im Meridian Editor und wie sie in Alarmen heisst */
+export interface MeridianKarte {
+  /** Map-ID aus dem Meridian Editor (steht in der Adresse der Karte) */
+  mapId: string
+  /** Klarname für Alarmtexte, z. B. «Hauptgebäude, 2. OG» */
+  name: string
+  /** Standort, zu dem die Karte gehört – der Alarm geht dann auch an die Personen dort */
+  locationId?: string
+}
+
+/**
+ * Indoor-Ortung über Aruba Meridian (Option B des Konzepts): Die Access Points
+ * senden Bluetooth-Beacons, das Meridian-SDK in der App rechnet daraus eine
+ * Position auf dem Grundriss. Die App übermittelt sie nur mit einem Alarm.
+ */
+export interface MeridianSettings {
+  enabled: boolean
+  /** Rechenzentrum des Meridian-Kontos: edit.meridianapps.com (us) oder edit-eu.meridianapps.com (eu) */
+  region: 'us' | 'eu'
+  /** Location-ID im Meridian Editor (im SDK «App» genannt) */
+  appId: string
+  /**
+   * Application Token für das Mobile-SDK. Es steckt in jeder App, die sich
+   * ortet – deshalb nicht geheim und nicht maskiert.
+   */
+  sdkToken: string
+  /** Lese-Token (read-only) für die Grundrissanzeige im Portal – maskiert */
+  apiToken: string
+  karten: MeridianKarte[]
+}
+
 export interface IntegrationSettings {
   organization: OrganizationSettings
   smsGateway: SmsGatewaySettings
@@ -358,6 +407,7 @@ export interface IntegrationSettings {
   teams: TeamsSettings
   lorawan: LorawanSettings
   sso: SsoSettings
+  meridian: MeridianSettings
   hrSync: { enabled: boolean; system: string; lastSync?: number }
   hotline: { enabled: boolean; number: string }
   multiLanguage: boolean

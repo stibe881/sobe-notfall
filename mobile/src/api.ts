@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Platform } from 'react-native'
-import type { AppState, ServerInfo, User } from './types'
+import type { AppState, IndoorPosition, ServerInfo, User } from './types'
 
 /**
  * Verbindung zum Alarmserver. Alle Daten kommen vom Server, damit App und
@@ -210,6 +210,12 @@ export const api = {
    */
   geoReport: (locationId: string | null) =>
     anfrage<{ ok: boolean; disabled?: boolean }>('/geo/report', { method: 'POST', body: JSON.stringify({ locationId }) }),
+  /**
+   * Indoor-Ortung: Position im Gebäude zu einem eigenen, laufenden Alarm
+   * nachführen. Ausserhalb eines Alarms verlässt die Position das Gerät nie.
+   */
+  indoorReport: (alarmId: string, position: IndoorPosition) =>
+    anfrage<{ ok: boolean; disabled?: boolean }>(`/alarms/${alarmId}/indoor`, { method: 'POST', body: JSON.stringify(position) }),
   /** criticalAlerts: Darf dieses Gerät Alarme auch bei stummem Telefon hörbar machen? */
   registerPush: (token: string, criticalAlerts: boolean) =>
     anfrage<{ ok: boolean }>('/push/register', {

@@ -6,6 +6,7 @@ import { LIVE_INITIAL_PASSWORD, SCENARIO_CONTENT_VERSION, SEED_SCENARIOS, SEED_U
 import { hashPassword, randomSalt } from './auth'
 import { criticalAlertsGranted, getPushToken, notifyNow } from './notifications'
 import { ladeAufenthalt, stopGeofencing, syncGeofencing, type GeofenceRegion } from './geofencing'
+import { aktuellePosition, stopIndoor, syncIndoor, verfolgeEigeneAlarme, type IndoorKonfig } from './indoor'
 import { ApiError, api, authToken, loadApiSettings, merkeServerInfo, setAuthToken, setFallbackUrl, setServerUrl, type ServerData } from './api'
 
 /** Erhöhen, wenn gespeicherte Passwortdaten einmalig korrigiert werden müssen */
@@ -464,6 +465,8 @@ async function serverEffekt(action: Action): Promise<boolean | 'merged'> {
         channels: a.channels, groupIds: a.groupIds, locationIds: a.locationIds,
         triggeredVia: 'app', escalation: a.escalation, drill: a.drill,
         recipientUserIds: [...new Set(a.deliveries.map((d) => d.userId))],
+        // Wo im Gebäude die Person gerade ist (Indoor-Ortung) – fehlt, wenn unbekannt
+        indoor: aktuellePosition() ?? undefined,
       })
       return antwort.merged ? 'merged' : true
     }
@@ -581,6 +584,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const logout = useCallback(() => {
     void getPushToken().then((t) => (t ? api.unregisterPush(t) : undefined)).catch(() => undefined)
     void stopGeofencing()
+    void stopIndoor()
     api.logout().catch(() => {
       // Server nicht erreichbar – lokal trotzdem abmelden
     })
@@ -706,6 +710,33 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     const { aktiv, regionen } = JSON.parse(geoKonfig) as { aktiv: boolean; regionen: GeofenceRegion[] }
     void syncGeofencing(aktiv, regionen)
   }, [hydrated, geoKonfig])
+
+  // Indoor-Ortung (Aruba Meridian) ebenso nur bei echten Änderungen abgleichen
+  const meridian = state.integrations?.meridian
+  const indoorKonfig = JSON.stringify({
+    aktiv: Boolean(state.session) && Boolean(meridian?.enabled),
+    region: meridian?.region === 'us' ? 'us' : 'eu',
+    appId: meridian?.appId ?? '',
+    sdkToken: meridian?.sdkToken ?? '',
+  } satisfies IndoorKonfig)
+  useEffect(() => {
+    if (!hydrated) return
+    void syncIndoor(JSON.parse(indoorKonfig) as IndoorKonfig)
+  }, [hydrated, indoorKonfig])
+
+  // Laufende eigene Alarme: Die Position im Gebäude wird nachgeführt, solange
+  // sie laufen – auch wenn die erste Ortung erst nach dem Auslösen gelingt
+  const eigeneAlarme = JSON.stringify(
+    state.session
+      ? state.alarms
+          .filter((a) => a.status === 'active' && a.triggeredByUserId === state.currentUserId)
+          .map((a) => ({ id: a.id, indoorAt: a.indoor?.ermitteltAt, indoorMapId: a.indoor?.mapId }))
+      : [],
+  )
+  useEffect(() => {
+    if (!hydrated) return
+    verfolgeEigeneAlarme(JSON.parse(eigeneAlarme))
+  }, [hydrated, eigeneAlarme])
 
   return (
     <StoreContext.Provider

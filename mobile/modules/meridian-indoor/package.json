@@ -1,0 +1,8 @@
+{
+  "name": "meridian-indoor",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Indoor-Ortung über das Aruba-Meridian-SDK (Beacons der Access Points)",
+  "main": "index.ts",
+  "license": "UNLICENSED"
+}

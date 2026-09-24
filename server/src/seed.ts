@@ -1054,6 +1054,7 @@ export const SEED_INTEGRATIONS: IntegrationSettings = {
   teams: { enabled: true, tenant: 'sonnenberg-baar.onmicrosoft.com', webhookUrl: 'https://sonnenbergbaar.webhook.office.com/webhookb2/demo' },
   lorawan: { enabled: true, provider: 'ttn', token: 'lw_demo0000000000000000000000000000000000000000000000', stilleWarnungStunden: 36, batterieWarnungProzent: 20 },
   sso: { enabled: false, tenantId: '', clientId: '', clientSecret: '', adminGroupId: '', krisenstabGroupId: '', autoCreate: true },
+  meridian: { enabled: false, region: 'eu', appId: '', sdkToken: '', apiToken: '', karten: [] },
   hrSync: { enabled: false, system: 'Abacus HR' },
   hotline: { enabled: true, number: '+41 41 767 49 48' },
   multiLanguage: true,

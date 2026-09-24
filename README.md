@@ -25,6 +25,8 @@ Alarmserver, Multikanal-Alarmierung, Notfallszenarien mit Handlungsanweisungen u
 - **Rollen & Portale:** Das Webportal (Verwaltung) ist Admin und Krisenstab vorbehalten – beide sehen alles und haben zusätzlich Zugriff auf die iOS-App (`mobile/`, plus Web-Vorschau über «App-Vorschau (iOS)»). Mitarbeitende haben ausschliesslich Zugriff auf die iOS-App; im Webportal sehen sie nur einen Hinweis-Bildschirm mit Verweis auf die App.
 - **App-Vorschau (iOS):** Web-Version der Mitarbeitenden-App mit SOS-Taste (Halte-Geste), aktiven Alarmen mit Quittierung, offline verfügbaren Szenarien/Checklisten, eigenem Alleinarbeits-Timer und Notrufkontakten (direkt anrufbar) – öffnet in einem separaten Tab.
 
+- **Indoor-Ortung (Aruba Meridian):** Die Access Points senden Bluetooth-Beacons; die App bestimmt daraus Stockwerk und Position im Gebäude und schickt sie mit einem Alarm mit. Der Alarmtext nennt das Stockwerk («Hauptgebäude, 2. OG (±3 m)»), die Alarmzentrale zeigt den Grundriss mit Markierung, und solange der eigene Alarm läuft, führt die App die Position nach. Ausserhalb eines Alarms verlässt die Position das Telefon nicht. Einrichtung: [`MERIDIAN-EINRICHTUNG.md`](MERIDIAN-EINRICHTUNG.md).
+
 ### 03 Alleinarbeitsschutz
 - **Timer-Funktion:** Überwachung mit Intervall, Lebenszeichen und automatischer Alarmauslösung bei Ablauf – wahlweise still.
 - **Physische Alarmknöpfe:** Verwaltung von LoRaWAN- (Batterie > 4 Jahre) und GSM-Knöpfen mit GPS, individuellen Alarmnachrichten, Zielgruppen und automatischer Eskalation an Blaulichtorganisationen.

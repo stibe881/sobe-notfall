@@ -13,3 +13,8 @@ play-service-account.json
 .DS_Store
 /ios/
 /android/
+
+# Aruba-Meridian-SDK: lädt das Config-Plugin beim Prebuild
+modules/meridian-indoor/ios/Meridian.xcframework/
+modules/meridian-indoor/ios/.meridian-sdk
+modules/meridian-indoor/android/maven/

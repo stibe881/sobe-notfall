@@ -1,0 +1,41 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'ch.sonnenberg.notfall'
+version = '1.0.0'
+
+android {
+  namespace "ch.sonnenberg.notfall.meridian"
+  defaultConfig {
+    // Das Meridian-SDK 12 setzt Android 11 (API 30) voraus
+    minSdkVersion 30
+    versionCode 1
+    versionName '1.0.0'
+  }
+}
+
+/*
+ * Das Meridian-SDK liefert Aruba als AAR-Datei, nicht über ein öffentliches
+ * Repository. Das Config-Plugin lädt es beim Prebuild herunter und legt es als
+ * kleines Maven-Verzeichnis ab (maven/…) – das Plugin trägt dieses Verzeichnis
+ * auch im Projekt ein, damit die App die Abhängigkeit auflösen kann.
+ */
+repositories {
+  maven { url "${projectDir}/maven" }
+}
+
+dependencies {
+  implementation 'com.arubanetworks.meridian:meridian:12.0.0@aar'
+
+  // Abhängigkeiten des SDK laut Aruba-Beispielprojekt (MeridianSamples, SDK 12.0.0)
+  implementation 'androidx.legacy:legacy-support-v4:1.0.0'
+  implementation 'androidx.appcompat:appcompat:1.7.1'
+  implementation 'com.google.android.gms:play-services-location:21.3.0'
+  implementation 'com.google.android.material:material:1.13.0'
+  implementation 'com.android.volley:volley:1.2.1'
+  implementation 'com.squareup:otto:1.3.8'
+  implementation 'org.conscrypt:conscrypt-android:2.5.3'
+  implementation 'com.lemmingapex.trilateration:trilateration:1.0.2'
+}

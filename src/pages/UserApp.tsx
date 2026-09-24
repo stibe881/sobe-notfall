@@ -183,9 +183,9 @@ function Lagemeldungen({ alarm }: { alarm: Alarm }) {
   return (
     <div className="mt-2 space-y-1.5">
       {updates.map((u, i) => (
-        <div key={i} className={`border-l-[3px] pl-2 ${u.kind === 'fehlalarm' ? 'border-amber-500' : 'border-violet-500'}`}>
-          <div className={`text-[11px] font-bold ${u.kind === 'fehlalarm' ? 'text-amber-700' : 'text-violet-700'}`}>
-            {u.kind === 'fehlalarm' ? 'Fehlalarm gemeldet' : u.kind === 'meldung' ? 'Weitere Meldung' : 'Lagemeldung'} · {formatRelative(u.ts)}
+        <div key={i} className={`border-l-[3px] pl-2 ${u.kind === 'fehlalarm' ? 'border-amber-500' : u.kind === 'standort' ? 'border-brand-600' : 'border-violet-500'}`}>
+          <div className={`text-[11px] font-bold ${u.kind === 'fehlalarm' ? 'text-amber-700' : u.kind === 'standort' ? 'text-brand-700' : 'text-violet-700'}`}>
+            {u.kind === 'fehlalarm' ? 'Fehlalarm gemeldet' : u.kind === 'meldung' ? 'Weitere Meldung' : u.kind === 'standort' ? 'Position im Gebäude' : 'Lagemeldung'} · {formatRelative(u.ts)}
           </div>
           <div className="text-sm text-slate-700">{u.message}</div>
         </div>

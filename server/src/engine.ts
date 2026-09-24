@@ -53,7 +53,7 @@ export async function alarmPush(alarm: Alarm, empfaenger?: string[]): Promise<vo
 export async function lagemeldungPush(alarm: Alarm, update: AlarmUpdate, empfaenger?: string[]): Promise<void> {
   const szenario = allScenarios().find((s) => s.id === alarm.scenarioId)
   const ids = empfaenger ?? [...new Set(alarm.deliveries.map((d) => d.userId))]
-  const art = update.kind === 'fehlalarm' ? 'Fehlalarm gemeldet' : update.kind === 'meldung' ? 'Weitere Meldung' : 'Lagemeldung'
+  const art = update.kind === 'fehlalarm' ? 'Fehlalarm gemeldet' : update.kind === 'meldung' ? 'Weitere Meldung' : update.kind === 'standort' ? 'Position im Gebäude' : 'Lagemeldung'
   const titel = `${art}: ${szenario?.title ?? 'Alarm'}`
   await sendPush(ids, {
     title: alarm.drill ? `${UEBUNG} – ${titel}` : titel,

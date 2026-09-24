@@ -11,6 +11,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@meridian/web-sdk": "^1.25.0",
     "@types/leaflet": "^1.9.22",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.441.0",

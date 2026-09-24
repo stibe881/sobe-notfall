@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { BellOff, CheckCircle2, ChevronDown, ChevronRight, Megaphone, Send, Siren, XCircle } from 'lucide-react'
+import { BellOff, CheckCircle2, ChevronDown, ChevronRight, MapPin, Megaphone, Send, Siren, XCircle } from 'lucide-react'
 import { useStore } from '../store'
 import type { Alarm, Delivery } from '../types'
 import { Badge, Button, Card, formatDateTime, formatRelative, formatTime, inputClass, kanalName, usePrompt } from '../components/ui'
 import { ScenarioIcon } from '../components/ScenarioIcon'
+import { IndoorKarte } from '../components/IndoorKarte'
 
 export default function AlarmMonitor() {
   const { state } = useStore()
@@ -57,6 +58,46 @@ export default function AlarmMonitor() {
             {ended.slice(0, 10).map((a) => <AlarmCard key={a.id} alarm={a} collapsed />)}
           </div>
         </div>
+      )}
+    </div>
+  )
+}
+
+const QUELLE: Record<string, string> = {
+  beacons: 'Bluetooth-Beacons der Access Points',
+  wlan: 'WLAN der Access Points',
+  system: 'Ortung des Telefons',
+}
+
+/**
+ * Wo im Gebäude die auslösende Person ist (Indoor-Ortung über Aruba Meridian).
+ * Die App führt die Position nach, solange der Alarm läuft – die Karte folgt.
+ */
+function IndoorAbschnitt({ alarm }: { alarm: Alarm }) {
+  const { state } = useStore()
+  const indoor = alarm.indoor!
+  const karte = state.integrations.meridian.karten.find((k) => k.mapId === indoor.mapId)
+  const standort = karte?.locationId ? state.locations.find((l) => l.id === karte.locationId) : undefined
+  const person = state.users.find((u) => u.id === alarm.triggeredByUserId)
+  const ort = karte?.name || `Karte ${indoor.mapId}`
+  return (
+    <div className="border-t border-slate-100 px-5 py-3 space-y-2">
+      <div className="flex items-start gap-2 text-sm">
+        <MapPin size={16} className="text-brand-600 mt-0.5 shrink-0" />
+        <div className="min-w-0">
+          <div className="font-medium text-slate-800">
+            Position im Gebäude: {ort}
+            {standort ? <span className="text-slate-500 font-normal"> · {standort.name}</span> : null}
+          </div>
+          <div className="text-xs text-slate-500">
+            {alarm.status === 'active' ? `ermittelt ${formatRelative(indoor.ermitteltAt)}` : `zuletzt ${formatDateTime(indoor.ermitteltAt)}`}
+            {indoor.genauigkeitM !== undefined ? ` · ±${Math.max(1, Math.round(indoor.genauigkeitM))} m` : ''}
+            {indoor.quelle && QUELLE[indoor.quelle] ? ` · ${QUELLE[indoor.quelle]}` : ''}
+          </div>
+        </div>
+      </div>
+      {state.integrations.meridian.enabled && (
+        <IndoorKarte position={indoor} titel={person ? `${person.firstName} ${person.lastName}` : 'Auslösende Person'} />
       )}
     </div>
   )
@@ -129,6 +170,8 @@ function AlarmCard({ alarm, collapsed = false }: { alarm: Alarm; collapsed?: boo
         )}
       </div>
 
+      {open && alarm.indoor && <IndoorAbschnitt alarm={alarm} />}
+
       {(alarm.status === 'active' || updates.length > 0 || alarm.endNote) && (
         <div className="border-t border-slate-100 px-5 py-3 space-y-2">
           {alarm.endNote && (
@@ -140,9 +183,9 @@ function AlarmCard({ alarm, collapsed = false }: { alarm: Alarm; collapsed?: boo
           {updates.map((u, i) => {
             const von = u.byUserId ? state.users.find((x) => x.id === u.byUserId) : undefined
             return (
-              <div key={i} className={`text-sm border-l-[3px] pl-2 ${u.kind === 'fehlalarm' ? 'border-amber-500' : 'border-violet-500'}`}>
-                <span className={`text-[11px] font-bold ${u.kind === 'fehlalarm' ? 'text-amber-700' : 'text-violet-700'}`}>
-                  {u.kind === 'fehlalarm' ? 'Fehlalarm gemeldet' : u.kind === 'meldung' ? 'Weitere Meldung' : 'Lagemeldung'} · {formatTime(u.ts)}
+              <div key={i} className={`text-sm border-l-[3px] pl-2 ${u.kind === 'fehlalarm' ? 'border-amber-500' : u.kind === 'standort' ? 'border-brand-600' : 'border-violet-500'}`}>
+                <span className={`text-[11px] font-bold ${u.kind === 'fehlalarm' ? 'text-amber-700' : u.kind === 'standort' ? 'text-brand-700' : 'text-violet-700'}`}>
+                  {u.kind === 'fehlalarm' ? 'Fehlalarm gemeldet' : u.kind === 'meldung' ? 'Weitere Meldung' : u.kind === 'standort' ? 'Position im Gebäude' : 'Lagemeldung'} · {formatTime(u.ts)}
                   {von ? ` · ${von.firstName} ${von.lastName}` : ''}
                 </span>
                 <div className="text-slate-700">{u.message}</div>

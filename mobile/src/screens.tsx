@@ -11,7 +11,8 @@ import { ensurePermissions } from './notifications'
 import { androidCountdownVerfuegbar } from './androidTimer'
 import { serverUrl } from './api'
 import { useAufenthalt } from './geofencing'
-import { LONE_WORK_DEFAULT_GROUPS, type Alarm, type LoneWorkSession, type Scenario, type User } from './types'
+import { useIndoor, type IndoorStatus } from './indoor'
+import { LONE_WORK_DEFAULT_GROUPS, type Alarm, type IndoorPosition, type IntegrationSettings, type LoneWorkSession, type Scenario, type User } from './types'
 import { Badge, Card, HoldButton, colors, formatDuration, formatRelative } from './ui'
 import { MIN_PASSWORD_LENGTH, passwordProblem } from './auth'
 import { activeScenarios, allClearStepsOf, responseStepsFor, responseStepsOf } from './scenarios'
@@ -74,6 +75,39 @@ function Rueckmeldestand({ alarm }: { alarm: Alarm }) {
   )
 }
 
+const meldungsFarbe = (kind: NonNullable<Alarm['updates']>[number]['kind']) =>
+  kind === 'fehlalarm' ? colors.amber : kind === 'standort' ? colors.brand : colors.violet
+
+/** Klarname einer Meridian-Karte (Stockwerk), wie ihn das Portal führt */
+export function indoorOrt(position: IndoorPosition, integrations: IntegrationSettings | undefined): string {
+  const karte = integrations?.meridian?.karten.find((k) => k.mapId === position.mapId)
+  return karte?.name || 'unbenanntes Stockwerk'
+}
+
+/**
+ * Wo im Gebäude die Person laut dem eigenen, laufenden Alarm ist. Bestätigt ihr,
+ * dass die Helfenden sie finden – oder dass noch gesucht wird.
+ */
+function EigenePosition({ alarm, status }: { alarm: Alarm; status: IndoorStatus }) {
+  const { state } = useStore()
+  if (!state.integrations?.meridian?.enabled) return null
+  const text = alarm.indoor
+    ? `Ihre Position im Gebäude: ${indoorOrt(alarm.indoor, state.integrations)}`
+    : status === 'keine-berechtigung'
+      ? 'Position im Gebäude unbekannt – die App darf den Standort nicht verwenden.'
+      : status === 'bluetooth-aus'
+        ? 'Position im Gebäude unbekannt – bitte Bluetooth einschalten.'
+        : status === 'nicht-verfuegbar'
+          ? 'Diese App-Version kann die Position im Gebäude nicht bestimmen.'
+          : 'Position im Gebäude wird ermittelt …'
+  return (
+    <View style={[styles.row, { marginTop: 8 }]}>
+      <MapPin size={14} color={alarm.indoor ? colors.brand : colors.faint} />
+      <Text style={[styles.body, { marginTop: 0, flex: 1, color: alarm.indoor ? colors.text : colors.muted }]}>{text}</Text>
+    </View>
+  )
+}
+
 /** Meldungen zum laufenden Alarm, neueste zuoberst */
 function Lagemeldungen({ alarm }: { alarm: Alarm }) {
   const updates = [...(alarm.updates ?? [])].reverse()
@@ -81,9 +115,9 @@ function Lagemeldungen({ alarm }: { alarm: Alarm }) {
   return (
     <View style={{ marginTop: 8, gap: 6 }}>
       {updates.map((u, i) => (
-        <View key={i} style={{ borderLeftWidth: 3, borderLeftColor: u.kind === 'fehlalarm' ? colors.amber : colors.violet, paddingLeft: 8 }}>
-          <Text style={[styles.faint, { color: u.kind === 'fehlalarm' ? colors.amber : colors.violet, fontWeight: '700' }]}>
-            {u.kind === 'fehlalarm' ? 'Fehlalarm gemeldet' : u.kind === 'meldung' ? 'Weitere Meldung' : 'Lagemeldung'} · {formatRelative(u.ts)}
+        <View key={i} style={{ borderLeftWidth: 3, borderLeftColor: meldungsFarbe(u.kind), paddingLeft: 8 }}>
+          <Text style={[styles.faint, { color: meldungsFarbe(u.kind), fontWeight: '700' }]}>
+            {u.kind === 'fehlalarm' ? 'Fehlalarm gemeldet' : u.kind === 'meldung' ? 'Weitere Meldung' : u.kind === 'standort' ? 'Position im Gebäude' : 'Lagemeldung'} · {formatRelative(u.ts)}
           </Text>
           <Text style={[styles.body, { marginTop: 0 }]}>{u.message}</Text>
         </View>
@@ -101,7 +135,13 @@ export function StartScreen({ onOpenScenario }: { onOpenScenario: (s: Scenario, 
   // Ein SOS gilt dort, wo die Person gerade ist – nicht dort, wo ihr Profil sie
   // führt. Ohne Geofence-Meldung bleibt es beim Profilstandort.
   const aufenthalt = useAufenthalt()
-  const standortId = aufenthalt ?? me.locationId
+  // Kennt die Indoor-Ortung das Stockwerk und gehört es zu einem Standort, ist
+  // das die genaueste Angabe – vor Geofencing und Profil.
+  const indoor = useIndoor()
+  const indoorStandort = indoor.position
+    ? state.integrations?.meridian?.karten.find((k) => k.mapId === indoor.position!.mapId)?.locationId
+    : undefined
+  const standortId = indoorStandort ?? aufenthalt ?? me.locationId
   const mySos = state.alarms.filter((a) => a.status === 'active' && a.triggeredByUserId === me.id)
   const myAlarms = state.alarms.filter(
     (a) => a.status === 'active' && a.triggeredByUserId !== me.id && a.deliveries.some((d) => d.userId === me.id),
@@ -159,6 +199,7 @@ export function StartScreen({ onOpenScenario }: { onOpenScenario: (s: Scenario, 
               {a.drill && <Badge label="ÜBUNG" color="amber" />}
               <Text style={styles.faint}>{formatRelative(a.triggeredAt)}</Text>
             </View>
+            <EigenePosition alarm={a} status={indoor.status} />
             <Lagemeldungen alarm={a} />
             <Text style={styles.body}>{delivered}/{a.deliveries.length} Benachrichtigungen zugestellt</Text>
             <View style={styles.progressTrack}>
@@ -1480,6 +1521,26 @@ function PushStatusCard() {
   )
 }
 
+/** Zustand der Indoor-Ortung im Profil – damit sich prüfen lässt, ob sie im Ernstfall greift */
+function IndoorZeile() {
+  const { state } = useStore()
+  const { position, status } = useIndoor()
+  if (!state.integrations?.meridian?.enabled) return null
+  const text =
+    status === 'aktiv' && position
+      ? `Im Gebäude: ${indoorOrt(position, state.integrations)}${position.genauigkeitM !== undefined ? ` (±${Math.max(1, Math.round(position.genauigkeitM))} m)` : ''}`
+      : status === 'keine-berechtigung'
+        ? 'Indoor-Ortung: Standortzugriff fehlt (Einstellungen)'
+        : status === 'bluetooth-aus'
+          ? 'Indoor-Ortung: Bluetooth ist ausgeschaltet'
+          : status === 'nicht-verfuegbar'
+            ? 'Indoor-Ortung: in dieser App-Version nicht enthalten'
+            : 'Indoor-Ortung: keine Access Points in Reichweite'
+  return (
+    <Text style={[styles.faint, { marginTop: 4, color: status === 'aktiv' && position ? colors.brand : colors.muted }]}>{text}</Text>
+  )
+}
+
 export function ProfileScreen() {
   const { state, dispatch, logout, serverStatus } = useStore()
   const me = state.users.find((u) => u.id === state.currentUserId) ?? state.users[0]
@@ -1512,6 +1573,7 @@ export function ProfileScreen() {
         {vorOrt && vorOrt.id !== me.locationId ? (
           <Text style={[styles.faint, { marginTop: 4 }]}>Profilstandort: {profilStandort?.name ?? 'keiner'}</Text>
         ) : null}
+        <IndoorZeile />
         <View style={[styles.row, { marginTop: 8, flexWrap: 'wrap', gap: 6 }]}>
           {myGroups.map((g) => <Badge key={g.id} label={g.name} />)}
         </View>

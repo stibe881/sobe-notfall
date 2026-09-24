@@ -152,6 +152,21 @@ Google prüft jedes Bundle und zeigt im Release-Dashboard Empfehlungen an:
 > internen Test auf ein echtes Gerät: Anmeldung, Alarmauslösung, Push-Zustellung und
 > Alleinarbeits-Timer durchspielen, bevor der Release in die Produktion hochgestuft wird.
 
+## Indoor-Ortung (Aruba Meridian)
+
+Die Position im Gebäude kommt aus dem nativen Modul `modules/meridian-indoor`
+(Meridian-SDK 12 für iOS und Android). Daraus folgt:
+
+- **Mindestversionen:** iOS 16 und Android 11 (API 30) – das verlangt das SDK;
+  in `app.json` über `expo-build-properties` gesetzt.
+- **Nur mit neuem Build:** Nativer Code kommt nicht über `eas update` und läuft
+  nicht in Expo Go. Dort bleibt die Indoor-Ortung aus, der Rest der App läuft.
+- **SDK-Download beim Prebuild:** Das Config-Plugin
+  (`modules/meridian-indoor/app.plugin.js`) lädt das SDK bei Aruba, prüft die
+  Prüfsumme und legt es ab; die Dateien stehen nicht im Git.
+
+Einrichtung von Meridian und Portal: [`../MERIDIAN-EINRICHTUNG.md`](../MERIDIAN-EINRICHTUNG.md).
+
 ## Struktur
 
 - `App.tsx` – Einstieg: Header, Tab-Navigation, Toasts
@@ -159,3 +174,5 @@ Google prüft jedes Bundle und zeigt im Release-Dashboard Empfehlungen an:
 - `src/store.tsx` – Zustand mit AsyncStorage-Zwischenspeicher, Anbindung an den Alarmserver
 - `src/seed.ts`, `src/types.ts` – Kopie der Daten/Typen aus der Web-App (`../src`)
 - `src/ui.tsx` – Farben, Badges, Halte-Button
+- `src/indoor.ts` – Indoor-Ortung: Ortung im Vordergrund, Position zum Alarm, Nachführung
+- `modules/meridian-indoor/` – natives Modul und Config-Plugin für das Meridian-SDK

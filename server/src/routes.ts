@@ -31,6 +31,7 @@ import {
   upsertDoc, upsertGroup, upsertLocation, upsertUser,
 } from './store.js'
 import type { AckStatus, Alarm, AlarmUpdate, Role, StoredUser } from './types.js'
+import { indoorOrt, indoorText, liesIndoor } from './indoor.js'
 
 export const router = Router()
 
@@ -824,6 +825,16 @@ router.get('/integrations/lorawan', auth, adminOnly, (req, res) => {
   res.json({ url: `${basisAdresse(req)}/api/hooks/lorawan`, token: lorawan.token || null, enabled: lorawan.enabled, provider: lorawan.provider })
 })
 
+/**
+ * Zugang für die Grundrissanzeige in der Alarmzentrale. Das Lese-Token ist im
+ * Datenbestand maskiert, weil dieser auch an die App der Mitarbeitenden geht;
+ * das Portal holt es hier – nur Administration und Krisenstab.
+ */
+router.get('/integrations/meridian', auth, staffOnly, (_req, res) => {
+  const m = integrations().meridian
+  res.json({ enabled: m.enabled, region: m.region, appId: m.appId, apiToken: m.apiToken || null })
+})
+
 /** Neues Token erzeugen – das alte gilt danach nicht mehr */
 router.post('/integrations/lorawan/token', auth, adminOnly, (req: AuthRequest, res) => {
   const aktuell = integrations()
@@ -1094,6 +1105,16 @@ router.post('/alarms', auth, async (req: AuthRequest, res) => {
   }
   const praefix = alarm.drill ? `${UEBUNG}: ` : ''
 
+  // Indoor-Ortung: Wo im Gebäude die auslösende Person ist, gehört in den
+  // Alarmtext – so steht es in Push, SMS und E-Mail, ohne Karte lesbar.
+  const integ = integrations()
+  const indoor = integ.meridian.enabled ? liesIndoor(o.indoor) : null
+  if (indoor) {
+    alarm.indoor = indoor
+    alarm.message = `${alarm.message} · ${indoorText(indoor, integ)}`
+    alarm.log.push({ ts: alarm.triggeredAt, message: `Position im Gebäude: ${indoorText(indoor, integ)}` })
+  }
+
   // --- Zweite Auslösung zum selben Ereignis: zusammenführen ---
   const laufend = laufenderAlarmZu(alarm)
   if (laufend) {
@@ -1105,6 +1126,7 @@ router.post('/alarms', auth, async (req: AuthRequest, res) => {
       ts: jetzt,
       kind: 'meldung',
       byUserId: ausloeser.id,
+      // alarm.message trägt die Position der zweiten Person bereits
       message: `Weitere Meldung von ${ausloeser.firstName} ${ausloeser.lastName}: ${alarm.message}`,
     }
     const zusammengefuehrt: Alarm = {
@@ -1143,6 +1165,63 @@ router.post('/alarms', auth, async (req: AuthRequest, res) => {
   await alarmPush(alarm)
   await sendeAlarmKanaele(alarm)
   if (!alarm.drill) await ausgehendeWebhooks(alarm)
+})
+
+/**
+ * Indoor-Ortung: Die App der auslösenden Person führt ihre Position im Gebäude
+ * nach, solange der Alarm läuft – etwa wenn die erste Ortung erst nach dem
+ * Auslösen gelingt oder die Person flüchtet.
+ *
+ * Kleine Bewegungen aktualisieren nur die Karte in der Alarmzentrale. Erst
+ * eine erste Position oder ein anderes Stockwerk geht als Meldung an alle
+ * Empfänger:innen – sonst würde jeder Schritt ein Telefon klingeln lassen.
+ */
+router.post('/alarms/:id/indoor', auth, async (req: AuthRequest, res) => {
+  const alarm = findAlarm(req.params.id)
+  if (!alarm) {
+    res.status(404).json({ error: 'Alarm nicht gefunden.' })
+    return
+  }
+  if (alarm.triggeredByUserId !== req.user!.id) {
+    res.status(403).json({ error: 'Nur die auslösende Person meldet ihre Position.' })
+    return
+  }
+  if (alarm.status !== 'active') {
+    res.status(409).json({ error: 'Der Alarm ist bereits beendet.' })
+    return
+  }
+  const integ = integrations()
+  if (!integ.meridian.enabled) {
+    // Wie bei /geo/report: kein Fehlerzustand, die App hört einfach auf
+    res.json({ ok: false, disabled: true })
+    return
+  }
+  const position = liesIndoor(req.body)
+  if (!position) {
+    res.status(400).json({ error: 'Ungültige oder veraltete Position.' })
+    return
+  }
+  // Anfragen können sich überholen – eine ältere Position ersetzt keine neuere
+  if (alarm.indoor && alarm.indoor.ermitteltAt >= position.ermitteltAt) {
+    res.json({ ok: true, alarm })
+    return
+  }
+  const neuesStockwerk = alarm.indoor?.mapId !== position.mapId
+  const aktualisiert: Alarm = { ...alarm, indoor: position }
+  let update: AlarmUpdate | null = null
+  if (neuesStockwerk) {
+    const text = alarm.indoor
+      ? `Position im Gebäude geändert: ${indoorText(position, integ)} (zuvor ${indoorOrt(alarm.indoor, integ)})`
+      : `Position im Gebäude: ${indoorText(position, integ)}`
+    update = { ts: Date.now(), kind: 'standort', byUserId: req.user!.id, message: text }
+    aktualisiert.updates = [...(alarm.updates ?? []), update]
+    aktualisiert.log = [...alarm.log, { ts: update.ts, message: text }]
+    addAudit('alarm', `${alarm.drill ? `${UEBUNG}: ` : ''}${text}`, req.user!.id)
+  }
+  saveAlarm(aktualisiert)
+  broadcast('state')
+  res.json({ ok: true, alarm: aktualisiert })
+  if (update) await lagemeldungPush(aktualisiert, update, [...new Set(aktualisiert.deliveries.map((d) => d.userId))])
 })
 
 /**

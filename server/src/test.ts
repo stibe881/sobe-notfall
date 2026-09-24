@@ -687,6 +687,104 @@ async function main(): Promise<void> {
   const geoZuruecksetzen = (await ruf('/state', { token: adminToken })).body.integrations
   await ruf('/integrations', { method: 'POST', token: adminToken, body: JSON.stringify({ ...geoZuruecksetzen, geofencing: false }) })
 
+  // --- Indoor-Ortung (Aruba Meridian) ---
+  const indoorPos = { mapId: '5668600916475904', x: 812.5, y: 344, genauigkeitM: 2.6, ermitteltAt: Date.now(), quelle: 'beacons' }
+  const sosAus = await ruf('/alarms', {
+    method: 'POST', token: peterToken,
+    body: JSON.stringify({
+      scenarioId: 'sc-sos', message: 'SOS Indoor aus', requireAck: true, channels: ['push'],
+      groupIds: ['gr-ersthelfer'], locationIds: ['loc-kloten'], triggeredVia: 'app', indoor: indoorPos,
+    }),
+  })
+  pruefe('ohne eingeschaltete Indoor-Ortung wird keine Position gespeichert',
+    sosAus.status === 200 && sosAus.body.alarm.indoor === undefined && sosAus.body.alarm.message === 'SOS Indoor aus')
+  await ruf(`/alarms/${sosAus.body.alarm.id}/end`, { method: 'POST', token: adminToken })
+
+  const merStand = (await ruf('/state', { token: adminToken })).body.integrations
+  pruefe('Indoor-Ortung ist anfänglich aus', merStand.meridian?.enabled === false && merStand.meridian?.region === 'eu')
+  await ruf('/integrations', {
+    method: 'POST', token: adminToken,
+    body: JSON.stringify({
+      ...merStand,
+      meridian: {
+        enabled: true, region: 'eu', appId: ' 5809862863224832 ', sdkToken: 'sdk-token', apiToken: 'lese-token',
+        karten: [
+          { mapId: '5668600916475904', name: 'Hauptgebäude, 2. OG', locationId: 'loc-baar' },
+          { mapId: '5668600916475904', name: 'Doppelt' },
+          { mapId: '', name: 'ohne Kennung' },
+          { mapId: '4856321132199936', name: 'Hauptgebäude, EG', locationId: 'loc-baar' },
+        ],
+      },
+    }),
+  })
+  const merGespeichert = (await ruf('/state', { token: peterToken })).body.integrations.meridian
+  pruefe('Meridian-Einstellungen bereinigt gespeichert',
+    merGespeichert.appId === '5809862863224832' && merGespeichert.karten.length === 2)
+  pruefe('App erhält das SDK-Token im Klartext', merGespeichert.sdkToken === 'sdk-token')
+  pruefe('Lese-Token ist im Datenbestand maskiert', merGespeichert.apiToken !== 'lese-token' && merGespeichert.apiToken !== '')
+  pruefe('Lese-Token nur für die Führung',
+    (await ruf('/integrations/meridian', { token: peterToken })).status === 403 &&
+      (await ruf('/integrations/meridian', { token: adminToken })).body.apiToken === 'lese-token')
+
+  const sosIndoor = await ruf('/alarms', {
+    method: 'POST', token: peterToken,
+    body: JSON.stringify({
+      scenarioId: 'sc-sos', message: 'SOS Indoor', requireAck: true, channels: ['push'],
+      groupIds: ['gr-ersthelfer'], locationIds: ['loc-kloten'], triggeredVia: 'app', indoor: indoorPos,
+    }),
+  })
+  const alarmIndoor = sosIndoor.body.alarm
+  pruefe('Alarm trägt die Position im Gebäude', alarmIndoor?.indoor?.mapId === indoorPos.mapId && alarmIndoor.indoor.x === 812.5)
+  pruefe('Alarmtext nennt Stockwerk und Genauigkeit', alarmIndoor?.message === 'SOS Indoor · Hauptgebäude, 2. OG (±3 m)', alarmIndoor?.message)
+
+  const veraltet = await ruf('/alarms', {
+    method: 'POST', token: adminToken,
+    body: JSON.stringify({
+      scenarioId: 'sc-brand', message: 'Alte Position', channels: ['push'], groupIds: ['gr-ersthelfer'],
+      locationIds: ['loc-menzingen'], triggeredVia: 'web', indoor: { ...indoorPos, ermitteltAt: Date.now() - 3600_000 },
+    }),
+  })
+  pruefe('veraltete Position wird verworfen, der Alarm trotzdem ausgelöst', veraltet.status === 200 && veraltet.body.alarm.indoor === undefined)
+  await ruf(`/alarms/${veraltet.body.alarm.id}/end`, { method: 'POST', token: adminToken })
+  const kaputt = await ruf('/alarms', {
+    method: 'POST', token: adminToken,
+    body: JSON.stringify({
+      scenarioId: 'sc-brand', message: 'Kaputte Position', channels: ['push'], groupIds: ['gr-ersthelfer'],
+      locationIds: ['loc-menzingen'], triggeredVia: 'web', indoor: { mapId: '../x', x: 'a', y: null },
+    }),
+  })
+  pruefe('unbrauchbare Position verhindert den Alarm nicht', kaputt.status === 200 && kaputt.body.alarm.indoor === undefined)
+  await ruf(`/alarms/${kaputt.body.alarm.id}/end`, { method: 'POST', token: adminToken })
+
+  pruefe('nur die auslösende Person führt die Position nach',
+    (await ruf(`/alarms/${alarmIndoor.id}/indoor`, { method: 'POST', token: adminToken, body: JSON.stringify(indoorPos) })).status === 403)
+  pruefe('unbrauchbare Nachführung abgewiesen',
+    (await ruf(`/alarms/${alarmIndoor.id}/indoor`, { method: 'POST', token: peterToken, body: JSON.stringify({ mapId: 'x' }) })).status === 400)
+  const kleinBewegt = await ruf(`/alarms/${alarmIndoor.id}/indoor`, {
+    method: 'POST', token: peterToken, body: JSON.stringify({ ...indoorPos, x: 830, ermitteltAt: Date.now() + 5 }),
+  })
+  pruefe('Bewegung auf demselben Stockwerk aktualisiert still',
+    kleinBewegt.body.alarm?.indoor?.x === 830 && (kleinBewegt.body.alarm.updates ?? []).length === 0)
+  const anderesStockwerk = await ruf(`/alarms/${alarmIndoor.id}/indoor`, {
+    method: 'POST', token: peterToken,
+    body: JSON.stringify({ mapId: '4856321132199936', x: 100, y: 200, ermitteltAt: Date.now() + 10 }),
+  })
+  const standortMeldung = (anderesStockwerk.body.alarm?.updates ?? []).find((u: any) => u.kind === 'standort')
+  pruefe('Wechsel des Stockwerks wird allen gemeldet',
+    standortMeldung?.message === 'Position im Gebäude geändert: Hauptgebäude, EG (zuvor Hauptgebäude, 2. OG)', standortMeldung?.message)
+  const ueberholt = await ruf(`/alarms/${alarmIndoor.id}/indoor`, {
+    method: 'POST', token: peterToken, body: JSON.stringify({ ...indoorPos, ermitteltAt: Date.now() - 60_000 }),
+  })
+  pruefe('ältere Position überschreibt keine neuere', ueberholt.body.alarm?.indoor?.mapId === '4856321132199936')
+  await ruf(`/alarms/${alarmIndoor.id}/end`, { method: 'POST', token: adminToken })
+  pruefe('beendeter Alarm nimmt keine Position mehr an',
+    (await ruf(`/alarms/${alarmIndoor.id}/indoor`, { method: 'POST', token: peterToken, body: JSON.stringify({ ...indoorPos, ermitteltAt: Date.now() }) })).status === 409)
+
+  const merZurueck = (await ruf('/state', { token: adminToken })).body.integrations
+  await ruf('/integrations', { method: 'POST', token: adminToken, body: JSON.stringify({ ...merZurueck, meridian: { ...merZurueck.meridian, enabled: false } }) })
+  pruefe('maskiertes Lese-Token bleibt beim Speichern erhalten',
+    (await ruf('/integrations/meridian', { token: adminToken })).body.apiToken === 'lese-token')
+
   // --- Single Sign-On (Microsoft Entra ID) ---
   pruefe('Anmeldemaske weiss, dass SSO aus ist', (await ruf('/setup')).body.sso === false)
   pruefe('SSO-Start ohne Einrichtung abgewiesen', (await fetch(BASIS + '/api/auth/sso/start')).status === 400)
