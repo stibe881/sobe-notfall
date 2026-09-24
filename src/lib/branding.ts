@@ -7,9 +7,17 @@
  * auch die Petrol-Vorgabe abbildet. Das Alarmrot bleibt unangetastet.
  */
 
-/** Name der Anwendung selbst – neben dem Logo in Portal, App und Anmeldemaske */
+/**
+ * Name der Anwendung selbst – neben dem Logo in Portal, App und Anmeldemaske.
+ *
+ * Drei Fälle, und der mittlere ist der Grund für diese Unterscheidung:
+ * Ein Name ergibt den Namen, **kein Eintrag** («undefined», nie gesetzt) die
+ * Vorgabe – und ein **leerer Eintrag** gar nichts. Wer neben seinem Logo
+ * keinen Text will, soll das Feld leeren können, ohne dass eine Vorgabe
+ * zurückkehrt.
+ */
 export function anwendungsname(appName: string | undefined): string {
-  return appName?.trim() || 'SOBE Notfall'
+  return appName === undefined ? 'SOBE Notfall' : appName.trim()
 }
 
 const STUFEN: { stufe: number; mischung: number }[] = [

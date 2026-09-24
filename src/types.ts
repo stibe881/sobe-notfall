@@ -367,6 +367,15 @@ export interface OrganizationSettings {
   color?: string
   /** Versionskennung des Kundenlogos – Teil der Logo-Adresse (/api/branding/logo) */
   logoVersion?: string
+  /**
+   * Logo auf eine helle Fläche legen.
+   *
+   * Anmeldemaske, Sidebar und App-Kopfzeile sind dunkel. Ein dunkles Logo mit
+   * transparentem Hintergrund verschwände dort – deshalb lässt sich eine helle
+   * Fläche darunterlegen. Ohne Angabe wird das Logo so gezeigt, wie es
+   * hochgeladen wurde: Was man hochlädt, soll man auch sehen.
+   */
+  logoPlatte?: boolean
 }
 
 /** Eine Karte (ein Stockwerk) im Meridian Editor und wie sie in Alarmen heisst */

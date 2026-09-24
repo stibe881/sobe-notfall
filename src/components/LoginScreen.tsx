@@ -10,21 +10,24 @@ import type { User } from '../types'
 const fieldClass =
   'w-full rounded-xl border border-slate-700 bg-slate-800 text-white placeholder-slate-500 px-10 py-3 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/30 transition'
 
-function Shell({ children, subtitle, showModeSwitch = false, logo = null }: {
+function Shell({ children, subtitle, showModeSwitch = false, logo = null, logoPlatte }: {
   children: React.ReactNode
   subtitle: string
   showModeSwitch?: boolean
   /** Logo-Version des Kunden – zeigt das hochgeladene Logo statt des Warndreiecks */
   logo?: string | null
+  /** Logo auf helle Fläche legen – nötig für dunkle Logos auf diesem dunklen Grund */
+  logoPlatte?: boolean
 }) {
   const { state, dispatch } = useStore()
   const logoVersion = logo ?? state.integrations.organization?.logoVersion ?? null
+  const platte = logoPlatte ?? state.integrations.organization?.logoPlatte ?? false
   return (
     <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4 sm:p-6">
       <div className="w-full max-w-sm">
         <div className="text-center mb-7">
           {logoVersion ? (
-            <div className="inline-flex items-center justify-center rounded-2xl bg-white p-3 mx-auto mb-4 max-w-[220px]">
+            <div className={`inline-flex items-center justify-center mx-auto mb-4 max-w-[220px] ${platte ? 'rounded-2xl bg-white p-3' : ''}`}>
               <img src={logoUrl(logoVersion)} alt="" className="h-12 w-auto max-w-full object-contain" />
             </div>
           ) : (
@@ -32,7 +35,9 @@ function Shell({ children, subtitle, showModeSwitch = false, logo = null }: {
               <AlertTriangle size={30} />
             </div>
           )}
-          <h1 className="text-xl font-bold text-white">{anwendungsname(state.integrations.organization?.appName)}</h1>
+          {anwendungsname(state.integrations.organization?.appName) && (
+            <h1 className="text-xl font-bold text-white">{anwendungsname(state.integrations.organization?.appName)}</h1>
+          )}
           <p className="text-sm text-slate-500 mt-1">{subtitle}</p>
         </div>
 
@@ -97,7 +102,7 @@ export default function LoginScreen() {
   const untertitel = setup?.organization || 'Notfall- & Krisenmanagement'
 
   return (
-    <Shell subtitle={untertitel} logo={setup?.logoVersion ?? null}>
+    <Shell subtitle={untertitel} logo={setup?.logoVersion ?? null} logoPlatte={setup?.logoPlatte}>
       <form onSubmit={submit} className="rounded-2xl bg-slate-800/60 border border-slate-800 p-5 space-y-3.5">
         <label className="block">
           <span className="text-xs text-slate-400">E-Mail-Adresse</span>

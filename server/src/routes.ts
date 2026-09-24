@@ -127,6 +127,7 @@ router.get('/setup', (_req, res) => {
     organization: integrations().organization.name || null,
     organizationColor: integrations().organization.color || null,
     logoVersion: integrations().organization.logoVersion || null,
+    logoPlatte: Boolean(integrations().organization.logoPlatte),
     // Der Einrichtungsassistent im Portal steht noch aus
     setupPending: einrichtungOffen(),
     // Redundanz: Rolle dieses Servers und Ausweichadresse für die App

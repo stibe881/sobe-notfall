@@ -841,6 +841,19 @@ async function main(): Promise<void> {
     method: 'POST', token: adminToken,
     body: JSON.stringify({ ...farbeKaputt, organization: { ...farbeKaputt.organization, color: 'red; }} böse' } }),
   })
+  // Ein geleerter Anwendungsname bleibt leer – sonst käme die Vorgabe zurück
+  const markeStand = (await ruf('/state', { token: adminToken })).body.integrations
+  await ruf('/integrations', {
+    method: 'POST', token: adminToken,
+    body: JSON.stringify({ ...markeStand, organization: { ...markeStand.organization, appName: '' } }),
+  })
+  pruefe('Leerer Anwendungsname wird als leer gespeichert',
+    (await ruf('/state', { token: adminToken })).body.integrations.organization.appName === '')
+  await ruf('/integrations', {
+    method: 'POST', token: adminToken,
+    body: JSON.stringify({ ...markeStand, organization: { ...markeStand.organization, appName: markeStand.organization.appName } }),
+  })
+
   pruefe('Ungültige Farbe wird nicht übernommen',
     (await ruf('/setup')).body.organizationColor === '#123456')
 

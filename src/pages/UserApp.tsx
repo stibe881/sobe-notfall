@@ -69,7 +69,9 @@ export default function UserApp() {
       <header className="sticky top-0 z-30 bg-slate-900 text-white px-4 py-3 flex items-center gap-2.5">
         <Siren size={20} className="text-brand-500" />
         <div className="min-w-0 flex-1">
-          <div className="font-bold leading-tight">{anwendungsname(state.integrations.organization?.appName)}</div>
+          {anwendungsname(state.integrations.organization?.appName) && (
+            <div className="font-bold leading-tight">{anwendungsname(state.integrations.organization?.appName)}</div>
+          )}
           <div className="text-xs text-slate-400 truncate flex items-center gap-1">
             {me.firstName} {me.lastName} · <MapPin size={10} /> {myLocation?.name}
           </div>

@@ -131,13 +131,13 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       <div className="px-5 py-4 border-b border-slate-800">
         <div className="flex items-center gap-2 text-white font-bold text-lg">
           {state.integrations.organization?.logoVersion ? (
-            <span className="inline-flex items-center rounded bg-white px-1.5 py-1">
+            <span className={`inline-flex items-center ${state.integrations.organization.logoPlatte ? 'rounded bg-white px-1.5 py-1' : ''}`}>
               <img src={logoUrl(state.integrations.organization.logoVersion)} alt="" className="h-5 w-auto max-w-[110px] object-contain" />
             </span>
           ) : (
             <AlertTriangle className="text-brand-500" size={22} />
           )}
-          {anwendungsname(state.integrations.organization?.appName)}
+          {anwendungsname(state.integrations.organization?.appName) || null}
         </div>
         <div className="text-xs text-slate-500 mt-0.5">
           {state.integrations.organization?.name || 'Notfall- & Krisenmanagement'}
@@ -384,7 +384,7 @@ export default function App() {
             <Menu size={22} />
           </button>
           <span className="font-bold flex items-center gap-1.5">
-            <AlertTriangle className="text-brand-500" size={18} /> {anwendungsname(state.integrations.organization?.appName)}
+            <AlertTriangle className="text-brand-500" size={18} /> {anwendungsname(state.integrations.organization?.appName) || null}
           </span>
           {activeAlarms.length > 0 && location.pathname !== '/monitor' && (
             <NavLink to="/monitor" className="ml-auto bg-alarm-600 text-white text-xs font-semibold rounded-full px-2.5 py-1 alarm-pulse">
