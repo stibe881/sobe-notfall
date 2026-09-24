@@ -430,6 +430,11 @@ export interface UplinkSpur {
   /** Namen der übersetzten Felder – zeigt, ob der Payload-Decoder greift */
   felder?: string[]
   batteryPct?: number
+  /** LoRaWAN-Port und rohe Nutzlast – ohne sie lässt sich ein falscher Messwert nicht prüfen */
+  fPort?: number
+  roh?: string
+  /** Zellspannung, sofern der Alarmserver die Nutzlast selbst übersetzt hat */
+  batterieMv?: number
 }
 
 /**
@@ -507,6 +512,11 @@ const ZELLE_VOLL_V = 4.2
 function alsProzent(wert: unknown): number | undefined {
   const zahl = Number(wert)
   if (!Number.isFinite(zahl) || zahl < 0) return undefined
+  // Null heisst «unbekannt», nicht «leer». Ein Gerät mit wirklich leerer
+  // Batterie funkt nicht mehr – wer eine Null meldet, hat keinen Messwert.
+  // Sie zu übernehmen hiesse, den letzten bekannten Stand durch eine
+  // Falschmeldung zu ersetzen und eine Warnung auszulösen, die nichts bedeutet.
+  if (zahl === 0) return undefined
 
   // Millivolt einer Lithium-Zelle
   if (zahl >= 2000 && zahl <= 4500) return ausSpannung(zahl / 1000)

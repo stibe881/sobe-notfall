@@ -285,6 +285,9 @@ export const api = {
       knopf?: string
       felder?: string[]
       batteryPct?: number
+      fPort?: number
+      roh?: string
+      batterieMv?: number
     }[] }>('/integrations/lorawan/uplinks'),
 
   triggerAlarm: (daten: Record<string, unknown>) =>

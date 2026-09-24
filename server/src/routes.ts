@@ -923,6 +923,7 @@ router.post('/hooks/lorawan', async (req, res) => {
   // Nutzlast der hinterlegten Modelle selbst. Das ist beim eingebauten
   // Netzserver vieler Gateways der Regelfall – dort gibt es gar keinen Platz
   // für einen eigenen Decoder.
+  let selbstUebersetzt: number | undefined
   if (ereignis.ohneDecoder && ereignis.daten && knopf.geraetetyp && knopf.geraetetyp !== 'auto') {
     const roh = dekodiere(knopf.geraetetyp, ereignis.daten, ereignis.fPort)
     if (roh) {
@@ -930,6 +931,7 @@ router.post('/hooks/lorawan', async (req, res) => {
       ereignis.batteryPct = alsBatterieProzent(roh.batterieMv)
       ereignis.ohneDecoder = false
       ereignis.felder = ['alarm', 'batterieMv']
+      selbstUebersetzt = roh.batterieMv
       aktualisiert.batteryPct = ereignis.batteryPct ?? aktualisiert.batteryPct
       upsertDoc('buttons', knopf.id, aktualisiert)
     }
@@ -944,7 +946,10 @@ router.post('/hooks/lorawan', async (req, res) => {
       decoderGemeldet.set(knopf.id, Date.now())
       addAudit('system', `Alarmknopf ${knopf.name} (${knopf.serial}) sendet ohne übersetzte Nutzlast – im Netzserver fehlt der Payload-Decoder. Ein Knopfdruck löst so keinen Alarm aus.`)
     }
-    merkeUplink({ geraet: ereignis.geraet, ergebnis: 'ohne-decoder', knopf: knopf.name })
+    merkeUplink({
+      geraet: ereignis.geraet, ergebnis: 'ohne-decoder', knopf: knopf.name,
+      fPort: ereignis.fPort, roh: ereignis.daten,
+    })
     broadcast('state')
     res.status(422).json({
       ok: false,
@@ -958,6 +963,7 @@ router.post('/hooks/lorawan', async (req, res) => {
     merkeUplink({
       geraet: ereignis.geraet, ergebnis: 'status', knopf: knopf.name,
       felder: ereignis.felder, batteryPct: aktualisiert.batteryPct,
+      fPort: ereignis.fPort, roh: ereignis.daten, batterieMv: selbstUebersetzt,
     })
     broadcast('state')
     res.json({ ok: true, alarm: null })
@@ -982,6 +988,7 @@ router.post('/hooks/lorawan', async (req, res) => {
     merkeUplink({
       geraet: ereignis.geraet, ergebnis: 'zusammengefasst', knopf: knopf.name,
       felder: ereignis.felder, batteryPct: aktualisiert.batteryPct,
+      fPort: ereignis.fPort, roh: ereignis.daten, batterieMv: selbstUebersetzt,
     })
     broadcast('state')
     res.json({ ok: true, alarm: laufend.id, merged: true })
@@ -1012,6 +1019,7 @@ router.post('/hooks/lorawan', async (req, res) => {
   merkeUplink({
     geraet: ereignis.geraet, ergebnis: 'alarm', knopf: knopf.name,
     felder: ereignis.felder, batteryPct: aktualisiert.batteryPct,
+    fPort: ereignis.fPort, roh: ereignis.daten, batterieMv: selbstUebersetzt,
   })
   addAudit('alarm', `Alarmknopf ausgelöst: ${knopf.name} (${knopf.serial}) – ${alarm.silent ? 'stille' : 'laute'} Alarmierung`, knopf.assignedUserId)
   broadcast('state')

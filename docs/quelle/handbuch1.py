@@ -97,8 +97,9 @@ KOERPER = r"""
     <p>
       Das Portal steht der Administration und dem Krisenstab offen, aber nicht mit
       demselben Umfang. Dem Krisenstab fehlen <span class="ui">Benutzende</span>,
-      <span class="ui">Gruppen &amp; Krisenteams</span>, <span class="ui">Standorte</span> und
-      <span class="ui">Einstellungen &amp; Konfiguration</span> &ndash; also alles, was die
+      <span class="ui">Gruppen &amp; Krisenteams</span>, <span class="ui">Standorte</span>,
+      <span class="ui">Einstellungen &amp; Konfiguration</span> und die
+      <span class="ui">App-Vorschau</span> &ndash; also alles, was die
       Grundordnung des Systems betrifft. Alarmieren, führen, nachbereiten und die
       Vorbereitung pflegen kann er vollständig.
     </p>

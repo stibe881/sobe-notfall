@@ -1430,6 +1430,15 @@ function UplinkSpur({ uplinks, kopieren, kopiert }: {
                 {u.felder && u.felder.length > 0 && (
                   <div className="text-slate-400 mt-0.5">Übersetzte Felder: {u.felder.join(', ')}</div>
                 )}
+                {(u.fPort !== undefined || u.roh || u.batterieMv !== undefined) && (
+                  // Für die Fehlersuche: Ohne Port und Rohbytes lässt sich ein
+                  // falscher Messwert von aussen nicht nachrechnen.
+                  <div className="text-slate-400 mt-0.5 break-all">
+                    {u.fPort !== undefined && <>Port {u.fPort}</>}
+                    {u.batterieMv !== undefined && <> · {u.batterieMv} mV</>}
+                    {u.roh && <> · <code>{u.roh}</code></>}
+                  </div>
+                )}
               </li>
             )
           })}

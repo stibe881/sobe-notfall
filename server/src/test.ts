@@ -841,6 +841,18 @@ async function main(): Promise<void> {
     method: 'POST', token: adminToken,
     body: JSON.stringify({ ...farbeKaputt, organization: { ...farbeKaputt.organization, color: 'red; }} böse' } }),
   })
+  // Eine gemeldete Null heisst «kein Messwert», nicht «Batterie leer»
+  const vorNull = (await ruf('/state', { token: adminToken })).body.buttons.find((b: any) => b.id === 'btn-roh')?.batteryPct
+  await ruf('/hooks/lorawan', {
+    method: 'POST', token: lwToken.body.token,
+    body: JSON.stringify({ applicationID: '1', devEUI: 'A84041000181D2C7', rxInfo: [], fPort: 7, data: Buffer.from('000000', 'hex').toString('base64') }),
+  })
+  pruefe('Eine Batterie-Null überschreibt den letzten Stand nicht',
+    (await ruf('/state', { token: adminToken })).body.buttons.find((b: any) => b.id === 'btn-roh')?.batteryPct === vorNull)
+  const spurMitRoh = (await ruf('/integrations/lorawan/uplinks', { token: adminToken })).body.uplinks
+  pruefe('Die Spur hält Port und Rohbytes fest',
+    spurMitRoh.some((u: any) => u.fPort === 7 && typeof u.roh === 'string' && u.roh.length > 0))
+
   // --- Sicherungswache: der Inhalt zählt, nicht das Dateidatum ---
   const sicherungslage = (await ruf('/bereitschaft', { token: adminToken })).body.sicherung
   pruefe('Bereitschaft urteilt über die Sicherung', typeof sicherungslage?.lage === 'string')
