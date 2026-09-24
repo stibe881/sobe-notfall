@@ -35,7 +35,9 @@ function Shell({ children, subtitle, showModeSwitch = false, logo = null, logoPl
               <AlertTriangle size={30} />
             </div>
           )}
-          <h1 className="text-xl font-bold text-white">{anwendungsname(state.integrations.organization?.appName)}</h1>
+          {anwendungsname(state.integrations.organization?.appName) && (
+            <h1 className="text-xl font-bold text-white">{anwendungsname(state.integrations.organization?.appName)}</h1>
+          )}
           <p className="text-sm text-slate-500 mt-1">{subtitle}</p>
         </div>
 

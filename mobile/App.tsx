@@ -10,6 +10,7 @@ import { alleinarbeitAbgleichen } from './src/liveActivity'
 import { alleinarbeitAndroidAbgleichen } from './src/androidTimer'
 import { alleinarbeitMeldungenAbgleichen } from './src/alleinarbeitMeldungen'
 import { logoUri } from './src/api'
+import { anwendungsname } from './src/branding'
 import type { Alarm, Scenario } from './src/types'
 import { colors } from './src/ui'
 import { AlarmAuswahlScreen, ContactsScreen, LoneWorkScreen, ProfileScreen, ScenarioDetailScreen, ScenariosScreen, StartScreen } from './src/screens'
@@ -175,7 +176,9 @@ function Root() {
           <Siren size={20} color={colors.brandLight} />
         )}
         <View style={{ flex: 1 }}>
-          <Text style={styles.headerTitle}>{state.integrations?.organization?.appName?.trim() || 'SOBE Notfall'}</Text>
+          {Boolean(anwendungsname(state.integrations?.organization?.appName)) && (
+            <Text style={styles.headerTitle}>{anwendungsname(state.integrations?.organization?.appName)}</Text>
+          )}
           <View style={styles.headerSubRow}>
             <Text style={styles.headerSub}>{me.firstName} {me.lastName} · </Text>
             <MapPin size={10} color="#94a3b8" />

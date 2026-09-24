@@ -137,7 +137,7 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           ) : (
             <AlertTriangle className="text-brand-500" size={22} />
           )}
-          {anwendungsname(state.integrations.organization?.appName)}
+          {anwendungsname(state.integrations.organization?.appName) || null}
         </div>
         <div className="text-xs text-slate-500 mt-0.5">
           {state.integrations.organization?.name || 'Notfall- & Krisenmanagement'}
@@ -384,7 +384,7 @@ export default function App() {
             <Menu size={22} />
           </button>
           <span className="font-bold flex items-center gap-1.5">
-            <AlertTriangle className="text-brand-500" size={18} /> {anwendungsname(state.integrations.organization?.appName)}
+            <AlertTriangle className="text-brand-500" size={18} /> {anwendungsname(state.integrations.organization?.appName) || null}
           </span>
           {activeAlarms.length > 0 && location.pathname !== '/monitor' && (
             <NavLink to="/monitor" className="ml-auto bg-alarm-600 text-white text-xs font-semibold rounded-full px-2.5 py-1 alarm-pulse">

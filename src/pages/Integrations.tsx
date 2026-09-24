@@ -431,7 +431,9 @@ function OrganisationEinstellungen() {
         organization: {
           ...org,
           name: entwurf.name.trim(),
-          appName: entwurf.appName?.trim() || undefined,
+          // «??» statt «||»: Ein geleertes Feld bleibt ein leerer Eintrag und
+          // wird nicht zu «nie gesetzt» – sonst käme die Vorgabe zurück.
+          appName: entwurf.appName?.trim() ?? undefined,
           shortName: entwurf.shortName.trim().slice(0, 11),
           color: /^#[0-9a-fA-F]{6}$/.test(farbe) ? farbe : undefined,
         },
@@ -455,6 +457,10 @@ function OrganisationEinstellungen() {
           className={inputClass} placeholder="SOBE Notfall"
           value={entwurf.appName ?? ''} onChange={(e) => patch({ appName: e.target.value })}
         />
+        <p className="text-xs text-slate-500 mt-1">
+          Leer lassen, wenn neben dem Logo kein Text stehen soll. Ohne Logo bleibt dann
+          nur das Symbol – prüfen Sie in dem Fall die Anmeldemaske.
+        </p>
       </Field>
       <Field label="Akzentfarbe – färbt Navigation, Knöpfe und Akzente in Portal und App">
         <div className="flex items-center gap-2">

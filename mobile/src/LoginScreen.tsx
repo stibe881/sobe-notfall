@@ -4,6 +4,7 @@ import * as WebBrowser from 'expo-web-browser'
 import { AlertTriangle, Eye, EyeOff, LogIn, ShieldCheck } from 'lucide-react-native'
 import Svg, { Rect } from 'react-native-svg'
 import { useStore } from './store'
+import { anwendungsname } from './branding'
 import { LIVE_INITIAL_PASSWORD } from './seed'
 import { MIN_PASSWORD_LENGTH, passwordProblem } from './auth'
 import { ApiError, api, logoUri, merkeServerInfo, serverUrl, setServerUrl, type SetupInfo } from './api'
@@ -31,7 +32,9 @@ function Shell({ subtitle, children, logoVersion = null }: {
           </View>
         )}
         <View style={s.titleRow}>
-          <Text style={s.title}>{state.integrations?.organization?.appName?.trim() || 'SOBE Notfall'}</Text>
+          {Boolean(anwendungsname(state.integrations?.organization?.appName)) && (
+            <Text style={s.title}>{anwendungsname(state.integrations?.organization?.appName)}</Text>
+          )}
         </View>
         <Text style={s.subtitle}>{subtitle}</Text>
 
