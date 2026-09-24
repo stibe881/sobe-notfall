@@ -25,7 +25,7 @@ import LoginScreen, { ForcePasswordChange } from './components/LoginScreen'
 import UpdateDialog from './components/UpdateDialog'
 import { api, logoUrl } from './lib/api'
 import { anwendungsname, wendeAkzentfarbeAn } from './lib/branding'
-import { NUR_ADMIN, darfOeffnen, useAnsicht, wirksameRolle } from './lib/ansicht'
+import { darfOeffnen, gehoertInsMenue, useAnsicht, wirksameRolle } from './lib/ansicht'
 import { Button, Field, Modal, inputClass } from './components/ui'
 
 /**
@@ -145,7 +145,7 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
 
   // Menü auf das filtern, was diese Rolle auch bedienen darf – und eine
   // Abschnittsüberschrift weglassen, unter der dann nichts mehr steht.
-  const uebrig = NAV.filter((item) => 'section' in item || darfOeffnen(rolle, item.to))
+  const uebrig = NAV.filter((item) => 'section' in item || gehoertInsMenue(rolle, item.to))
   const sichtbar = uebrig.filter((item, i) => !('section' in item) || !('section' in (uebrig[i + 1] ?? { section: '' })) && uebrig[i + 1] !== undefined)
 
   // Regelmässig im Hintergrund nachsehen, ob der Server hinter origin zurückliegt –

@@ -19,6 +19,17 @@ export const NUR_ADMIN: readonly string[] = [
   '/integrationen',
 ]
 
+/**
+ * Nur aus dem Menü genommen, nicht gesperrt.
+ *
+ * `/app` ist keine reine Vorschau, sondern die Weboberfläche der
+ * Mitarbeitenden – und Krisenstabs-Mitglieder sind auch Mitarbeitende. Der
+ * Eintrag «App-Vorschau» gehört trotzdem nicht in ihr Menü: Dort heisst er
+ * Vorschau, weil er für die Administration eine ist. Wer die Seite offen hat
+ * oder ihre Adresse kennt, wird nicht ausgesperrt.
+ */
+export const NUR_ADMIN_IM_MENUE: readonly string[] = ['/app']
+
 export type Ansicht = 'admin' | 'krisenstab'
 
 const SPEICHER = 'sobe-ansicht'
@@ -38,6 +49,11 @@ export function wirksameRolle(rolle: Role, ansicht: Ansicht): Role {
 /** Darf diese Rolle die Seite öffnen? */
 export function darfOeffnen(rolle: Role, pfad: string): boolean {
   return rolle === 'admin' || !NUR_ADMIN.includes(pfad)
+}
+
+/** Gehört der Eintrag für diese Rolle ins Menü? */
+export function gehoertInsMenue(rolle: Role, pfad: string): boolean {
+  return darfOeffnen(rolle, pfad) && (rolle === 'admin' || !NUR_ADMIN_IM_MENUE.includes(pfad))
 }
 
 /**
