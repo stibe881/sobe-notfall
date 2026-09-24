@@ -371,6 +371,15 @@ export interface OrganizationSettings {
    * GET /api/branding/logo ausgeliefert, nicht im Datenbestand mitgeschickt.
    */
   logoVersion?: string
+  /**
+   * Logo auf eine helle Fläche legen.
+   *
+   * Anmeldemaske, Sidebar und App-Kopfzeile sind dunkel. Ein dunkles Logo mit
+   * transparentem Hintergrund verschwände dort – deshalb lässt sich eine helle
+   * Fläche darunterlegen. Ohne Angabe wird das Logo so gezeigt, wie es
+   * hochgeladen wurde: Was man hochlädt, soll man auch sehen.
+   */
+  logoPlatte?: boolean
 }
 
 export interface IntegrationSettings {

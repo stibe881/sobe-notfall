@@ -161,6 +161,8 @@ export interface SetupInfo {
   /** Akzentfarbe (#rrggbb) und Logo-Version – Branding schon vor der Anmeldung */
   organizationColor?: string | null
   logoVersion?: string | null
+  /** Logo auf heller Fläche zeigen – für dunkle Logos mit transparentem Grund */
+  logoPlatte?: boolean
   /** Der Einrichtungsassistent im Portal steht noch aus */
   setupPending?: boolean
   /** Redundanz: Rolle dieses Servers und Ausweichadresse */

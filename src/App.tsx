@@ -131,7 +131,7 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       <div className="px-5 py-4 border-b border-slate-800">
         <div className="flex items-center gap-2 text-white font-bold text-lg">
           {state.integrations.organization?.logoVersion ? (
-            <span className="inline-flex items-center rounded bg-white px-1.5 py-1">
+            <span className={`inline-flex items-center ${state.integrations.organization.logoPlatte ? 'rounded bg-white px-1.5 py-1' : ''}`}>
               <img src={logoUrl(state.integrations.organization.logoVersion)} alt="" className="h-5 w-auto max-w-[110px] object-contain" />
             </span>
           ) : (

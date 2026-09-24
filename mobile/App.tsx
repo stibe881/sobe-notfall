@@ -164,7 +164,7 @@ function Root() {
       <StatusBar style="light" />
       <View style={styles.header}>
         {state.integrations?.organization?.logoVersion ? (
-          <View style={styles.headerLogo}>
+          <View style={state.integrations.organization.logoPlatte ? styles.headerLogo : undefined}>
             <Image
               source={{ uri: logoUri(state.integrations.organization.logoVersion) }}
               style={{ width: 64, height: 22 }}

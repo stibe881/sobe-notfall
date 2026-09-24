@@ -523,8 +523,10 @@ function OrganisationEinstellungen() {
 
 /** Kundenlogo: hochladen, Vorschau, entfernen – liegt auf dem Alarmserver */
 function LogoEinstellungen() {
-  const { state, refresh } = useStore()
-  const logoVersion = state.integrations.organization?.logoVersion
+  const { state, dispatch, refresh } = useStore()
+  const organisation = state.integrations.organization
+  const logoVersion = organisation?.logoVersion
+  const platte = Boolean(organisation?.logoPlatte)
   const [fehler, setFehler] = useState<string | null>(null)
   const [laedt, setLaedt] = useState(false)
 
@@ -559,9 +561,19 @@ function LogoEinstellungen() {
       <div className="text-xs text-slate-500 font-medium">Kundenlogo</div>
       <div className="flex items-center gap-3 flex-wrap">
         {logoVersion ? (
-          <span className="inline-flex items-center rounded-lg border border-slate-200 bg-white p-2">
-            <img src={logoUrl(logoVersion)} alt="Kundenlogo" className="h-10 w-auto max-w-[180px] object-contain" />
-          </span>
+          // Zwei Vorschauen: Das Logo erscheint auf hellem Grund (Kacheln im
+          // Portal) und auf dunklem (Anmeldemaske, Sidebar, App-Kopfzeile).
+          // Nur nebeneinander lässt sich beurteilen, ob es beides verträgt.
+          <div className="flex items-center gap-2">
+            <span className={`inline-flex items-center rounded-lg border border-slate-200 bg-white p-2 ${platte ? '' : 'bg-white'}`}>
+              <img src={logoUrl(logoVersion)} alt="Kundenlogo auf hellem Grund" className="h-10 w-auto max-w-[180px] object-contain" />
+            </span>
+            <span className="inline-flex items-center rounded-lg border border-slate-700 bg-slate-900 p-2">
+              <span className={platte ? 'inline-flex items-center rounded bg-white p-1.5' : 'inline-flex'}>
+                <img src={logoUrl(logoVersion)} alt="Kundenlogo auf dunklem Grund" className="h-10 w-auto max-w-[180px] object-contain" />
+              </span>
+            </span>
+          </div>
         ) : (
           <span className="text-xs text-slate-400">Noch kein Logo hinterlegt.</span>
         )}
@@ -583,9 +595,27 @@ function LogoEinstellungen() {
         )}
       </div>
       {fehler && <p className="text-xs text-alarm-600">{fehler}</p>}
+      {logoVersion && organisation && (
+        <div className="pt-1">
+          <Toggle
+            checked={platte}
+            onChange={(v) => dispatch({
+              type: 'UPDATE_INTEGRATIONS',
+              integrations: { ...state.integrations, organization: { ...organisation, logoPlatte: v } },
+            })}
+            label="Auf heller Fläche zeigen"
+          />
+          <p className="text-xs text-slate-500 mt-1 pl-11">
+            {platte
+              ? 'Das Logo liegt auf einem weissen Feld. Nötig für dunkle Logos – sie wären auf der dunklen Anmeldemaske sonst unsichtbar.'
+              : 'Das Logo erscheint so, wie Sie es hochgeladen haben – ein transparenter Hintergrund bleibt transparent. Prüfen Sie an der rechten Vorschau, ob es auf dunklem Grund noch zu erkennen ist.'}
+          </p>
+        </div>
+      )}
       <p className="text-xs text-slate-400">
         PNG, JPEG, SVG oder WebP, max. ~300 KB – am besten ein Logo mit transparentem Hintergrund.
-        Es erscheint hell hinterlegt auf der Anmeldemaske, in der Portal-Sidebar und in der App.
+        Es erscheint auf der Anmeldemaske, in der Portal-Sidebar und in der App; diese drei
+        Flächen sind dunkel.
       </p>
     </div>
   )
