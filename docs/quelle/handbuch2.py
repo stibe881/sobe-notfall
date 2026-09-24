@@ -343,7 +343,7 @@ KOERPER = r"""
   <p>
     Diese Bereiche sehen Sie zwar im Menü, dürfen sie aber nicht ändern:
     <b>Benutzende</b>, <b>Gruppen &amp; Krisenteams</b>, <b>Standorte</b> und
-    <b>Integrationen</b>. Auch der Knopf <span class="ui">Aktualisierung</span> ist der
+    <b>Einstellungen &amp; Konfiguration</b>. Auch der Knopf <span class="ui">Aktualisierung</span> ist der
     Administration vorbehalten.
   </p>
   <div class="hinweis">

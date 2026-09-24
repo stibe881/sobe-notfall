@@ -24,7 +24,7 @@ KOERPER = r"""
     <li><a href="#a7"><span class="zahl">7</span> Alleinarbeit und Alarmknöpfe</a></li>
     <li><a href="#a8"><span class="zahl">8</span> Benutzende verwalten</a></li>
     <li><a href="#a9"><span class="zahl">9</span> Gruppen und Standorte</a></li>
-    <li><a href="#a10"><span class="zahl">10</span> Integrationen und Zugangscodes</a></li>
+    <li><a href="#a10"><span class="zahl">10</span> Einstellungen &amp; Konfiguration</a></li>
     <li><a href="#a11"><span class="zahl">11</span> Ereignisprotokoll</a></li>
     <li><a href="#a12"><span class="zahl">12</span> Die Anwendung aktualisieren</a></li>
     <li><a href="#a13"><span class="zahl">13</span> Rollen und Rechte</a></li>
@@ -88,7 +88,7 @@ KOERPER = r"""
         <tr><th scope="row">Laufender Betrieb</th><td>Alleinarbeit, Alarmknöpfe, Ereignisprotokoll &ndash; der Alltag zwischen den Ereignissen</td></tr>
         <tr><th scope="row">Vorbereitung</th><td>Szenarien, Alarmpläne, Notfallkontakte &ndash; die Inhalte, die im Ernstfall greifen</td></tr>
         <tr><th scope="row">Organisation</th><td>Benutzende, Gruppen &amp; Krisenteams, Standorte &ndash; wer dazugehört und wo</td></tr>
-        <tr><th scope="row">System &amp; Hilfe</th><td>Integrationen, App-Vorschau und die Handbücher &ndash; immer in der Fassung, die zur laufenden Version gehört</td></tr>
+        <tr><th scope="row">System &amp; Hilfe</th><td>Einstellungen &amp; Konfiguration, App-Vorschau und die Handbücher &ndash; immer in der Fassung, die zur laufenden Version gehört</td></tr>
       </tbody>
     </table>
   </div>
@@ -424,7 +424,7 @@ KOERPER = r"""
     <b>Geräte erfassen können Sie jederzeit</b> &ndash; auch bevor das Funknetz steht.
     Ist der Uplink-Endpunkt noch ausgeschaltet, weist ein gelber Hinweis oben auf der
     Seite darauf hin; mit <span class="ui">Jetzt aktivieren</span> schalten Sie ihn
-    direkt von dort ein, ohne den Umweg über die Integrationen. Ist er eingeschaltet,
+    direkt von dort ein, ohne den Umweg über Einstellungen &amp; Konfiguration. Ist er eingeschaltet,
     trägt die Überschrift das grüne Abzeichen <span class="ui">Uplink aktiv</span>.
     Einschalten darf ihn die Administration; erfassen und bearbeiten dürfen Geräte
     auch Mitglieder des Krisenstabs.
@@ -442,7 +442,7 @@ KOERPER = r"""
     <li>die Batterie unter einen Schwellenwert fällt (Vorgabe: 20 %).</li>
   </ul>
   <p>
-    Beide Werte stellen Sie unter <span class="ui">Integrationen &rsaquo; LoRaWAN-Netz /
+    Beide Werte stellen Sie unter <span class="ui">Einstellungen &amp; Konfiguration &rsaquo; LoRaWAN-Netz /
     Alarmknöpfe</span> ein. Richten Sie die Stundenzahl nach dem Melde-Intervall
     Ihrer Geräte &ndash; die meisten senden alle 12 bis 24 Stunden ein Lebenszeichen.
     Auf der Knopf-Übersicht trägt ein betroffenes Gerät das Abzeichen
@@ -608,9 +608,9 @@ KOERPER = r"""
 </section>
 
 <section id="a10">
-  <h2 class="abschnitt"><span class="zahl">10</span> Integrationen und Zugangscodes</h2>
+  <h2 class="abschnitt"><span class="zahl">10</span> Einstellungen &amp; Konfiguration</h2>
   <figure class="bild-breit">
-    <img src="bilder/web-13-integrationen.webp" alt="Seite Integrationen mit Kommunikationskanälen, Identitätsanbindung, Webhooks und Zugangscodes">
+    <img src="bilder/web-13-integrationen.webp" alt="Seite Einstellungen &amp; Konfiguration mit Kommunikationskanälen, Identitätsanbindung, Webhooks und Zugangscodes">
     <figcaption><b>Abb.</b> &nbsp; Kommunikationskanäle, Anbindung an Drittsysteme und die Zugangscodes für die App-Installation.</figcaption>
   </figure>
   <h3>Interne Notfallnummer</h3>
@@ -742,7 +742,7 @@ KOERPER = r"""
         <tr><th scope="row">Übung auslösen</th><td class="nein">nein</td><td class="ja">ja</td><td class="ja">ja</td></tr>
         <tr><th scope="row">Szenarien, Alarmpläne, Kontakte, Alarmknöpfe</th><td class="nein">nein</td><td class="ja">ja</td><td class="ja">ja</td></tr>
         <tr><th scope="row">Konten, Gruppen, Standorte</th><td class="nein">nein</td><td class="nein">nein</td><td class="ja">ja</td></tr>
-        <tr><th scope="row">Integrationen</th><td class="nein">nein</td><td class="nein">nein</td><td class="ja">ja</td></tr>
+        <tr><th scope="row">Einstellungen &amp; Konfiguration</th><td class="nein">nein</td><td class="nein">nein</td><td class="ja">ja</td></tr>
         <tr><th scope="row">Aktualisierung</th><td class="nein">nein</td><td class="nein">nein</td><td class="ja">ja</td></tr>
       </tbody>
     </table>

@@ -259,7 +259,7 @@ export default function LoginScreen() {
       )}
 
       <p className="text-center text-[11px] text-slate-600 mt-5 leading-relaxed">
-        Anmeldung über Microsoft Entra ID (SSO) ist vorbereitet und kann unter Integrationen aktiviert werden,
+        Anmeldung über Microsoft Entra ID (SSO) ist vorbereitet und kann unter Einstellungen & Konfiguration aktiviert werden,
         sobald der Verzeichnisdienst angebunden ist.
       </p>
     </Shell>

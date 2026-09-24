@@ -1153,7 +1153,7 @@ export function createLiveInitialState(): AppState {
     },
     contacts: SEED_CONTACTS,
     audit: [
-      { id: 'a-live-1', ts: Date.now(), type: 'system', message: 'System initialisiert. Versand-Gateways unter Integrationen anbinden.' },
+      { id: 'a-live-1', ts: Date.now(), type: 'system', message: 'System initialisiert. Versand-Gateways unter Einstellungen & Konfiguration anbinden.' },
     ],
   }
 }

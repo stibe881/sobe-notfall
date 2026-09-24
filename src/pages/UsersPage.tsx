@@ -60,8 +60,8 @@ export default function UsersPage() {
         <div>
           <h1 className="text-2xl font-bold text-slate-800">Benutzerverwaltung</h1>
           <p className="text-sm text-slate-500">
-            Manuelle Erfassung, CSV-Upload oder automatische Synchronisation mit dem Personalsystem (siehe Integrationen) ·
-            Anmeldung mit E-Mail und Passwort oder mit Microsoft (SSO, siehe Integrationen) ·
+            Manuelle Erfassung, CSV-Upload oder automatische Synchronisation mit dem Personalsystem (siehe Einstellungen & Konfiguration) ·
+            Anmeldung mit E-Mail und Passwort oder mit Microsoft (SSO, siehe Einstellungen & Konfiguration) ·
             <b>Erreichbarkeit</b> sagt, ob ein Alarm tatsächlich ankommt – dafür braucht es ein angemeldetes Gerät
           </p>
         </div>

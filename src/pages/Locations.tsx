@@ -55,7 +55,7 @@ export default function Locations() {
                           {l.geofence.punkte?.length
                             ? `Umriss mit ${l.geofence.punkte.length} Punkten`
                             : `Umkreis ${l.geofence.radiusM} m`}
-                          {state.integrations.geofencing ? ' · aktiv' : ' · Geofencing unter Integrationen ausgeschaltet'}
+                          {state.integrations.geofencing ? ' · aktiv' : ' · Geofencing unter Einstellungen & Konfiguration ausgeschaltet'}
                         </Badge>
                       )
                       : <Badge>kein Geofence</Badge>}

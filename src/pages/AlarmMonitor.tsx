@@ -23,7 +23,7 @@ export default function AlarmMonitor() {
         <div className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
           <strong>Hinweis:</strong> SMS und Sprachanrufe sind noch nicht angebunden – Alarme gehen per Push und an
           ausgehende Webhooks, aber nicht per SMS/Anruf. Gateways unter{' '}
-          <Link to="/integrationen" className="underline font-medium">Integrationen</Link> anbinden.
+          <Link to="/integrationen" className="underline font-medium">Einstellungen &amp; Konfiguration</Link> anbinden.
         </div>
       )}
 

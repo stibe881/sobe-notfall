@@ -224,7 +224,7 @@ export function KanalWahl({ gewaehlt, onToggle }: { gewaehlt: Channel[]; onToggl
           <span>
             Über {stumm.map((c) => KANAL_KURZ[c]).join(', ')} geht heute nichts hinaus.{' '}
             {stumm.some((c) => c !== 'email' && c !== 'tts') && (
-              <>Einrichten unter <Link to="/integrationen" className="underline">Integrationen</Link>. </>
+              <>Einrichten unter <Link to="/integrationen" className="underline">Einstellungen &amp; Konfiguration</Link>. </>
             )}
             Der Plan lässt sich trotzdem speichern – die Wahl gilt, sobald der Kanal angebunden ist.
           </span>

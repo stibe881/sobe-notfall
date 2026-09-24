@@ -203,7 +203,7 @@ export default function TriggerAlarm() {
           {!state.integrations.smsGateway.enabled && !state.integrations.telephony.enabled && (
             <div className="text-xs text-amber-700 pt-1">
               Kein SMS-/Anruf-Gateway angebunden: Der Alarm geht per Push und an Webhooks, aber nicht per SMS/Anruf.
-              Anbindung unter Integrationen.
+              Anbindung unter Einstellungen & Konfiguration.
             </div>
           )}
         </div>

@@ -151,7 +151,7 @@ export default function Buttons() {
           {istAdmin ? (
             <div className="flex flex-col sm:flex-row gap-2 shrink-0">
               <Button onClick={aktiviereUplink}><PlugZap size={14} /> Jetzt aktivieren</Button>
-              <Button variant="secondary" onClick={() => navigate('/integrationen')}>Zu den Integrationen</Button>
+              <Button variant="secondary" onClick={() => navigate('/integrationen')}>Zu den Einstellungen</Button>
             </div>
           ) : (
             <span className="text-xs text-amber-700 shrink-0">Einschalten kann das die Administration.</span>

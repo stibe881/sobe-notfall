@@ -254,7 +254,7 @@ export default function Integrations() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Integrationen</h1>
+          <h1 className="text-2xl font-bold text-slate-800">Einstellungen &amp; Konfiguration</h1>
           <p className="text-sm text-slate-500">
             Alles, was das System mit der Aussenwelt verbindet – {aktiv} von {karten.length} Bereichen sind aktiv.
           </p>

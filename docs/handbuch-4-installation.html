@@ -303,7 +303,7 @@ footer .adressfuss { margin-top: 22px; }
     <li><a href="#a4"><span class="zahl">4</span> Einstellungen (server/.env)</a></li>
     <li><a href="#a5"><span class="zahl">5</span> Erstinbetriebnahme</a></li>
     <li><a href="#a6"><span class="zahl">6</span> Grundkonfiguration</a></li>
-    <li><a href="#a7"><span class="zahl">7</span> Organisation und Integrationen</a></li>
+    <li><a href="#a7"><span class="zahl">7</span> Organisation und Einstellungen</a></li>
     <li><a href="#a8"><span class="zahl">8</span> Die App verteilen und verbinden</a></li>
     <li><a href="#a9"><span class="zahl">9</span> Alarmknöpfe anbinden</a></li>
     <li><a href="#a10"><span class="zahl">10</span> Redundanz: zweiter Alarmserver</a></li>
@@ -512,14 +512,14 @@ footer .adressfuss { margin-top: 22px; }
 </section>
 
 <section id="a7">
-  <h2 class="abschnitt"><span class="zahl">7</span> Organisation und Integrationen</h2>
+  <h2 class="abschnitt"><span class="zahl">7</span> Organisation und Einstellungen</h2>
   <p>
-    Unter <span class="ui">Integrationen</span> binden Sie die Dienste des Kunden an.
+    Unter <span class="ui">Einstellungen &amp; Konfiguration</span> binden Sie die Dienste des Kunden an.
     Zugangsdaten werden maskiert gespeichert und verlassen den Server nie im
     Klartext; zu jeder Anbindung gehört ein Verbindungstest.
   </p>
   <figure class="bild-breit">
-    <img src="bilder/web-26-organisation-redundanz.webp" alt="Seite Integrationen mit den Karten Organisation und Auftritt sowie Redundanz">
+    <img src="bilder/web-26-organisation-redundanz.webp" alt="Seite Einstellungen &amp; Konfiguration mit den Karten Organisation und Auftritt sowie Redundanz">
     <figcaption><b>Abb. 3</b> &nbsp; Oben links <span class="ui">Organisation &amp; Auftritt</span> (Name und Kurzname), rechts die Redundanz (Abschnitt 10). Darunter folgen App-Verbindung, SMS-Gateway, Teams, Telefonie, SSO und LoRaWAN.</figcaption>
   </figure>
   <h3>Logo und Akzentfarbe</h3>
@@ -564,7 +564,7 @@ footer .adressfuss { margin-top: 22px; }
     dieselbe. Auf die iPhones kommt sie über TestFlight oder den App&nbsp;Store, auf
     Android-Geräte über den Play&nbsp;Store oder als direkt installierbares APK (etwa per
     Geräteverwaltung). Damit sie mit dem richtigen Server spricht, zeigt das Portal
-    unter <span class="ui">Integrationen &rarr; App-Verbindung</span> einen QR-Code.
+    unter <span class="ui">Einstellungen &amp; Konfiguration &rarr; App-Verbindung</span> einen QR-Code.
   </p>
   <figure class="bild-breit">
     <img src="bilder/web-27-app-verbindung.webp" alt="Karte App-Verbindung mit QR-Code und Verbindungs-Link">
@@ -708,7 +708,7 @@ footer .adressfuss { margin-top: 22px; }
 
   <h3>Einrichten</h3>
   <ol>
-    <li>Im Portal unter <span class="ui">Integrationen &rsaquo; LoRaWAN-Netz / Alarmknöpfe</span>
+    <li>Im Portal unter <span class="ui">Einstellungen &amp; Konfiguration &rsaquo; LoRaWAN-Netz / Alarmknöpfe</span>
       den Endpunkt einschalten und ein <b>Token erzeugen</b>. Endpunkt-Adresse und Token
       werden dort angezeigt und lassen sich kopieren.</li>
     <li>Im Netzserver einen <b>Webhook</b> auf diese Adresse einrichten und das Token als
@@ -808,7 +808,7 @@ footer .adressfuss { margin-top: 22px; }
   <div class="hinweis">
     <p class="marke-klein">Beim Einrichten: Letzte Uplinks</p>
     <p>
-      Unter <span class="ui">Integrationen &rsaquo; LoRaWAN-Netz / Alarmknöpfe</span> steht
+      Unter <span class="ui">Einstellungen &amp; Konfiguration &rsaquo; LoRaWAN-Netz / Alarmknöpfe</span> steht
       die Liste <span class="ui">Letzte Uplinks</span>. Dort erscheint jeder eintreffende
       Uplink innert zehn Sekunden &ndash; auch ein abgewiesener, mit dem Grund im Klartext,
       der Gerätekennung zum Kopieren und den Namen der übersetzten Felder. Damit ist die
@@ -888,7 +888,7 @@ footer .adressfuss { margin-top: 22px; }
   <h3>Einrichten</h3>
   <ol class="schritte">
     <li>Zweiten Server nach Abschnitt 3 aufsetzen &ndash; eigene Domain (z.&nbsp;B. <code>notfall2.kunde.ch</code>), eigene Datenbank. Den Einrichtungsassistenten dort einfach schliessen: Die Daten kommen gleich vom Hauptserver.</li>
-    <li>Auf dem <b>Hauptserver</b> unter <span class="ui">Integrationen &rarr; Redundanz</span>: einschalten, Rolle <span class="ui">Hauptserver</span>, Adresse des Partners eintragen, <span class="ui">Speichern</span>. Das erzeugte <b>Geheimnis kopieren</b>.</li>
+    <li>Auf dem <b>Hauptserver</b> unter <span class="ui">Einstellungen &amp; Konfiguration &rarr; Redundanz</span>: einschalten, Rolle <span class="ui">Hauptserver</span>, Adresse des Partners eintragen, <span class="ui">Speichern</span>. Das erzeugte <b>Geheimnis kopieren</b>.</li>
     <li>Auf dem <b>zweiten Server</b>: einschalten, Rolle <span class="ui">Standby</span>, Adresse des Hauptservers und das kopierte Geheimnis eintragen, <span class="ui">Speichern</span>.</li>
     <li>Prüfen: Auf beiden Seiten meldet die Karte <b>Partner: erreichbar</b>, auf dem Standby zusätzlich <b>Letzter Abgleich: &hellip; erfolgreich</b>.</li>
   </ol>
@@ -960,7 +960,7 @@ footer .adressfuss { margin-top: 22px; }
         <tr><td>1</td><td>Domain(s) und Zertifikat, Instanz(en) nach Abschnitt 3 mit eigener <code>.env</code> und Datenbank</td></tr>
         <tr><td>2</td><td>Erstanmeldung, Passwort gewechselt, Einrichtungsassistent abgeschlossen</td></tr>
         <tr><td>3</td><td>Standorte, Konten, Gruppen, Alarmpläne erfasst (Abschnitt 6)</td></tr>
-        <tr><td>4</td><td>Integrationen mit den Zugangsdaten des Kunden eingetragen und getestet (Abschnitt 7)</td></tr>
+        <tr><td>4</td><td>Dienste des Kunden unter Einstellungen eingetragen und getestet (Abschnitt 7)</td></tr>
         <tr><td>5</td><td>Redundanz eingerichtet und Failover einmal geprobt (Abschnitt 9)</td></tr>
         <tr><td>6</td><td>QR-Code verteilt, Testalarm als Übung mit Quittierung durchgeführt (Abschnitt 8)</td></tr>
         <tr><td>7</td><td>Sicherung eingerichtet und eine Wiederherstellung ausprobiert (Abschnitt 11)</td></tr>

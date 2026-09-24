@@ -23,7 +23,7 @@ const TYPE_LABELS: Record<string, string> = {
   system: 'System',
   cms: 'Inhalte',
   hardware: 'Geräte',
-  integration: 'Integrationen',
+  integration: 'Einstellungen',
 }
 
 const typeLabel = (t: string) => TYPE_LABELS[t] ?? t

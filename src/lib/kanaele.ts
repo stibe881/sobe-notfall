@@ -37,7 +37,7 @@ export function kanalHinweis(c: Channel, integ: IntegrationSettings | undefined)
     case 'aktiv':
       return `${KANAL_KURZ[c]}: wird zugestellt`
     case 'nicht eingerichtet':
-      return `${KANAL_KURZ[c]}: unter Integrationen nicht eingerichtet – es wird nichts versendet`
+      return `${KANAL_KURZ[c]}: unter Einstellungen & Konfiguration nicht eingerichtet – es wird nichts versendet`
     default:
       return `${KANAL_KURZ[c]}: vorbereitet, noch nicht umgesetzt`
   }

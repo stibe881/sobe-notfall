@@ -55,7 +55,7 @@ const NAV = [
   { to: '/gruppen', label: 'Gruppen & Krisenteams', icon: UsersRound },
   { to: '/standorte', label: 'Standorte', icon: Building2 },
   { section: 'System & Hilfe' },
-  { to: '/integrationen', label: 'Integrationen', icon: Plug },
+  { to: '/integrationen', label: 'Einstellungen & Konfiguration', icon: Plug },
   { to: '/app', label: 'App-Vorschau', icon: Smartphone, newTab: true },
   { to: '/hilfe', label: 'Handbücher', icon: BookMarked },
 ] as const
@@ -174,7 +174,7 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
               }
             >
               <item.icon size={16} className={item.to === '/alarm' ? 'text-alarm-400' : undefined} />
-              <span className={item.to === '/alarm' ? 'font-semibold text-alarm-100' : undefined}>{item.label}</span>
+              <span className={`leading-tight ${item.to === '/alarm' ? 'font-semibold text-alarm-100' : ''}`}>{item.label}</span>
               {item.to === '/monitor' && activeAlarms.length > 0 && (
                 <span className="ml-auto bg-alarm-600 text-white text-xs rounded-full px-1.5 py-0.5 alarm-pulse">{activeAlarms.length}</span>
               )}
@@ -293,7 +293,7 @@ function EinrichtungsAssistent() {
     <Modal title="Willkommen – Einrichtung des Alarmservers" onClose={() => setOffen(false)}>
       <p className="text-sm text-slate-500 mb-4">
         Dieser Alarmserver ist neu. Ein paar Angaben zur Organisation genügen für den Start –
-        alles lässt sich später unter «Integrationen» und «Standorte» anpassen.
+        alles lässt sich später unter «Einstellungen & Konfiguration» und «Standorte» anpassen.
       </p>
       <Field label="Name der Organisation *">
         <input className={inputClass} autoFocus placeholder="Muster AG" value={name} onChange={(e) => { setName(e.target.value); setFehler(null) }} />

@@ -216,7 +216,7 @@ function BereitschaftKarte() {
             <StatusRow
               label="Geofencing"
               ok={Boolean(daten.geofencing)}
-              detail={daten.geofencing ? `${daten.ortsmeldungen ?? 0} aktuelle Ortsmeldung(en)` : 'unter Integrationen einschaltbar'}
+              detail={daten.geofencing ? `${daten.ortsmeldungen ?? 0} aktuelle Ortsmeldung(en)` : 'unter Einstellungen & Konfiguration einschaltbar'}
             />
           </ul>
         </div>
