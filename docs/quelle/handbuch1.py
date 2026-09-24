@@ -92,6 +92,24 @@ KOERPER = r"""
       </tbody>
     </table>
   </div>
+  <div class="hinweis">
+    <p class="marke-klein">Was der Krisenstab sieht</p>
+    <p>
+      Das Portal steht der Administration und dem Krisenstab offen, aber nicht mit
+      demselben Umfang. Dem Krisenstab fehlen <span class="ui">Benutzende</span>,
+      <span class="ui">Gruppen &amp; Krisenteams</span>, <span class="ui">Standorte</span> und
+      <span class="ui">Einstellungen &amp; Konfiguration</span> &ndash; also alles, was die
+      Grundordnung des Systems betrifft. Alarmieren, führen, nachbereiten und die
+      Vorbereitung pflegen kann er vollständig.
+    </p>
+    <p>
+      Die Administration findet unten in der Menüleiste einen Umschalter
+      <span class="ui">Administration / Krisenstab</span>. Damit sieht sie das Portal so,
+      wie es der Krisenstab sieht &ndash; nützlich vor einer Schulung. <b>Es ist eine
+      Ansicht, keine Rechtebeschränkung:</b> Wer sie umlegt, bleibt auf dem Server
+      Administration. Die Wahl gilt bis zum Abmelden.
+    </p>
+  </div>
   <figure class="bild-breit">
     <img src="bilder/web-02-dashboard.webp" alt="Dashboard mit vier Kennzahlen, Alarmserver-Status und den letzten Ereignissen">
     <figcaption><b>Abb.</b> &nbsp; Das Dashboard. Vier Kennzahlen oben, links der Zustand der Kanäle, rechts die jüngsten Ereignisse. Was nur vorbereitet ist, steht grau als «vorbereitet, noch nicht aktiv».</figcaption>

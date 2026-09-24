@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { NavLink, Navigate, Route, Routes, useLocation } from 'react-router-dom'
+import { Link, NavLink, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import {
   AlertTriangle, BellRing, BookMarked, BookOpen, Building2, ClipboardList, ExternalLink, FileClock, LayoutDashboard,
   Download, LifeBuoy, Lock, LogOut, Menu, Phone, Plug, Radio, Siren, Smartphone, Timer, Users, UsersRound, X,
@@ -25,6 +25,7 @@ import LoginScreen, { ForcePasswordChange } from './components/LoginScreen'
 import UpdateDialog from './components/UpdateDialog'
 import { api, logoUrl } from './lib/api'
 import { anwendungsname, wendeAkzentfarbeAn } from './lib/branding'
+import { NUR_ADMIN, darfOeffnen, useAnsicht, wirksameRolle } from './lib/ansicht'
 import { Button, Field, Modal, inputClass } from './components/ui'
 
 /**
@@ -61,6 +62,33 @@ const NAV = [
 ] as const
 
 /** Mitarbeitende haben keinen Webportal-Zugriff – Verweis auf die iOS-App */
+/**
+ * Seiten, die nur die Administration bedienen darf.
+ *
+ * Das Menü blendet sie bereits aus; diese Wache fängt den Fall ab, dass jemand
+ * die Adresse von Hand eingibt oder ein altes Lesezeichen öffnet. Die
+ * eigentliche Schranke bleibt der Server – er weist jede Änderung ab, die
+ * nicht von einer Administration kommt.
+ */
+function NurAdmin({ children }: { children: React.ReactNode }) {
+  const { state } = useStore()
+  const currentUser = state.users.find((u) => u.id === state.currentUserId) ?? state.users[0]
+  const [ansicht] = useAnsicht()
+  const rolle = wirksameRolle(currentUser.role, ansicht)
+  if (rolle === 'admin') return <>{children}</>
+  return (
+    <div className="max-w-xl">
+      <h1 className="text-2xl font-bold text-slate-800">Nur für die Administration</h1>
+      <p className="text-sm text-slate-600 mt-2">
+        {currentUser.role === 'admin'
+          ? 'Sie sehen das Portal gerade in der Ansicht des Krisenstabs. Schalten Sie links auf «Administration» zurück, um diese Seite zu öffnen.'
+          : 'Konten, Gruppen, Standorte und die Einstellungen pflegt die Administration. Wenden Sie sich an sie, wenn hier etwas geändert werden muss.'}
+      </p>
+      <Link to="/dashboard" className="inline-block mt-4 text-sm text-brand-700 underline">Zurück zum Dashboard</Link>
+    </div>
+  )
+}
+
 function NoWebAccess() {
   const { state, logout } = useStore()
   const currentUser = state.users.find((u) => u.id === state.currentUserId) ?? state.users[0]
@@ -111,7 +139,14 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const activeAlarms = state.alarms.filter((a) => a.status === 'active')
   const [updateOffen, setUpdateOffen] = useState(false)
   const [hinterher, setHinterher] = useState<number | null>(null)
-  const zeigeUpdate = currentUser.role === 'admin'
+  const [ansicht, setAnsicht] = useAnsicht()
+  const rolle = wirksameRolle(currentUser.role, ansicht)
+  const zeigeUpdate = rolle === 'admin'
+
+  // Menü auf das filtern, was diese Rolle auch bedienen darf – und eine
+  // Abschnittsüberschrift weglassen, unter der dann nichts mehr steht.
+  const uebrig = NAV.filter((item) => 'section' in item || darfOeffnen(rolle, item.to))
+  const sichtbar = uebrig.filter((item, i) => !('section' in item) || !('section' in (uebrig[i + 1] ?? { section: '' })) && uebrig[i + 1] !== undefined)
 
   // Regelmässig im Hintergrund nachsehen, ob der Server hinter origin zurückliegt –
   // dieselbe Prüfung, die der Aktualisierungs-Dialog beim Öffnen ohnehin macht.
@@ -143,8 +178,33 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           {state.integrations.organization?.name || 'Notfall- & Krisenmanagement'}
         </div>
       </div>
+      {currentUser.role === 'admin' && (
+        // Nur für die Administration: sehen, was der Krisenstab sieht.
+        // Rein eine Frage der Anzeige – auf dem Server bleibt sie Administration.
+        <div className="px-5 pt-3">
+          <div className="flex rounded-lg bg-slate-800 p-0.5 text-xs">
+            {(['admin', 'krisenstab'] as const).map((a) => (
+              <button
+                key={a}
+                type="button"
+                onClick={() => setAnsicht(a)}
+                className={`flex-1 rounded-md px-2 py-1.5 transition ${
+                  ansicht === a ? 'bg-slate-700 text-white font-medium' : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                {a === 'admin' ? 'Administration' : 'Krisenstab'}
+              </button>
+            ))}
+          </div>
+          {ansicht === 'krisenstab' && (
+            <p className="text-[11px] text-amber-400/90 mt-1.5 leading-snug">
+              Sie sehen das Portal wie der Krisenstab. Ihre Rechte ändern sich dadurch nicht.
+            </p>
+          )}
+        </div>
+      )}
       <nav className="flex-1 overflow-y-auto py-3">
-        {NAV.map((item, i) =>
+        {sichtbar.map((item, i) =>
           'section' in item ? (
             <div key={i} className="px-5 pt-4 pb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
               {item.section}
@@ -324,6 +384,7 @@ function EinrichtungsAssistent() {
 export default function App() {
   const { state } = useStore()
   const [navOpen, setNavOpen] = useState(false)
+  const [ansichtDerHuelle] = useAnsicht()
   const location = useLocation()
   const activeAlarms = state.alarms.filter((a) => a.status === 'active')
   const sessionUser = state.users.find((u) => u.id === state.session?.userId)
@@ -355,7 +416,7 @@ export default function App() {
   return (
     <div className="min-h-screen flex">
       {/* Neu aufgesetzter Server: Grunddaten des Kunden abfragen */}
-      {sessionUser.role === 'admin' && <EinrichtungsAssistent />}
+      {sessionUser.role === 'admin' && ansichtDerHuelle === 'admin' && <EinrichtungsAssistent />}
 
       {/* Desktop-Sidebar */}
       <aside className="hidden lg:block shrink-0">
@@ -413,11 +474,11 @@ export default function App() {
             <Route path="/szenarien" element={<Scenarios />} />
             <Route path="/alarmplaene" element={<AlarmPlans />} />
             <Route path="/soforthilfe" element={<Soforthilfe />} />
-            <Route path="/benutzer" element={<UsersPage />} />
-            <Route path="/gruppen" element={<Groups />} />
-            <Route path="/standorte" element={<Locations />} />
+            <Route path="/benutzer" element={<NurAdmin><UsersPage /></NurAdmin>} />
+            <Route path="/gruppen" element={<NurAdmin><Groups /></NurAdmin>} />
+            <Route path="/standorte" element={<NurAdmin><Locations /></NurAdmin>} />
             <Route path="/notfallkontakte" element={<Contacts />} />
-            <Route path="/integrationen" element={<Integrations />} />
+            <Route path="/integrationen" element={<NurAdmin><Integrations /></NurAdmin>} />
             <Route path="/protokoll" element={<AuditLog />} />
             <Route path="/hilfe" element={<Help />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
