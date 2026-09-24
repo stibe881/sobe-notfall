@@ -841,6 +841,16 @@ async function main(): Promise<void> {
     method: 'POST', token: adminToken,
     body: JSON.stringify({ ...farbeKaputt, organization: { ...farbeKaputt.organization, color: 'red; }} böse' } }),
   })
+  // --- Sicherungswache: der Inhalt zählt, nicht das Dateidatum ---
+  const sicherungslage = (await ruf('/bereitschaft', { token: adminToken })).body.sicherung
+  pruefe('Bereitschaft urteilt über die Sicherung', typeof sicherungslage?.lage === 'string')
+  pruefe('Das Urteil kennt nur die vorgesehenen Lagen',
+    ['keine', 'veraltet', 'unlesbar', 'gut'].includes(sicherungslage.lage))
+  pruefe('Das Urteil bringt einen Klartext mit', typeof sicherungslage.text === 'string' && sicherungslage.text.length > 10)
+  pruefe('Die Bereitschaft bleibt dem Krisenstab zugänglich',
+    (await ruf('/bereitschaft', { token: peterToken })).status !== 200 ||
+    typeof (await ruf('/bereitschaft', { token: peterToken })).body.sicherung?.lage === 'string')
+
   // Ein geleerter Anwendungsname bleibt leer – sonst käme die Vorgabe zurück
   const markeStand = (await ruf('/state', { token: adminToken })).body.integrations
   await ruf('/integrations', {

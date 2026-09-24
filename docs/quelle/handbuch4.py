@@ -698,6 +698,38 @@ KOERPER = r"""
 
 <section id="a12">
   <h2 class="abschnitt"><span class="zahl">12</span> Aktualisierung und Sicherung</h2>
+  <div class="hinweis hinweis--warnung">
+    <p class="marke-klein">Der Server prüft die Sicherung selbst &ndash; und zwar den Inhalt</p>
+    <p>
+      Ein frisches Dateidatum ist noch keine brauchbare Sicherung. In diesem System
+      lief der Sicherungslauf einmal wochenlang ins Leere: Er schrieb täglich eine
+      Datei, kopierte aber wegen eines falsch aufgelösten Pfades immer dieselbe
+      veraltete Datenbank. Die Dateiliste sah tadellos aus.
+    </p>
+    <p>
+      Deshalb vergleicht der Server täglich den <b>Inhalt</b> der jüngsten Sicherung
+      mit dem laufenden Bestand &ndash; Anzahl Protokolleinträge und Alter des jüngsten.
+      Stimmt etwas nicht, meldet er es der Administration aufs Telefon und schreibt es
+      ins Ereignisprotokoll; das Urteil steht ausserdem auf dem Dashboard unter
+      <span class="ui">Bereitschaft</span>. Gemeldet wird höchstens einmal täglich und
+      einmal, wenn die Störung behoben ist.
+    </p>
+    <p>
+      <b>Was Sie trotzdem tun sollten:</b> einmal im Jahr eine Sicherung testweise
+      zurückspielen. Dass eine Datei vollständig ist, heisst noch nicht, dass Sie im
+      Ernstfall wissen, wie man sie einspielt.
+    </p>
+  </div>
+  <div class="hinweis">
+    <p class="marke-klein">Monatlicher Bereitschaftsbericht</p>
+    <p>
+      Einmal im Monat meldet der Server der Administration, wie viele Personen über
+      die App erreichbar sind &ndash; und nennt namentlich, wer es nicht ist: ohne
+      angemeldetes Gerät oder ohne Zustimmung zu kritischen Hinweisen. Wer nicht
+      erreichbar ist, ist im Ernstfall nicht da; das gehört gemeldet und nicht auf
+      einer Seite ausgestellt, die man öffnen müsste.
+    </p>
+  </div>
   <h3>Aktualisieren per Knopfdruck</h3>
   <p>
     Die Administration aktualisiert den Server aus dem Portal: Der Knopf

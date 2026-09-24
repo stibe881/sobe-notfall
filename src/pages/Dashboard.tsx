@@ -158,7 +158,14 @@ function BereitschaftKarte() {
 
   const gesamt = daten ? daten.standorte.reduce((s, x) => s + x.personen, 0) : state.users.length
   const mitGeraet = daten ? daten.standorte.reduce((s, x) => s + x.mitGeraet, 0) : 0
-  const sicherungAlt = daten?.letzteSicherung ? Date.now() - daten.letzteSicherung.ts > SICHERUNG_FRIST_MS : true
+  // Das Dateidatum sagt nichts über den Inhalt: Eine Sicherung von heute Morgen
+  // kann den Stand von vor drei Wochen enthalten – genau das ist hier schon
+  // einmal wochenlang unbemerkt geblieben. Deshalb zählt das Urteil des Servers.
+  const sicherungOk = daten?.sicherung
+    ? daten.sicherung.lage === 'gut'
+    : daten?.letzteSicherung
+      ? Date.now() - daten.letzteSicherung.ts <= SICHERUNG_FRIST_MS
+      : false
   const titel = (
     <span className="flex items-center gap-2"><ShieldCheck size={16} /> Bereitschaft</span>
   )
@@ -204,8 +211,16 @@ function BereitschaftKarte() {
             />
             <StatusRow
               label="Sicherung"
-              ok={!sicherungAlt}
-              detail={daten.letzteSicherung ? `${daten.letzteSicherung.datei} · ${formatRelative(daten.letzteSicherung.ts)}` : 'keine Sicherung gefunden'}
+              ok={sicherungOk}
+              detail={
+                daten.sicherung
+                  ? daten.sicherung.lage === 'gut' && daten.sicherung.standZeit
+                    ? `${daten.sicherung.datei} · Stand ${formatRelative(daten.sicherung.standZeit)}`
+                    : daten.sicherung.text
+                  : daten.letzteSicherung
+                    ? `${daten.letzteSicherung.datei} · ${formatRelative(daten.letzteSicherung.ts)}`
+                    : 'keine Sicherung gefunden'
+              }
             />
             <StatusRow
               label="Wöchentliche Testmeldung"

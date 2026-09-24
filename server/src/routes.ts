@@ -14,6 +14,7 @@ import {
 } from './integrationen.js'
 import { sendeAlarmKanaele, sendeInfoKanaele } from './kanaele.js'
 import { GERAETETYPEN, dekodiere } from './geraetedecoder.js'
+import { pruefeSicherung } from './sicherungswache.js'
 import { rolleAusGruppen, ssoAbbruch, ssoCallback, ssoKonfiguriert, ssoStartUrl, ssoTest, ssoZiel } from './sso.js'
 import { geraeteProPerson, letzterTestpush, pushDienstStatus, registerPushToken, removePushToken } from './push.js'
 import { readFileSync, readdirSync, statSync } from 'node:fs'
@@ -1311,6 +1312,8 @@ router.get('/bereitschaft', auth, staffOnly, (_req, res) => {
     ohneGeraet,
     tokensGesamt: [...geraete.values()].reduce((s, g) => s + g.geraete, 0),
     letzteSicherung: letzteSicherung(),
+    // Nicht das Dateidatum, sondern der Inhalt: siehe sicherungswache.ts
+    sicherung: pruefeSicherung(),
     pushDienst: pushDienstStatus(),
     letzterTestpush: letzterTestpush(),
     geofencing,

@@ -1,8 +1,11 @@
 import { broadcast } from './events.js'
 import { sendeAlarmKanaele } from './kanaele.js'
 import {
-  letzterTestpush, markiereOhneGeraet, merkeTestpush, pruefeEmpfangsbestaetigungen, pruefePushDienst, sendPush,
+  geraeteProPerson, letzterTestpush, markiereOhneGeraet, merkeTestpush, pruefeEmpfangsbestaetigungen,
+  pruefePushDienst, sendPush,
 } from './push.js'
+import { getSetting, setSetting } from './db.js'
+import { ueberwacheSicherung } from './sicherungswache.js'
 import { standbyPassiv } from './replikation.js'
 import {
   addAudit, allAlarms, allButtons, allGroups, allLoneWork, allScenarios, allStoredUsers, buildDeliveries, createAlarm,
@@ -210,12 +213,77 @@ export async function tick(): Promise<void> {
     await pruefePushDienst()
     await woechentlicherTestpush(jetzt)
     await pruefeAlarmknoepfe(jetzt)
+    await taeglicheSicherungspruefung(jetzt)
+    await monatlicherBereitschaftsbericht(jetzt)
     // Alte Aufenthaltsmeldungen entfernen – es entsteht nie eine Bewegungshistorie
     purgePresence()
   }
 }
 
 let letzteDienstpruefung = 0
+
+/**
+ * Bericht über die Erreichbarkeit – einmal im Monat an die Administration.
+ *
+ * Wer nicht erreichbar ist, ist im Ernstfall nicht da. Der Server weiss das
+ * längst: kein Gerät angemeldet, keine Zustimmung zu kritischen Hinweisen.
+ * Bisher stand es auf Seiten, die jemand öffnen muss – und freitags um vier
+ * öffnet sie niemand. Deshalb kommt der Bericht von selbst.
+ */
+async function monatlicherBereitschaftsbericht(jetzt: number): Promise<void> {
+  const letzter = Number(getSetting('letzterBereitschaftsbericht') ?? 0)
+  if (jetzt - letzter < 28 * 24 * 3600_000) return
+  const lokal = new Date(jetzt)
+  if (lokal.getDay() === 0 || lokal.getDay() === 6 || lokal.getHours() < 8 || lokal.getHours() > 11) return
+
+  const admins = allStoredUsers().filter((u) => u.role === 'admin')
+  if (admins.length === 0) return
+  setSetting('letzterBereitschaftsbericht', String(jetzt))
+
+  const geraete = geraeteProPerson()
+  const personen = allStoredUsers()
+  const ohneGeraet = personen.filter((u) => !geraete.has(u.id))
+  const ohneCritical = personen.filter((u) => geraete.has(u.id) && !geraete.get(u.id)?.critical)
+  const erreichbar = personen.length - ohneGeraet.length
+
+  const namen = (liste: typeof personen) =>
+    liste.slice(0, 8).map((u) => `${u.firstName} ${u.lastName}`).join(', ') +
+    (liste.length > 8 ? ` und ${liste.length - 8} weitere` : '')
+
+  const zeilen = [`${erreichbar} von ${personen.length} Personen sind über die App erreichbar.`]
+  if (ohneGeraet.length > 0) zeilen.push(`Ohne angemeldetes Gerät: ${namen(ohneGeraet)}.`)
+  if (ohneCritical.length > 0) {
+    zeilen.push(`Ohne Zustimmung zu kritischen Hinweisen – ein stummes Telefon erreicht sie nicht: ${namen(ohneCritical)}.`)
+  }
+  if (ohneGeraet.length === 0 && ohneCritical.length === 0) zeilen.push('Alle Personen sind erreichbar.')
+
+  const text = zeilen.join(' ')
+  addAudit('system', `Monatlicher Bereitschaftsbericht: ${text}`)
+  await sendPush(admins.map((u) => u.id), {
+    title: 'Bereitschaft: monatlicher Bericht',
+    body: text,
+    data: { kind: 'bereitschaft' },
+    wichtig: ohneGeraet.length > 0 || ohneCritical.length > 0,
+  })
+}
+
+/** Täglicher Blick auf die Sicherung – der Inhalt zählt, nicht das Dateidatum */
+async function taeglicheSicherungspruefung(jetzt: number): Promise<void> {
+  const admins = allStoredUsers().filter((u) => u.role === 'admin').map((u) => u.id)
+  await ueberwacheSicherung(
+    jetzt,
+    async (text) => {
+      if (admins.length === 0) return
+      await sendPush(admins, {
+        title: 'Sicherung prüfen',
+        body: text,
+        data: { kind: 'sicherung' },
+        wichtig: true,
+      })
+    },
+    (text) => addAudit('system', text),
+  )
+}
 
 /**
  * Einmal pro Woche eine Testmeldung an die Administration – werktags am

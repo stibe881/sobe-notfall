@@ -138,6 +138,15 @@ export interface Bereitschaft {
   ohneGeraet: { id: string; name: string; locationId: string }[]
   tokensGesamt: number
   letzteSicherung: { ts: number; datei: string } | null
+  /** Urteil über den Inhalt der jüngsten Sicherung – nicht über ihr Dateidatum */
+  sicherung?: {
+    lage: 'gut' | 'veraltet' | 'unlesbar' | 'keine'
+    datei?: string
+    dateiZeit?: number
+    standZeit?: number
+    fehlend?: number
+    text: string
+  }
   pushDienst: { ok: boolean; geprueft: number } | null
   letzterTestpush: number | null
   /** Geofencing eingeschaltet? Dann zählt «vorOrt» pro Standort */

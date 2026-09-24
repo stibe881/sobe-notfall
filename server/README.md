@@ -364,6 +364,30 @@ Administrationsportal unter **Integrationen** konfiguriert:
   `silent` des Knopfs, voreingestellt laut –, doppelte Drücke werden
   zusammengefasst.
 
+### Wachhunde
+
+Der Server prüft im Hintergrund, ob er im Ernstfall überhaupt funktionieren
+würde – und meldet es der Administration, statt es auf einer Seite auszustellen,
+die niemand öffnet.
+
+- **Sicherung** (täglich, `sicherungswache.ts`) – vergleicht nicht das
+  Dateidatum, sondern den **Inhalt** der jüngsten Sicherung mit dem
+  Livebestand: Anzahl Protokolleinträge und Alter des jüngsten. Eine Sicherung
+  von heute Morgen mit dem Stand von vor drei Wochen gilt als veraltet. Genau
+  dieser Fall blieb hier schon einmal wochenlang unbemerkt, weil ein relativ
+  aufgelöster Pfad den Sicherungslauf die falsche Datei kopieren liess. Das
+  Urteil steht auch in `/api/bereitschaft` und auf dem Dashboard.
+- **Bereitschaft** (monatlich) – wie viele Personen über die App erreichbar
+  sind, und namentlich wer nicht: ohne angemeldetes Gerät oder ohne Zustimmung
+  zu kritischen Hinweisen.
+- **Alarmknöpfe** (alle zehn Minuten) – stumme Geräte und schwache Batterien.
+- **Testmeldung** (wöchentlich) – an die Administration, prüft die Kette bis
+  aufs Telefon.
+
+Gemeldet wird eine Störung höchstens einmal täglich und einmal, wenn sie
+behoben ist. Eine Warnung, die dauernd leuchtet, liest nach zwei Wochen niemand
+mehr.
+
 Geheimnisse (Gateway-Passwörter, Webhook-URL, Client Secret, Token) speichert
 der Server im Klartext nur in der Datenbank; an die Clients gehen sie
 ausschliesslich maskiert, und ein zurückgeschickter Platzhalter lässt den
