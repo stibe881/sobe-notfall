@@ -31,8 +31,8 @@ brauchen die Grundrisse im Meridian Editor.
 
 ## Vor dem Start
 
-- [ ] Ein **Meridian-Abonnement** für die Fläche (Konzept: ca. 0,50–1,00 € pro
-      m² und Jahr) und ein Konto im Meridian Editor
+- [ ] Eine Lizenz **Meridian Blue Dot Navigation** für die Fläche (Konzept: ca.
+      0,50–1,00 € pro m² und Jahr) und ein Konto im Meridian Editor
 - [ ] Zugang zu **Aruba Central** mit den AP505
 - [ ] **Grundrisse** jedes Stockwerks als PDF oder Bild
 - [ ] Zugang zum Portal als **Administration**
@@ -46,18 +46,89 @@ brauchen die Grundrisse im Meridian Editor.
 
 ---
 
-## Schritt 1 – Central mit Meridian verbinden
+## Schritt 1 – Lizenz und Central mit Meridian verbinden
 
-**Ziel:** Die AP505 senden Meridian-Beacons, und Meridian kennt die Access Points.
+Quelle: Arubas Anleitungen «HPE Aruba Networking Central Meridian Beacons
+Management Configuration Guide» und «AOS 10 Meridian Beacons Management
+Configuration Guide» auf docs.meridianapps.com.
 
-1. Verknüpfen Sie in Aruba Central das Konto mit dem Meridian-Abonnement.
-2. Prüfen Sie, dass auf den AP505 der eingebaute **BLE-Funk** eingeschaltet ist.
-   Die Beacon-Einstellungen verwaltet danach Meridian: Kennungen und
-   Sendeleistung überträgt Central selbst. Ein eigenes iBeacon-Profil wie in
-   Option A ist **nicht** nötig.
+### 1a – Lizenz
 
-**Prüfung:** Im Meridian Editor erscheinen die Access Points als Beacons der
-Location.
+Die App braucht **«Meridian Blue Dot Navigation»** (HPE-Teilenummer JZ092AAE
+für 1 Jahr oder JZ102AAE für 5 Jahre, je 10 000 m²). «Maps with Static
+Wayfinding» zeigt nur Karten und liefert keine Position. «Asset Tracking» ist
+für Tags und hier nicht nötig. Bezogen wird die Lizenz über den
+Aruba-/HPE-Partner. Danach gibt es ein Konto im Meridian Editor; welches
+Rechenzentrum es nutzt, steht in der Adresse: `edit-eu.meridianapps.com` oder
+`edit.meridianapps.com`.
+
+### 1b – Angaben aus dem Meridian Editor
+
+- **Access Token für Central:** *Beacons → Beacons Management → «Generate your
+  access token»*, dann kopieren. Nicht verwechseln mit dem Application Token für
+  die App aus Schritt 3.
+- **Location-ID:** *Settings → Location* oder aus der Adresse
+  `https://edit-eu.meridianapps.com/apps/<Location-ID>`.
+- **Server-Adresse für Beacons Management:**
+  `https://edit-eu.meridianapps.com/api/beacons/manage` (EU) bzw.
+  `https://edit.meridianapps.com/api/beacons/manage` (Standard).
+
+### 1c – In Central: Bluetooth der AP505 einschalten
+
+Firmware der AP505 vorher prüfen: **AOS 8 / Instant** oder **AOS 10**. Der
+Weg unterscheidet sich ab 1e.
+
+1. Gruppe der AP505 wählen → **Devices** → oben rechts **Config** → **Show
+   Advanced** → Reiter **IoT**.
+2. Unter **IoT Radio Profiles** auf **+**: Name frei, *Radio Mode* **BLE**,
+   *Radio* **Internal**, *BLE operation mode* **Both (Beaconing & Scanning)**,
+   den Rest belassen. Speichern.
+3. Das Profil ist zunächst aus: mit dem Schalter rechts einschalten.
+
+### 1d – Zertifikat hinterlegen
+
+1. Von <https://pki.goog/repository/> das Root-Zertifikat **GTS Root R1** im
+   PEM-Format laden.
+2. **Organization → Certificates → +**, Typ **CA**, hochladen.
+3. **Gruppe → Config → Security → Certificate Usage → IoT CA Cert**: das
+   Zertifikat wählen, speichern.
+
+### 1e – Verbindung zu Meridian (AOS 8 / Instant)
+
+1. Wieder *Devices → Config → Show Advanced → IoT*, unter **IoT Transport
+   Streams** auf **+**.
+2. *Server URL*: die Beacons-Management-Adresse aus 1b; *Server type*
+   **Meridian Beacon Management**; *Device Class* **Aruba Beacons**;
+   *Reporting interval* **60** Sekunden; unter *Authentication* das Access
+   Token aus 1b. Speichern und mit dem Schalter einschalten.
+3. 15–30 Minuten warten.
+
+### 1e – Verbindung zu Meridian (AOS 10, ab Version 10.5.1.0)
+
+1. Unter *IoT → BLE Beacon Service Profiles* auf **+**: *Radio* **Internal**,
+   *Beacon Configuration Method* **IoT Operations App**. Den **Profile
+   Identifier** notieren, speichern.
+2. Einen **IoT Connector** einrichten (VM oder AP-basiert; AP-basiert nur auf
+   AP-6xx/7xx) und die AP505 ihm zuweisen.
+3. **Applications → IoT Operations → Connectors → Installed Applications →
+   Manage → Meridian → Install**. Einzutragen: Access Token, Profile_ID (aus
+   Schritt 1), Location_ID; die beiden Server-Adressen für die EU auf
+   `edit-eu…` bzw. `tags-eu…` ändern. **Install**.
+4. In der Firewall `edit-eu.meridianapps.com` (bzw. `edit.…`) auf Port 443
+   freigeben.
+
+**Prüfung:** Im Meridian Editor unter *Beacons* steht der Verbindungsstatus als
+verbunden, und die AP505 erscheinen in der Liste (Filter **Access Point
+Beacon**). Meridian konfiguriert sie beim ersten Kontakt selbst («APB
+Auto-Deploy»); danach haben sie das Kennzeichen «unplaced», bis sie in
+Schritt 2 auf eine Karte gesetzt sind. Als Typ muss **Location** eingestellt
+sein, nicht Proximity.
+
+> **Genauigkeit:** Meridian empfiehlt für 3–5 m Genauigkeit Beacons im Abstand
+> von höchstens 10 m. Access Points hängen meist weiter auseinander; mit den
+> AP505 allein ist eher mit Raum- bis Bereichsgenauigkeit zu rechnen.
+> Stockwerke erkennt die Ortung zuverlässig. Wo es genauer sein muss, ergänzen
+> batteriebetriebene Aruba-Beacons die Access Points.
 
 ## Schritt 2 – Grundrisse und Access Points im Meridian Editor
 
