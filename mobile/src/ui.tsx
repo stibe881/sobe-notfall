@@ -52,6 +52,24 @@ export function Card({ children, style }: { children: React.ReactNode; style?: o
   return <View style={[styles.card, style]}>{children}</View>
 }
 
+/**
+ * Kurzes Überschwingen beim Erscheinen – für Vertrauensmomente wie eine
+ * quittierte Teilnahme oder eine Entwarnung, damit die Bestätigung spürbar
+ * ankommt statt nur kommentarlos zu erscheinen. Läuft nativ, damit sie auch
+ * unter Last (z. B. während ein Alarm gerade eintrifft) flüssig bleibt.
+ */
+export function PopIn({ children, style }: { children: React.ReactNode; style?: object }) {
+  const scale = useRef(new Animated.Value(0.5)).current
+  const opacity = useRef(new Animated.Value(0)).current
+  React.useEffect(() => {
+    Animated.parallel([
+      Animated.spring(scale, { toValue: 1, useNativeDriver: true, friction: 5, tension: 140 }),
+      Animated.timing(opacity, { toValue: 1, duration: 180, useNativeDriver: true }),
+    ]).start()
+  }, [])
+  return <Animated.View style={[style, { opacity, transform: [{ scale }] }]}>{children}</Animated.View>
+}
+
 /** Auslöse-Button mit Halte-Geste – gedrückt halten füllt den Button, bei 100 % wird ausgelöst. */
 export function HoldButton({ onTrigger, label, hint = 'Zum Auslösen gedrückt halten', holdMs = 1200 }: {
   onTrigger: () => void

@@ -16,7 +16,7 @@ import { notrufbild } from './notrufsymbole'
 import { lagetext, notrufAnbieten } from './alarmversand'
 import { useIndoor, type IndoorStatus } from './indoor'
 import { CHANNEL_LABELS, LONE_WORK_DEFAULT_GROUPS, type Alarm, type IndoorPosition, type IntegrationSettings, type LoneWorkSession, type Scenario, type User } from './types'
-import { Badge, Card, HoldButton, colors, formatDuration, formatRelative } from './ui'
+import { Badge, Card, HoldButton, PopIn, colors, formatDuration, formatRelative } from './ui'
 import { MIN_PASSWORD_LENGTH, passwordProblem } from './auth'
 import { activeScenarios, allClearStepsOf, brauchtRollentrennung, eigeneSchritteNachRolle, haeufigeSzenarien, responseStepsFor, responseStepsOf } from './scenarios'
 
@@ -380,12 +380,12 @@ export function StartScreen({ onOpenScenario, onWaehleSzenario }: {
               </View>
             )}
             {a.requireAck && myAck !== 'none' && (
-              <View style={{ marginTop: 8, alignSelf: 'flex-start' }}>
+              <PopIn key={myAck} style={{ marginTop: 8, alignSelf: 'flex-start' }}>
                 <Badge
                   label={myAck === 'acknowledged' ? 'quittiert – Sie nehmen teil' : 'als nicht verfügbar gemeldet'}
                   color={myAck === 'acknowledged' ? 'green' : 'slate'}
                 />
-              </View>
+              </PopIn>
             )}
             {me.role !== 'mitarbeiter' && (
               <Pressable style={styles.outlineButton} onPress={() => entwarnungGeben(dispatch, a.id)}>
@@ -398,7 +398,9 @@ export function StartScreen({ onOpenScenario, onWaehleSzenario }: {
 
       {myAlarms.length === 0 && mySos.length === 0 && (
         <Card style={{ alignItems: 'center' }}>
-          <CheckCircle2 size={28} color={colors.green} />
+          <PopIn>
+            <CheckCircle2 size={28} color={colors.green} />
+          </PopIn>
           <Text style={[styles.cardTitle, { marginTop: 6 }]}>Keine aktiven Alarme</Text>
           <Text style={styles.faint}>Sie werden bei einem Ereignis sofort benachrichtigt.</Text>
         </Card>
@@ -409,7 +411,7 @@ export function StartScreen({ onOpenScenario, onWaehleSzenario }: {
         return (
           <Card key={a.id} style={{ borderColor: colors.green, borderWidth: 2 }}>
             <View style={styles.row}>
-              <ShieldCheck size={18} color={colors.green} />
+              <PopIn><ShieldCheck size={18} color={colors.green} /></PopIn>
               <Text style={[styles.cardTitle, { flex: 1 }]}>Entwarnung · {scenario?.title ?? 'Alarm'}</Text>
               <Text style={styles.faint}>{formatRelative(a.endedAt ?? a.triggeredAt)}</Text>
             </View>
@@ -1090,7 +1092,7 @@ function EntwarnungScreen({
       </Pressable>
       <View style={[styles.row, { marginBottom: 12 }]}>
         <View style={{ width: 46, height: 46, borderRadius: 12, backgroundColor: colors.greenBg, alignItems: 'center', justifyContent: 'center' }}>
-          <ShieldCheck size={24} color={colors.green} />
+          <PopIn><ShieldCheck size={24} color={colors.green} /></PopIn>
         </View>
         <View style={{ flex: 1 }}>
           <Text style={styles.h1}>Entwarnung</Text>
@@ -1333,11 +1335,11 @@ function EmpfaengerScreen({
             </View>
           )}
           {alarm.requireAck && myAck !== 'none' && (
-            <View style={{ marginTop: 8 }}>
+            <PopIn key={myAck} style={{ marginTop: 8 }}>
               {myAck === 'acknowledged'
                 ? <Badge label="quittiert – Sie nehmen teil" color="green" />
                 : <Badge label="als nicht verfügbar gemeldet" color="slate" />}
-            </View>
+            </PopIn>
           )}
         </Card>
       ) : (

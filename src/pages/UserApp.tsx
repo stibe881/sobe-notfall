@@ -452,7 +452,7 @@ function StartTab({ onOpenScenario, onWaehleSzenario }: {
               </div>
             )}
             {a.requireAck && myAck !== 'none' && (
-              <div className="mt-2">
+              <div key={myAck} className="mt-2 check-pop inline-block">
                 {myAck === 'acknowledged'
                   ? <Badge color="green"><CheckCircle2 size={12} /> quittiert – Sie nehmen teil</Badge>
                   : <Badge>als nicht verfügbar gemeldet</Badge>}
@@ -469,7 +469,7 @@ function StartTab({ onOpenScenario, onWaehleSzenario }: {
 
       {myAlarms.length === 0 && mySos.length === 0 && (
         <div className="rounded-2xl bg-white border border-slate-200 p-4 text-center">
-          <CheckCircle2 size={26} className="text-emerald-500 mx-auto mb-1.5" />
+          <CheckCircle2 size={26} className="check-pop text-emerald-500 mx-auto mb-1.5" />
           <div className="text-sm font-medium text-slate-700">Keine aktiven Alarme</div>
           <div className="text-xs text-faint mt-0.5">Sie werden bei einem Ereignis sofort benachrichtigt.</div>
         </div>
@@ -480,7 +480,7 @@ function StartTab({ onOpenScenario, onWaehleSzenario }: {
         return (
           <div key={a.id} className="rounded-2xl border-2 border-emerald-500 bg-white p-4">
             <div className="flex items-center gap-2 font-bold text-slate-800">
-              <ShieldCheck size={18} className="text-emerald-600" />
+              <ShieldCheck size={18} className="check-pop text-emerald-600" />
               <span className="flex-1">Entwarnung · {scenario?.title ?? 'Alarm'}</span>
               <span className="text-xs font-normal text-faint">{formatRelative(a.endedAt ?? a.triggeredAt)}</span>
             </div>
@@ -1341,7 +1341,7 @@ function EntwarnungAnsicht({
       </button>
       <div className="flex items-center gap-3 mb-4">
         <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-          <ShieldCheck size={26} />
+          <ShieldCheck size={26} className="check-pop" />
         </div>
         <div className="min-w-0">
           <h2 className="font-bold text-slate-800 text-xl leading-tight">Entwarnung</h2>
