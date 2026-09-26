@@ -3,7 +3,7 @@ const { execFileSync } = require('child_process')
 const fs = require('fs')
 const os = require('os')
 const path = require('path')
-const { withDangerousMod, withInfoPlist, withProjectBuildGradle } = require('expo/config-plugins')
+const { withAndroidManifest, withDangerousMod, withInfoPlist, withProjectBuildGradle, AndroidConfig } = require('expo/config-plugins')
 
 /**
  * Config-Plugin für die Indoor-Ortung (Aruba Meridian).
@@ -121,6 +121,20 @@ module.exports = function withMeridianIndoor(config) {
         throw new Error('[meridian-indoor] allprojects.repositories in android/build.gradle nicht gefunden')
       }
     }
+    return c
+  })
+
+  // Meridians eigenes Manifest schreibt enableOnBackInvokedCallback=true fest, die App
+  // deaktiviert die Predictive-Back-Geste (app.json android.predictiveBackGestureEnabled)
+  // mit false – ohne tools:replace bricht der Manifest-Merger deshalb den Build ab
+  config = withAndroidManifest(config, (c) => {
+    AndroidConfig.Manifest.ensureToolsAvailable(c.modResults)
+    const app = AndroidConfig.Manifest.getMainApplicationOrThrow(c.modResults)
+    const attribut = 'android:enableOnBackInvokedCallback'
+    const bestehend = app.$['tools:replace']
+    const eintraege = bestehend ? bestehend.split(',').map((e) => e.trim()) : []
+    if (!eintraege.includes(attribut)) eintraege.push(attribut)
+    app.$['tools:replace'] = eintraege.join(',')
     return c
   })
 
