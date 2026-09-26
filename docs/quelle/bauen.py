@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Erzeugt die drei Handbücher aus den Inhaltsmodulen und der gemeinsamen Hülle.
+"""Erzeugt die vier Handbücher aus den Inhaltsmodulen und der gemeinsamen Hülle.
 
     python3 docs/quelle/bauen.py                 -> docs/handbuch-*.html (Bilder aus docs/bilder/)
     python3 docs/quelle/bauen.py <verzeichnis>   -> zusätzlich eine Fassung mit eingebetteten
@@ -20,6 +20,54 @@ DATEIEN = [
     ('handbuch-4-installation', handbuch4),
 ]
 
+# Ab so vielen Spalten wird eine Tabelle auf schmalen Geräten zur Karte.
+# Zwei Spalten passen auch auf ein Telefon noch als Tabelle.
+STAPELN_AB_SPALTEN = 3
+
+
+def tabellen_beschriften(html):
+    """Gibt jeder Körperzelle ihre Spaltenüberschrift als data-spalte mit.
+
+    Auf schmalen Geräten löst die Gestaltung die Tabelle in Karten auf; dort
+    steht die Überschrift dann über dem Wert. Von Hand gepflegt würde sich
+    diese Beschriftung früher oder später von der Kopfzeile lösen - deshalb
+    liest der Bauschritt sie jedes Mal neu aus dem <thead>.
+    """
+    def je_tabelle(treffer):
+        tabelle = treffer.group(0)
+        kopf = re.search(r'<thead>(.*?)</thead>', tabelle, re.S)
+        if not kopf:
+            return tabelle
+        namen = [re.sub(r'<[^>]+>', '', z).replace('&nbsp;', '').strip()
+                 for z in re.findall(r'<th[^>]*>(.*?)</th>', kopf.group(1), re.S)]
+        if len(namen) < STAPELN_AB_SPALTEN:
+            return tabelle
+
+        koerper = re.search(r'<tbody>(.*?)</tbody>', tabelle, re.S)
+        if not koerper:
+            return tabelle
+
+        def je_zeile(zeile_treffer):
+            spalte = iter(namen)
+
+            def je_zelle(zellen_treffer):
+                marke, rest = zellen_treffer.group(1), zellen_treffer.group(2)
+                name = next(spalte, '')
+                # Die erste Zelle wird zum Titel der Karte und braucht keine
+                # Beschriftung; leere Kopfzellen ebenso wenig.
+                if not name or '"' in name:
+                    return zellen_treffer.group(0)
+                return f'<{marke} data-spalte="{name}"{rest}'
+
+            return re.sub(r'<(td|th)((?:\s[^>]*)?>)', je_zelle, zeile_treffer.group(0))
+
+        neuer_koerper = re.sub(r'<tr>.*?</tr>', je_zeile, koerper.group(1), flags=re.S)
+        tabelle = tabelle.replace(koerper.group(1), neuer_koerper)
+        return tabelle.replace('<table>', '<table data-stapeln>', 1)
+
+    return re.sub(r'<table.*?</table>', je_tabelle, html, flags=re.S)
+
+
 def einbetten(html):
     def ersetze(treffer):
         pfad = os.path.join(WURZEL, treffer.group(1))
@@ -38,6 +86,8 @@ for name, modul in DATEIEN:
     # weiteren Abbildung nichts von Hand nachziehen lässt.
     zaehler = itertools.count(1)
     seite = re.sub(r'<b>Abb\.</b>', lambda _: f'<b>Abb. {next(zaehler)}</b>', seite)
+
+    seite = tabellen_beschriften(seite)
 
     fehlend = [b for b in re.findall(r'src="(bilder/[^"]+)"', seite)
                if not os.path.exists(os.path.join(WURZEL, b))]

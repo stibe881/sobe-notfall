@@ -476,7 +476,9 @@ KOERPER = r"""
   </p>
   <p>
     Unter <span class="ui">Handbücher</span> finden Sie zudem die Handbücher zu Ihrer
-    Rolle &ndash; sie öffnen im Browser und lassen sich von dort drucken oder sichern.
+    Rolle. Sie öffnen im Browser, sind für das Telefon gestaltet &ndash; lesbare
+    Schrift, keine Tabellen zum seitlichen Rollen &ndash; und lassen sich von dort
+    drucken oder sichern.
     Darunter zeigt <span class="ui">Push-Benachrichtigungen</span>, ob Mitteilungen auf
     diesem Gerät aktiv sind, und <span class="ui">Über diese App</span> die installierte
     Version.

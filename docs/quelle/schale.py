@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Gemeinsame Hülle und Gestaltung der drei Handbücher.
+"""Gemeinsame Hülle und Gestaltung der vier Handbücher.
 
 Folgt dem Corporate Design von SONNENBERG, wie es die Word-Vorlage vorgibt:
 
@@ -13,6 +13,22 @@ Folgt dem Corporate Design von SONNENBERG, wie es die Word-Vorlage vorgibt:
 Segoe UI liegt auf Windows-Rechnern vor. Damit die Handbücher auch auf
 anderen Systemen und im Browser stimmig aussehen, folgt Source Sans 3 als
 nächstverwandte Rückfallschrift.
+
+Auf dem Telefon gelesen
+-----------------------
+Mitarbeitende öffnen die Handbücher aus der App heraus, also auf einem
+Telefon. Dafür gilt:
+
+  * <meta name="viewport"> ist zwingend. Ohne die Angabe rendert jedes
+    Telefon mit 980 Pixeln Breite und verkleinert anschliessend - die Regeln
+    für schmale Bildschirme greifen dann gar nicht erst.
+  * Nichts darf seitlich überstehen. Lange Pfade, Adressen und Bedienpfade
+    brechen um; Befehlsblöcke bekommen einen eigenen rollbaren Kasten.
+  * Tabellen ab drei Spalten werden zu Karten, eine Zeile je Karte. Die
+    Beschriftung setzt bauen.py aus dem <thead> - von Hand gepflegt würde
+    sie sich früher oder später von der Kopfzeile lösen.
+  * Der Druck bleibt davon unberührt: dort gelten weiter A4 und echte
+    Tabellen.
 """
 
 STIL = """
@@ -94,7 +110,13 @@ body {
   font-size: 17px;
   line-height: 1.62;
   -webkit-font-smoothing: antialiased;
+  /* iOS bläht Text im Querformat sonst eigenmächtig auf */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
+
+/* Kein Wort darf die Seite seitlich schieben - auf dem Telefon ist dafür kein Platz */
+h1, h2, h3, h4, p, li, td, th, figcaption, dd, dt { overflow-wrap: break-word; }
 
 .blatt { max-width: 980px; margin: 0 auto; padding: 0 28px 96px; }
 
@@ -171,6 +193,21 @@ a { color: var(--haus-tief); }
 code {
   font-weight: 600; font-size: .9em; background: var(--flaeche-still);
   border: 1px solid var(--linie); padding: .06em .38em; border-radius: 3px;
+  /* Pfade und Adressen brechen notfalls mitten im Wort statt überzustehen */
+  overflow-wrap: anywhere;
+}
+
+/* Befehlsblöcke: eigener Kasten, waagrecht rollbar statt überstehend */
+pre {
+  max-width: var(--mass); margin: 18px 0; padding: 14px 16px;
+  background: var(--flaeche-still); border: 1px solid var(--linie); border-radius: 4px;
+  overflow-x: auto; -webkit-overflow-scrolling: touch;
+  font-size: 14.5px; line-height: 1.55;
+}
+pre code {
+  background: none; border: 0; padding: 0; font-size: inherit;
+  /* Befehle dürfen nicht mitten im Wort brechen - sie werden abgetippt */
+  overflow-wrap: normal; white-space: pre;
 }
 
 /* Beschriftung eines Bedienelements aus der Anwendung */
@@ -251,15 +288,101 @@ footer .adressfuss { margin-top: 22px; }
 :focus-visible { outline: 2px solid var(--haus); outline-offset: 3px; }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 
+/* ---------- Sprung zurück nach oben ----------
+   Ein Handbuch von 40 Seiten hat am Telefon sonst keinen Weg zurück zum
+   Inhaltsverzeichnis. Reines HTML, kein Skript. */
+.nach-oben {
+  position: fixed; right: 14px; bottom: 14px; z-index: 5;
+  width: 46px; height: 46px; border-radius: 50%;
+  display: none; align-items: center; justify-content: center;
+  background: var(--haus); color: #fff; text-decoration: none;
+  font-size: 19px; line-height: 1; box-shadow: 0 2px 8px rgba(0,0,0,.28);
+}
+.nach-oben:hover, .nach-oben:focus-visible { background: var(--haus-tief); }
+
 /* Nur am Bildschirm: die A4-Druckbreite liegt in CSS-Pixeln ebenfalls unter 720. */
 @media screen and (max-width: 720px) {
   body { font-size: 16.5px; }
   .blatt { padding: 0 18px 64px; }
   h2.abschnitt { flex-direction: column; gap: 2px; }
   .titel-logo { justify-content: flex-start; }
+
+  .nach-oben { display: flex; }
+  /* Erst zeigen, wenn es etwas gibt, wohin man zurückspringen kann */
+  :root[data-oben] .nach-oben { opacity: 0; pointer-events: none; transition: opacity .18s; }
+  :root[data-oben="weg"] .nach-oben { opacity: 1; pointer-events: auto; }
+
+  /* Luft zusammenstreichen: am Telefon zählt jede Bildschirmhöhe */
+  .titelseite { padding: 26px 0 26px; }
+  .titel-logo { margin-bottom: clamp(28px, 9vw, 60px); }
+  .vorspann { font-size: 17px; margin-top: 22px; }
+  .stand { margin-top: 24px; gap: 4px 18px; }
+  .inhalt { margin-top: 32px; padding-top: 30px; }
+  section { padding-top: 40px; }
+  h3 { margin-top: 30px; }
+
+  /* Fingerkuppen brauchen mehr als 30 Pixel Höhe */
+  .inhalt a { padding: 12px 8px 12px 0; min-height: 44px; align-items: center; }
+
+  /* Ein Pfad wie «Einstellungen & Konfiguration › LoRaWAN-Netz» ist breiter
+     als das Telefon - hier muss er umbrechen dürfen. */
+  .ui { white-space: normal; }
+
+  .hinweis { padding: 14px 16px; margin: 18px 0; }
+  ol.schritte > li { padding-left: 40px; }
+  figure { margin: 20px 0; }
+  .geraet-reihe { gap: 22px; grid-template-columns: minmax(0, 300px); }
+  .geraet { max-width: 100%; }
+
+  /* Die Anschrift stapelt sich, statt zwei Spalten zu erzwingen */
+  .adressfuss { grid-template-columns: 1fr; gap: 0; }
+  .adressfuss span:nth-child(even) { margin-bottom: 7px; }
+
+  footer { margin-top: 56px; }
+}
+
+/* ---------- Tabellen auf schmalen Geräten ----------
+   Zwei Spalten passen noch. Drei oder vier werden zu Karten: jede Zeile ein
+   Block, jeder Wert mit seiner Spaltenüberschrift davor. Das ist lesbar,
+   ohne seitlich zu rollen. Die Beschriftung setzt der Bauschritt als
+   data-spalte, damit sie sich nie von der Kopfzeile lösen kann. */
+@media screen and (max-width: 620px) {
+  table { min-width: 0; font-size: 15px; }
+  th, td { padding-right: 10px; }
+
+  .tabelle-huelle:has(table[data-stapeln]) { overflow-x: visible; }
+  table[data-stapeln] { display: block; }
+  table[data-stapeln] caption { display: block; }
+  /* Die Kopfzeile bleibt für Vorlesewerkzeuge erhalten, verschwindet nur optisch */
+  table[data-stapeln] thead {
+    position: absolute; width: 1px; height: 1px; padding: 0;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
+  table[data-stapeln] tbody, table[data-stapeln] tr,
+  table[data-stapeln] th, table[data-stapeln] td { display: block; }
+  table[data-stapeln] tr {
+    background: var(--flaeche); border: 1px solid var(--linie);
+    border-radius: 4px; padding: 13px 15px; margin-bottom: 11px;
+  }
+  table[data-stapeln] th, table[data-stapeln] td { border: 0; padding: 0; }
+  /* Die erste Zelle ist der Titel der Karte */
+  table[data-stapeln] tbody tr > :first-child {
+    font-weight: 700; font-size: 16.5px; color: var(--tinte);
+    letter-spacing: -.01em; text-transform: none; margin-bottom: 2px;
+  }
+  table[data-stapeln] td[data-spalte]::before {
+    content: attr(data-spalte); display: block;
+    font-size: 11px; font-weight: 700; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--tinte-fein);
+    margin: 10px 0 1px;
+  }
+  /* Über dem Kartentitel braucht es keine Spaltenüberschrift - er ist der Gegenstand */
+  table[data-stapeln] tbody tr > :first-child::before { display: none; }
+  table[data-stapeln] td.ja, table[data-stapeln] td.nein { font-size: 15px; }
 }
 
 @media print {
+  .nach-oben { display: none !important; }
   :root {
     --grund: #fff; --flaeche: #fff; --flaeche-still: #f1f5f4; --haus-schleier: #eef4f3;
     --tinte: #000; --tinte-leise: #1c1c1c; --tinte-fein: #4a5a58;
@@ -322,4 +445,29 @@ def titelseite(rolle, titel, untertitel, vorspann, stand='August 2026'):
 def seite(titel, koerper):
     # Ohne ausdrückliches charset raten Browser bei file:// und einfachen
     # Webservern windows-1252 - aus «Für» würde «FÃ¼r».
-    return f'<meta charset="utf-8">\n<title>{titel}</title>\n{STIL}\n{koerper}'
+    #
+    # Ohne viewport rendert jedes Telefon die Seite mit 980 Pixeln Breite und
+    # verkleinert sie anschliessend: Die Schrift wird unlesbar klein und die
+    # Regeln für schmale Bildschirme greifen gar nicht erst.
+    kopf = (
+        '<meta charset="utf-8">\n'
+        '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
+        '<meta name="color-scheme" content="light dark">\n'
+        '<meta name="theme-color" content="#1c504b">\n'
+        f'<title>{titel}</title>'
+    )
+    return f'{kopf}\n{STIL}\n<span id="oben"></span>\n{koerper}\n{NACH_OBEN}'
+
+
+# Springt zurück zum Inhaltsverzeichnis. Das Handbuch hat sonst keinen Weg
+# dorthin, sobald man einmal unten ist.
+#
+# Die vier Zeilen Skript blenden ihn aus, solange man oben steht. Fällt das
+# Skript aus, bleibt der Knopf dauerhaft sichtbar und voll benutzbar - dieser
+# Ausfall kostet also nichts.
+NACH_OBEN = r'''<a class="nach-oben" href="#oben" aria-label="Zurück zum Seitenanfang" title="Zurück zum Seitenanfang">&uarr;</a>
+<script>
+  var wurzel = document.documentElement
+  wurzel.dataset.oben = ''
+  addEventListener('scroll', function () { wurzel.dataset.oben = scrollY > 600 ? 'weg' : '' }, { passive: true })
+</script>'''
