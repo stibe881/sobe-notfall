@@ -249,10 +249,16 @@ export function purgePresence(maxAgeMs = 48 * 3600_000): void {
 export function resolveRecipients(users: User[] | StoredUser[], groupIds: string[], locationIds: string[]): (User | StoredUser)[] {
   const today = new Date().toISOString().slice(0, 10)
   const aufenthalt = ladeIntegrationen().geofencing ? presenceMap() : null
+  // Der Krisenstab ist eine Funktion der Organisation, nicht eines Gebäudes.
+  // Bis September 2026 galt der Standortfilter auch für ihn: Bei einem Brand
+  // in Menzingen erreichte die Eskalation nur Mitglieder mit Profilstandort
+  // Menzingen – der Krisenstab im Hauptsitz erfuhr nichts.
+  const krisenGruppen = new Set(allGroups().filter((g) => g.isCrisisTeam).map((g) => g.id))
   return users.filter((u) => {
     const inGroup = groupIds.length === 0 || u.groupIds.some((g) => groupIds.includes(g))
+    const alsKrisenstab = u.groupIds.some((g) => krisenGruppen.has(g) && groupIds.includes(g))
     const vorOrt = aufenthalt?.get(u.id)?.locationId
-    const inLocation = locationIds.length === 0 || locationIds.includes(u.locationId) || (vorOrt != null && locationIds.includes(vorOrt))
+    const inLocation = alsKrisenstab || locationIds.length === 0 || locationIds.includes(u.locationId) || (vorOrt != null && locationIds.includes(vorOrt))
     const absent = u.absence && u.absence.from <= today && today <= u.absence.to
     return inGroup && inLocation && !absent
   })

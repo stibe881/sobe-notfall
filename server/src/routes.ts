@@ -29,9 +29,10 @@ import {
 import {
   addAudit, allAlarms, allButtons, allGroups, allLocations, allLoneWork, allStoredUsers, createAlarm, deleteDoc, deleteUser, findAlarm,
   findStoredUser, findStoredUserByEmail, fullState, integrations, presenceMap, saveAlarm, saveIntegrations, setPresence, uid,
-  upsertDoc, upsertGroup, upsertLocation, upsertUser,
+  upsertDoc, upsertGroup, upsertLocation, upsertUser, allPlans,
 } from './store.js'
-import type { AckStatus, Alarm, AlarmUpdate, Role, StoredUser } from './types.js'
+import { planFuer } from './planwahl.js'
+import type { AckStatus, Alarm, AlarmPlan, AlarmUpdate, EscalationLevel, Role, StoredUser } from './types.js'
 import { indoorOrt, indoorText, liesIndoor } from './indoor.js'
 
 export const router = Router()
@@ -1096,6 +1097,24 @@ function laufenderAlarmZu(neu: Alarm): Alarm | null {
 router.post('/alarms', auth, async (req: AuthRequest, res) => {
   const o = req.body ?? {}
   const ausloeser = req.user!
+
+  // Den Alarmplan löst der Server auf – nicht der Client. Vorher wandte das
+  // Portal ihn nur auf Wunsch an und die App gar nie (siehe planwahl.ts).
+  //   escalation fehlt         → Plan zum Szenario und Standort suchen
+  //   escalation: []           → bewusst ohne Stufen (Info an eine Person)
+  //   escalation: [...] / planId → so belassen
+  const standorte: string[] = Array.isArray(o.locationIds) ? o.locationIds : []
+  let planId: string | undefined = o.planId ? String(o.planId) : undefined
+  let eskalation: EscalationLevel[] | undefined = Array.isArray(o.escalation) ? o.escalation : undefined
+  let angewandterPlan: AlarmPlan | null = null
+  if (!planId && eskalation === undefined) {
+    angewandterPlan = planFuer(allPlans(), String(o.scenarioId ?? ''), standorte)
+    if (angewandterPlan) {
+      planId = angewandterPlan.id
+      eskalation = angewandterPlan.escalation
+    }
+  }
+
   const alarm: Alarm = {
     ...createAlarm({
       scenarioId: String(o.scenarioId ?? ''),
@@ -1107,13 +1126,19 @@ router.post('/alarms', auth, async (req: AuthRequest, res) => {
       locationIds: Array.isArray(o.locationIds) ? o.locationIds : [],
       triggeredByUserId: ausloeser.id,
       triggeredVia: o.triggeredVia ?? 'app',
-      planId: o.planId,
-      escalation: o.escalation,
+      planId,
+      escalation: eskalation,
       recipientUserIds: o.recipientUserIds,
     }),
     drill: Boolean(o.drill) || undefined,
   }
   const praefix = alarm.drill ? `${UEBUNG}: ` : ''
+  if (angewandterPlan) {
+    alarm.log.push({
+      ts: alarm.triggeredAt,
+      message: `Alarmplan «${angewandterPlan.name}» angewendet – ${angewandterPlan.escalation.length} Eskalationsstufe(n)`,
+    })
+  }
 
   // Indoor-Ortung: Wo im Gebäude die auslösende Person ist, gehört in den
   // Alarmtext – so steht es in Push, SMS und E-Mail, ohne Karte lesbar.

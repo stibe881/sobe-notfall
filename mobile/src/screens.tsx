@@ -215,7 +215,7 @@ export function StartScreen({ onOpenScenario, onWaehleSzenario }: {
     const plan = state.plans.find((p) => p.scenarioId === 'sc-sos')
     dispatch({
       type: 'TRIGGER_ALARM',
-      alarm: createAlarm(state.users, {
+      alarm: createAlarm(state, {
         scenarioId: 'sc-sos',
         message: `SOS-Alarm von ${me.firstName} ${me.lastName} (App) – Standort: ${location?.name ?? 'unbekannt'}`,
         silent: false,
@@ -588,7 +588,7 @@ export function ScenarioDetailScreen({
       .join(', ')
     dispatch({
       type: 'TRIGGER_ALARM',
-      alarm: createAlarm(state.users, {
+      alarm: createAlarm(state, {
         scenarioId: scenario.id,
         message: `${scenario.title} – Standort ${locationNames || 'alle Standorte'}. Ausgelöst von ${me.firstName} ${me.lastName}, bitte Handlungsanweisungen in der App befolgen.`,
         silent: scenario.silentDefault,
@@ -598,7 +598,10 @@ export function ScenarioDetailScreen({
         locationIds: alarmLocationIds,
         triggeredByUserId: me.id,
         triggeredVia: 'app',
-        escalation: [{ afterMinutes: 5, channels: ['voice'], groupIds: ['gr-krisenstab'], notifyEmergencyServices: false }],
+        // Keine Stufen mitschicken: Der Server wendet den Alarmplan des
+        // Szenarios an. Vorher stand hier für jedes Szenario dieselbe fest
+        // verdrahtete Eskalation mit einer Seed-Gruppenkennung – der
+        // Brandalarm (Evakuationsteam nach 3 Min.) griff aus der App nie.
       }),
     })
   }
@@ -606,7 +609,7 @@ export function ScenarioDetailScreen({
   function triggerCrisisTeam() {
     dispatch({
       type: 'TRIGGER_ALARM',
-      alarm: createAlarm(state.users, {
+      alarm: createAlarm(state, {
         scenarioId: scenario.id,
         message: `Krisenteam-Aufgebot (${scenario.title}) durch ${me.firstName} ${me.lastName} – bitte quittieren.`,
         silent: false,
@@ -616,6 +619,7 @@ export function ScenarioDetailScreen({
         locationIds: [],
         triggeredByUserId: me.id,
         triggeredVia: 'app',
+        ohneEskalation: true,
       }),
     })
   }
@@ -624,7 +628,7 @@ export function ScenarioDetailScreen({
     const user = state.users.find((u) => u.id === userId)
     dispatch({
       type: 'TRIGGER_ALARM',
-      alarm: createAlarm(state.users, {
+      alarm: createAlarm(state, {
         scenarioId: scenario.id,
         message: `Info an ${user?.firstName} ${user?.lastName}: ${scenario.title} – bitte bei ${me.firstName} ${me.lastName} melden.`,
         silent: true,
@@ -634,6 +638,7 @@ export function ScenarioDetailScreen({
         locationIds: [],
         triggeredByUserId: me.id,
         triggeredVia: 'app',
+        ohneEskalation: true,
         recipientUserIds: [userId],
       }),
     })

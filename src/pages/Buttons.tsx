@@ -110,7 +110,7 @@ export default function Buttons() {
       triggeredByUserId: button.assignedUserId ?? state.currentUserId,
       triggeredVia: 'button',
       escalation: [
-        { afterMinutes: button.escalateToEmergencyServicesAfterMin, channels: ['voice', 'sms'], groupIds: ['gr-krisenstab'], notifyEmergencyServices: true },
+        { afterMinutes: button.escalateToEmergencyServicesAfterMin, channels: ['voice', 'sms'], groupIds: state.groups.filter((g) => g.isCrisisTeam).map((g) => g.id), notifyEmergencyServices: true },
       ],
     })
     dispatch({ type: 'TRIGGER_ALARM', alarm, audit: `Alarmknopf ausgelöst: ${button.name} (${button.type.toUpperCase()}) – ${alarm.silent ? 'stille' : 'laute'} Alarmierung` })

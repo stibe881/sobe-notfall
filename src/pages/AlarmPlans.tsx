@@ -186,10 +186,9 @@ export default function AlarmPlans() {
 
               <Ablauf plan={p} />
 
-              {(p.requireAck || p.respectOperatingHours) && (
+              {p.requireAck && (
                 <div className="flex flex-wrap gap-1.5 mt-3 pt-3 border-t border-slate-100">
-                  {p.requireAck && <Badge color="violet">Quittierung erforderlich</Badge>}
-                  {p.respectOperatingHours && <Badge color="amber">nur Betriebszeiten ({VORBEREITET})</Badge>}
+                  <Badge color="violet">Quittierung erforderlich</Badge>
                 </div>
               )}
             </Card>
@@ -402,11 +401,6 @@ export function PlanEditor({
           <KanalWahl gewaehlt={draft.channels} onToggle={(c) => setDraft({ ...draft, channels: toggle(draft.channels, c) })} />
           <div className="flex flex-wrap gap-5 mt-4">
             <Toggle checked={draft.requireAck} onChange={(v) => setDraft({ ...draft, requireAck: v })} label="Quittierung verlangen" />
-            <Toggle
-              checked={draft.respectOperatingHours}
-              onChange={(v) => setDraft({ ...draft, respectOperatingHours: v })}
-              label={`Nur während Betriebszeiten – ${VORBEREITET}`}
-            />
           </div>
         </section>
 
@@ -477,7 +471,7 @@ function PlanWizard({ onClose }: { onClose: () => void }) {
   const { state, dispatch } = useStore()
   const [draft, setDraft] = useState<AlarmPlan>(() => ({
     id: uid('pl'), name: '', locationIds: [], groupIds: [], channels: ['push', 'sms'],
-    requireAck: false, respectOperatingHours: false, escalation: [],
+    requireAck: false, escalation: [],
   }))
   const [uebernommenVon, setUebernommenVon] = useState<string | null>(null)
 
@@ -604,7 +598,6 @@ function PlanWizard({ onClose }: { onClose: () => void }) {
                     Empfänger:innen bestätigen den Erhalt. Ob eine Zusage die nächste Stufe abwendet, entscheiden Sie je Stufe unten.
                   </p>
                 </div>
-                <Toggle checked={draft.respectOperatingHours} onChange={(v) => setDraft({ ...draft, respectOperatingHours: v })} label={`Nur während Betriebszeiten alarmieren – ${VORBEREITET}`} />
               </div>
             </>
           ),
@@ -681,7 +674,6 @@ function PlanWizard({ onClose }: { onClose: () => void }) {
                   <div className="text-sm text-muted">{szenario ? `Szenario: ${szenario.title}` : 'ohne festes Szenario'}</div>
                   <div className="flex flex-wrap gap-1.5 mt-1.5">
                     {draft.requireAck && <Badge color="violet">Quittierung</Badge>}
-                    {draft.respectOperatingHours && <Badge color="amber">nur Betriebszeiten</Badge>}
                   </div>
                 </div>
               </div>

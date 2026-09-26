@@ -326,7 +326,7 @@ function ScenarioEditor({ scenario, onClose }: { scenario: Scenario; onClose: ()
     return {
       id: uid('pl'), name: draft.title ? `Alarmplan ${draft.title}` : '', scenarioId: draft.id,
       locationIds: [], groupIds: draft.responsibleGroupIds, channels: draft.defaultChannels.length ? draft.defaultChannels : ['push'],
-      requireAck: false, respectOperatingHours: false, escalation: [],
+      requireAck: false, escalation: [],
     }
   }
 
@@ -655,7 +655,7 @@ function SzenarioWizard({ onClose }: { onClose: () => void }) {
           id: uid('pl'), name: planName.trim(), scenarioId: draft.id,
           locationIds: [], groupIds: draft.responsibleGroupIds,
           channels: draft.defaultChannels.length ? draft.defaultChannels : ['push'],
-          requireAck: false, respectOperatingHours: false, escalation: [],
+          requireAck: false, escalation: [],
         },
       })
     } else {

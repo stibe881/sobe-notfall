@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { ChevronDown, ChevronLeft, ChevronUp, Pencil, Search, Siren, Users } from 'lucide-react'
 import { createAlarm, resolveRecipients, useStore } from '../store'
 import { activeScenarios, zeigePrioritaet } from '../lib/scenarios'
+import { planFuer } from '../lib/planwahl'
 import type { AlarmPlan, Channel, Scenario } from '../types'
 import { CHANNEL_LABELS } from '../types'
 import { Badge, HoldButton, Toggle, Vorbereitet, inputClass, kanalName } from '../components/ui'
@@ -48,6 +49,12 @@ export default function TriggerAlarm() {
     if (s.defaultChannels.length > 0) setChannels(s.defaultChannels)
     if (s.responsibleGroupIds.length > 0) setGroupIds(s.responsibleGroupIds)
     setMessage('')
+    // Den Alarmplan des Szenarios gleich anwenden. Vorher lag er hinter einem
+    // Dropdown «optional» – wer ihn unter Druck nicht wählte, löste ohne
+    // Eskalationsstufen aus. Umstellen bleibt über das Dropdown möglich.
+    const plan = planFuer(state.plans, s.id, [])
+    if (plan) applyPlan(plan.id)
+    else setPlanId('')
     setAdjustOpen(false)
     window.scrollTo({ top: 0 })
   }
@@ -85,7 +92,8 @@ export default function TriggerAlarm() {
       triggeredByUserId: state.currentUserId,
       triggeredVia: 'web',
       planId: planId || undefined,
-      escalation: plan?.escalation ?? [],
+      // fehlt → der Server wendet den Alarmplan an
+      escalation: plan?.escalation,
       drill,
     })
     dispatch({ type: 'TRIGGER_ALARM', alarm, audit: `${drill ? 'Übung' : 'Alarm'} ausgelöst: ${scenario.title} (${recipients.length} Empfänger:innen)` })

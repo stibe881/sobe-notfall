@@ -948,7 +948,7 @@ export const SEED_PLANS: AlarmPlan[] = [
   {
     id: 'pl-brand-baar', name: 'Brandalarm Hauptsitz Baar', scenarioId: 'sc-brand',
     locationIds: ['loc-baar'], groupIds: ['gr-alle'],
-    channels: ['push', 'sms', 'tts'], requireAck: false, respectOperatingHours: false,
+    channels: ['push', 'sms', 'tts'], requireAck: false,
     escalation: [
       { afterMinutes: 3, channels: ['voice'], groupIds: ['gr-evak'], notifyEmergencyServices: false },
       { afterMinutes: 10, channels: ['voice', 'sms'], groupIds: ['gr-krisenstab'], notifyEmergencyServices: true },
@@ -957,7 +957,7 @@ export const SEED_PLANS: AlarmPlan[] = [
   {
     id: 'pl-krisenstab', name: 'Aufgebot Krisenstab (mit Quittierung)', scenarioId: 'sc-krise',
     locationIds: ['loc-baar', 'loc-menzingen', 'loc-kloten'], groupIds: ['gr-krisenstab'],
-    channels: ['push', 'sms', 'voice', 'conference'], requireAck: true, respectOperatingHours: false,
+    channels: ['push', 'sms', 'voice', 'conference'], requireAck: true,
     escalation: [
       { afterMinutes: 5, channels: ['voice'], groupIds: ['gr-krisenstab'], notifyEmergencyServices: false, nurWennUnbeantwortet: true },
     ],
@@ -965,7 +965,7 @@ export const SEED_PLANS: AlarmPlan[] = [
   {
     id: 'pl-vermisst', name: 'Vermisste:r Schüler:in – Suchaktion', scenarioId: 'sc-vermisst',
     locationIds: [], groupIds: ['gr-alle'],
-    channels: ['push', 'sms'], requireAck: true, respectOperatingHours: false,
+    channels: ['push', 'sms'], requireAck: true,
     escalation: [
       { afterMinutes: 10, channels: ['voice'], groupIds: ['gr-krisenstab'], notifyEmergencyServices: false },
       { afterMinutes: 20, channels: ['voice', 'sms'], groupIds: ['gr-krisenstab'], notifyEmergencyServices: true },
@@ -974,7 +974,7 @@ export const SEED_PLANS: AlarmPlan[] = [
   {
     id: 'pl-medizin', name: 'Medizinischer Notfall (Schulsanität)', scenarioId: 'sc-medizin',
     locationIds: [], groupIds: ['gr-ersthelfer'],
-    channels: ['push', 'voice'], requireAck: true, respectOperatingHours: true,
+    channels: ['push', 'voice'], requireAck: true,
     escalation: [
       { afterMinutes: 2, channels: ['voice', 'sms'], groupIds: ['gr-sicherheit'], notifyEmergencyServices: true, nurWennUnbeantwortet: true },
     ],
@@ -982,7 +982,7 @@ export const SEED_PLANS: AlarmPlan[] = [
   {
     id: 'pl-eskalation', name: 'Deeskalationsteam (stiller Alarm)', scenarioId: 'sc-gewalt',
     locationIds: [], groupIds: ['gr-paed'],
-    channels: ['push'], requireAck: true, respectOperatingHours: true,
+    channels: ['push'], requireAck: true,
     escalation: [
       { afterMinutes: 3, channels: ['push', 'voice'], groupIds: ['gr-sicherheit', 'gr-krisenstab'], notifyEmergencyServices: false, nurWennUnbeantwortet: true },
     ],
@@ -990,7 +990,7 @@ export const SEED_PLANS: AlarmPlan[] = [
   {
     id: 'pl-it', name: 'IT-Incident Response', scenarioId: 'sc-it',
     locationIds: [], groupIds: ['gr-it'],
-    channels: ['push', 'email', 'teams'], requireAck: true, respectOperatingHours: false,
+    channels: ['push', 'email', 'teams'], requireAck: true,
     escalation: [
       { afterMinutes: 15, channels: ['voice'], groupIds: ['gr-krisenstab'], notifyEmergencyServices: false, nurWennUnbeantwortet: true },
     ],
@@ -998,7 +998,7 @@ export const SEED_PLANS: AlarmPlan[] = [
   {
     id: 'pl-sos', name: 'SOS-Hilferuf (Soforthilfe-Knopf)', scenarioId: 'sc-sos',
     locationIds: [], groupIds: ['gr-ersthelfer', 'gr-sicherheit'],
-    channels: ['push', 'sms', 'voice'], requireAck: true, respectOperatingHours: false,
+    channels: ['push', 'sms', 'voice'], requireAck: true,
     escalation: [
       { afterMinutes: 3, channels: ['voice'], groupIds: ['gr-krisenstab'], notifyEmergencyServices: true, nurWennUnbeantwortet: true },
     ],

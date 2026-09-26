@@ -173,7 +173,13 @@ export interface AlarmPlan {
   groupIds: string[]
   channels: Channel[]
   requireAck: boolean
-  respectOperatingHours: boolean
+  /**
+   * @deprecated Wurde nie ausgewertet und ist aus der Oberfläche entfernt.
+   * Ein Notfall nach Uhrzeit zu unterdrücken ist nie richtig – der Schalter
+   * stand im Seed ausgerechnet beim Medizinischen Notfall auf «an». Bleibt
+   * nur, damit gespeicherte Pläne weiterhin lesbar sind.
+   */
+  respectOperatingHours?: boolean
   escalation: EscalationLevel[]
 }
 
@@ -219,6 +225,12 @@ export interface Alarm {
   updates?: AlarmUpdate[]
   escalationStage: number
   escalation: EscalationLevel[]
+  /**
+   * Nur für den Versand an den Server: bewusst ohne Alarmplan und Stufen –
+   * etwa die Information an ein einzelnes Krisenstab-Mitglied. Fehlt das
+   * Feld und sind keine Stufen gesetzt, löst der Server den Plan auf.
+   */
+  ohneEskalation?: boolean
   deliveries: Delivery[]
   log: AlarmLogEntry[]
 }

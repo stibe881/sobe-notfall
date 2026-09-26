@@ -771,15 +771,47 @@ footer .adressfuss { margin-top: 22px; }
       Szenarien bereits wählen, damit die Planung vollständig ist &ndash; versendet wird
       darüber nichts, und in der Alarmzentrale steht bei diesen Kanälen «kein Versand».
       Dasselbe gilt für «Blaulichtorganisationen benachrichtigen» in den
-      Eskalationsstufen und für «Nur während Betriebszeiten».
-      Überall im Portal ist das einheitlich mit <em>vorbereitet, noch nicht aktiv</em>
-      gekennzeichnet.
+      Eskalationsstufen. Überall im Portal ist das einheitlich mit
+      <em>vorbereitet, noch nicht aktiv</em> gekennzeichnet.
+    </p>
+    <p>
+      Den früheren Schalter «Nur während Betriebszeiten» gibt es nicht mehr. Er
+      wurde nie ausgewertet &ndash; und hätte er es je, wäre das falsch gewesen:
+      Ein Notfall nach Uhrzeit zu unterdrücken ist nie richtig. Ein
+      Herzstillstand um 17.30 Uhr braucht dieselbe Alarmierung wie um 9 Uhr.
     </p>
   </div>
   <figure class="bild-breit">
     <img src="bilder/web-08-alarmplaene.webp" alt="Übersicht der Alarmpläne mit Zielgruppen, Kanälen und Eskalationsstufen">
     <figcaption><b>Abb. 11</b> &nbsp; Sechs vorbereitete Alarmpläne mit ihren Eskalationsstufen.</figcaption>
   </figure>
+
+  <h3>Der Plan gilt von selbst</h3>
+  <p>
+    Wer ein Szenario auslöst &ndash; im Portal oder in der App &ndash;, bekommt
+    dessen Alarmplan automatisch: Der Alarmserver sucht den Plan zum Szenario
+    und zum Standort und wendet seine Eskalationsstufen an. Gibt es Pläne für
+    mehrere Standorte, gewinnt der passende; ein Plan ohne Standortbindung gilt
+    überall. Im Portal lässt sich der Plan vor dem Auslösen noch umstellen.
+  </p>
+  <div class="hinweis hinweis--warnung">
+    <p class="marke-klein">Geändert im September 2026</p>
+    <p>
+      Bis dahin galt der Plan im Portal nur, wenn man ihn aus einem Dropdown
+      «optional» wählte &ndash; und in der App gar nie: Dort schickte jedes
+      Szenario dieselbe fest verdrahtete Eskalation. Der Brandalarm mit
+      Evakuationsteam nach drei Minuten griff aus der App also nicht. Wer
+      sich darauf verlassen hat, dass Pläne wirken, hatte recht &ndash; jetzt
+      stimmt es auch.
+    </p>
+  </div>
+  <p>
+    Ebenfalls neu: <b>Der Krisenstab ist nicht an einen Standort gebunden.</b>
+    Gruppen, die als Krisenteam gekennzeichnet sind, werden bei jedem Alarm
+    erreicht, gleich an welchem Standort er ausgelöst wurde. Vorher galt der
+    Standortfilter auch für sie &ndash; bei einem Brand in Menzingen erfuhr ein
+    Krisenstab mit Profilstandort Baar nichts.
+  </p>
 
   <h3>Zwei Arten von Eskalationsstufen</h3>
   <p>

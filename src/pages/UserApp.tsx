@@ -657,7 +657,7 @@ function ScenarioView({
       locationIds: alarmLocationIds,
       triggeredByUserId: me.id,
       triggeredVia: 'app',
-      escalation: [{ afterMinutes: 5, channels: ['voice'], groupIds: ['gr-krisenstab'], notifyEmergencyServices: false }],
+      // Keine Stufen mitschicken: Der Server wendet den Alarmplan an (siehe App)
     })
     dispatch({ type: 'TRIGGER_ALARM', alarm, audit: `Alarm aus Szenario «${scenario.title}» (App, ${locationNames}): ${me.firstName} ${me.lastName}` })
   }
@@ -673,6 +673,7 @@ function ScenarioView({
       locationIds: [],
       triggeredByUserId: me.id,
       triggeredVia: 'app',
+      ohneEskalation: true,
     })
     dispatch({ type: 'TRIGGER_ALARM', alarm, audit: `Krisenteam-Aufgebot aus Szenario «${scenario.title}»: ${me.firstName} ${me.lastName}` })
   }
@@ -689,6 +690,7 @@ function ScenarioView({
       locationIds: [],
       triggeredByUserId: me.id,
       triggeredVia: 'app',
+      ohneEskalation: true,
       recipientUserIds: [userId],
     })
     dispatch({ type: 'TRIGGER_ALARM', alarm, audit: `SMS & Push an ${user?.firstName} ${user?.lastName} (${scenario.title})` })

@@ -206,8 +206,10 @@ KOERPER = r"""
     <figcaption><b>Abb.</b> &nbsp; Ein vorbereiteter Alarm. Die Empfängerzahl über dem Auslöseknopf ist die wichtigste Angabe auf der Seite &ndash; prüfen Sie sie, bevor Sie halten.</figcaption>
   </figure>
   <p>
-    Schneller geht es über einen Alarmplan: Er bringt Zielgruppen, Standorte, Kanäle
-    und die Eskalationsstufen fertig eingestellt mit.
+    Den Alarmplan müssen Sie nicht suchen: Sobald Sie ein Szenario wählen, ist
+    sein Plan angewendet &ndash; Zielgruppen, Standorte, Kanäle und die
+    Eskalationsstufen stehen fertig da. Das Dropdown darüber zeigt, welcher Plan
+    gilt, und lässt Sie umstellen, falls es einmal ein anderer sein soll.
   </p>
   <figure class="bild-breit">
     <img src="bilder/kri-02-alarmplaene.webp" alt="Übersicht der Alarmpläne mit Zielgruppen, Kanälen und Eskalationsstufen">

@@ -19,7 +19,6 @@ function sosVorgabe(): AlarmPlan {
     groupIds: ['gr-ersthelfer', 'gr-sicherheit'],
     channels: ['push', 'sms', 'voice'],
     requireAck: true,
-    respectOperatingHours: false,
     escalation: [{ afterMinutes: 3, channels: ['voice'], groupIds: ['gr-krisenstab'], notifyEmergencyServices: true }],
   }
 }
@@ -99,11 +98,6 @@ export default function Soforthilfe() {
         <KanalWahl gewaehlt={draft.channels} onToggle={(c) => aendern({ channels: toggle(draft.channels, c) })} />
         <div className="flex flex-wrap gap-5 mt-4">
           <Toggle checked={draft.requireAck} onChange={(v) => aendern({ requireAck: v })} label="Quittierung verlangen" />
-          <Toggle
-            checked={draft.respectOperatingHours}
-            onChange={(v) => aendern({ respectOperatingHours: v })}
-            label={`Nur während Betriebszeiten – ${VORBEREITET}`}
-          />
         </div>
       </Card>
 

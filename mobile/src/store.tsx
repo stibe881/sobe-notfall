@@ -72,11 +72,15 @@ export function alleinarbeitEmpfaenger(users: User[], s: LoneWorkSession): { gro
   return { groupIds, recipientUserIds: [...new Set([...ausGruppen, ...einzelne])].filter((id) => id !== s.userId) }
 }
 
-export function resolveRecipients(users: User[], groupIds: string[], locationIds: string[]): User[] {
+export function resolveRecipients(users: User[], groupIds: string[], locationIds: string[], groups: Group[] = []): User[] {
   const today = new Date().toISOString().slice(0, 10)
+  // Der Krisenstab ist eine Funktion des Hauses, nicht eines Gebäudes – der
+  // Standortfilter gilt für ihn nicht (gleiche Regel wie auf dem Server).
+  const krisenGruppen = new Set(groups.filter((g) => g.isCrisisTeam).map((g) => g.id))
   return users.filter((u) => {
     const inGroup = groupIds.length === 0 || u.groupIds.some((g) => groupIds.includes(g))
-    const inLocation = locationIds.length === 0 || locationIds.includes(u.locationId)
+    const alsKrisenstab = u.groupIds.some((g) => krisenGruppen.has(g) && groupIds.includes(g))
+    const inLocation = alsKrisenstab || locationIds.length === 0 || locationIds.includes(u.locationId)
     const absent = u.absence && u.absence.from <= today && today <= u.absence.to
     return inGroup && inLocation && !absent
   })
@@ -102,17 +106,24 @@ export interface TriggerOptions {
   locationIds: string[]
   triggeredByUserId: string
   triggeredVia: Alarm['triggeredVia']
+  /**
+   * Fehlt: der Server wendet den Alarmplan des Szenarios an.
+   * Gesetzt: genau diese Stufen. Für «bewusst keine» siehe ohneEskalation.
+   */
   escalation?: EscalationLevel[]
+  /** Bewusst ohne Plan und Stufen – Information an einzelne Personen */
+  ohneEskalation?: boolean
   /** Gezielte Empfänger (z. B. einzelnes Krisenteam-Mitglied) statt Gruppen-/Standortauflösung */
   recipientUserIds?: string[]
   /** Übung: gleiche Abläufe, als solche gekennzeichnet */
   drill?: boolean
 }
 
-export function createAlarm(users: User[], opts: TriggerOptions): Alarm {
+export function createAlarm(state: { users: User[]; groups: Group[] }, opts: TriggerOptions): Alarm {
+  const { users, groups } = state
   const recipients = opts.recipientUserIds
     ? users.filter((u) => opts.recipientUserIds!.includes(u.id))
-    : resolveRecipients(users, opts.groupIds, opts.locationIds)
+    : resolveRecipients(users, opts.groupIds, opts.locationIds, groups)
   const now = Date.now()
   return {
     id: uid('alarm'),
@@ -130,6 +141,7 @@ export function createAlarm(users: User[], opts: TriggerOptions): Alarm {
     status: 'active',
     escalationStage: 0,
     escalation: opts.escalation ?? [],
+    ohneEskalation: opts.ohneEskalation || undefined,
     deliveries: buildDeliveries(recipients, opts.channels),
     log: [
       { ts: now, message: `Alarm ausgelöst (${opts.triggeredVia}) – ${recipients.length} Empfänger:innen über ${opts.channels.map((c) => CHANNEL_LABELS[c]).join(', ')}` },
@@ -474,7 +486,9 @@ async function serverEffekt(action: Action): Promise<boolean | 'merged'> {
       const antwort = await api.triggerAlarm({
         scenarioId: a.scenarioId, message: a.message, silent: a.silent, requireAck: a.requireAck,
         channels: a.channels, groupIds: a.groupIds, locationIds: a.locationIds,
-        triggeredVia: 'app', escalation: a.escalation, drill: a.drill,
+        triggeredVia: 'app', drill: a.drill,
+        // fehlt → der Server wendet den Alarmplan an · [] → bewusst ohne Stufen
+        escalation: a.ohneEskalation ? [] : (a.escalation.length ? a.escalation : undefined),
         recipientUserIds: [...new Set(a.deliveries.map((d) => d.userId))],
         // Wo im Gebäude die Person gerade ist (Indoor-Ortung) – fehlt, wenn unbekannt
         indoor: aktuellePosition() ?? undefined,
