@@ -1378,7 +1378,12 @@ function EmpfaengerAnsicht({
   const alleSchritte = responseStepsOf(scenario)
   const gruppenName = (ids?: string[]) =>
     (ids ?? []).map((id) => state.groups.find((g) => g.id === id)?.name).filter(Boolean).join(', ')
-  const meineGruppen = state.groups.filter((g) => me.groupIds.includes(g.id) && g.id !== 'gr-alle')
+  // Nur die Gruppe nennen, der die gezeigten Schritte wirklich zugeordnet
+  // sind – nicht irgendeine andere Gruppe der Person. Sonst hiesse es «Ihre
+  // Schritte als Krisenstab», obwohl es die allgemeinen Schritte für alle
+  // sind und die Person nur zufällig auch im Krisenstab ist.
+  const eigeneRolle = bloecke.find((b) => b.groupId !== undefined)?.groupId
+  const eigeneRolleGruppe = eigeneRolle ? state.groups.find((g) => g.id === eigeneRolle) : undefined
   const ausloeser = alarm ? state.users.find((u) => u.id === alarm.triggeredByUserId) : undefined
   const orte = alarm
     ? alarm.locationIds.map((id) => state.locations.find((l) => l.id === id)?.name).filter(Boolean).join(', ')
@@ -1507,8 +1512,8 @@ function EmpfaengerAnsicht({
           <span>Alle Schritte aller Gruppen – antippen, wenn erledigt:</span>
         ) : (
           <>
-            <span>Ihre Schritte{!nachRollen && meineGruppen.length > 0 ? ' als' : ''}</span>
-            {!nachRollen && meineGruppen.map((g) => <Badge key={g.id}>{g.name}</Badge>)}
+            <span>Ihre Schritte{!nachRollen && eigeneRolleGruppe ? ' als' : ''}</span>
+            {!nachRollen && eigeneRolleGruppe && <Badge>{eigeneRolleGruppe.name}</Badge>}
             <span>– antippen, wenn erledigt:</span>
           </>
         )}
