@@ -12,6 +12,29 @@ import { starteReplikation } from './replikation.js'
 import { router } from './routes.js'
 import { INITIAL_ADMIN_EMAIL, seedDatabase, serverStartProtokollieren } from './setup.js'
 
+/**
+ * Ohne diese beiden Handler beendet Node den ganzen Prozess beim ersten nicht
+ * abgefangenen Promise-Fehler irgendwo im Code – und laut DEPLOY-HETZNER.md
+ * startet ihn das Hosting-Panel danach nicht zuverlässig neu. Für ein
+ * Alarmsystem heisst «Prozess weg» «niemand wird mehr alarmiert», bis das
+ * jemand bemerkt.
+ *
+ * Eine offene Promise-Ablehnung (unhandledRejection) ist praktisch immer ein
+ * fehlendes .catch() an einer einzelnen Stelle – der Prozess selbst ist nicht
+ * beschädigt. Hier gilt dieselbe Abwägung wie in engine.ts tick(): protokollieren
+ * und weiterlaufen schlägt abstürzen. Eine synchrone uncaughtException dagegen
+ * kann den Prozess in einem undefinierten Zustand hinterlassen (siehe
+ * Node-Dokumentation) – dort wird protokolliert und sauber beendet, in der
+ * Erwartung, dass ein Dienstverwalter (pm2, systemd, das Panel) neu startet.
+ */
+process.on('unhandledRejection', (grund) => {
+  console.error('[server] Unbehandelte Promise-Ablehnung – wird protokolliert, der Prozess läuft weiter:', grund)
+})
+process.on('uncaughtException', (fehler) => {
+  console.error('[server] Unbehandelte Ausnahme – Prozess wird beendet, ein Dienstverwalter sollte neu starten:', fehler)
+  process.exit(1)
+})
+
 const PORT = Number(process.env.PORT ?? 3001)
 const HOST = process.env.HOST ?? '0.0.0.0'
 
