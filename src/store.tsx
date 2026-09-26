@@ -39,8 +39,9 @@ export type Action =
   | { type: 'DELETE_PLAN'; planId: string }
   | { type: 'TRIGGER_ALARM'; alarm: Alarm; audit: string }
   | { type: 'END_ALARM'; alarmId: string; byUserId: string; note?: string }
-  | { type: 'ALARM_UPDATE'; alarmId: string; message: string; kind: 'lage' | 'fehlalarm' }
+  | { type: 'ALARM_UPDATE'; alarmId: string; message: string; kind: 'lage' | 'fehlalarm' | 'uebergabe' }
   | { type: 'ACK_ALARM'; alarmId: string; userId: string; ack: 'acknowledged' | 'declined' }
+  | { type: 'TOGGLE_CHECKLIST'; alarmId: string; stepIndex: number; checked: boolean }
   | { type: 'UPSERT_BUTTON'; button: AlarmButton }
   | { type: 'DELETE_BUTTON'; buttonId: string }
   | { type: 'START_LONE_WORK'; session: LoneWorkSession }
@@ -342,8 +343,11 @@ function reducer(state: AppState, action: Action): AppState {
       const name = person ? `${person.firstName} ${person.lastName}` : '?'
       const text = action.kind === 'fehlalarm'
         ? `FEHLALARM gemeldet von ${name}${action.message ? `: ${action.message}` : ''} – bitte auf die Entwarnung durch den Krisenstab warten.`
-        : action.message
+        : action.kind === 'uebergabe'
+          ? `${name} übergibt die Führung: ${action.message}`
+          : action.message
       const betroffen = state.alarms.find((a) => a.id === action.alarmId)
+      const artLabel = action.kind === 'fehlalarm' ? 'Fehlalarm gemeldet' : action.kind === 'uebergabe' ? 'Führungsübergabe' : 'Lagemeldung'
       return {
         ...state,
         alarms: state.alarms.map((a) =>
@@ -351,13 +355,23 @@ function reducer(state: AppState, action: Action): AppState {
             ? {
                 ...a,
                 updates: [...(a.updates ?? []), { ts: Date.now(), kind: action.kind, byUserId: state.currentUserId, message: text }],
-                log: [...a.log, { ts: Date.now(), message: action.kind === 'fehlalarm' ? text : `Lagemeldung von ${name}: ${action.message}` }],
+                log: [...a.log, { ts: Date.now(), message: action.kind === 'lage' ? `Lagemeldung von ${name}: ${action.message}` : text }],
               }
             : a,
         ),
-        audit: audit(state, 'alarm', `${betroffen?.drill ? 'ÜBUNG: ' : ''}${action.kind === 'fehlalarm' ? 'Fehlalarm gemeldet' : 'Lagemeldung'}: ${action.message || '(ohne Text)'}`, state.currentUserId),
+        audit: audit(state, 'alarm', `${betroffen?.drill ? 'ÜBUNG: ' : ''}${artLabel}: ${action.message || '(ohne Text)'}`, state.currentUserId),
       }
     }
+    case 'TOGGLE_CHECKLIST':
+      return {
+        ...state,
+        alarms: state.alarms.map((a) => {
+          if (a.id !== action.alarmId) return a
+          const bisher = new Set(a.sharedChecklist ?? [])
+          action.checked ? bisher.add(action.stepIndex) : bisher.delete(action.stepIndex)
+          return { ...a, sharedChecklist: [...bisher].sort((x, y) => x - y) }
+        }),
+      }
     case 'ACK_ALARM':
       return {
         ...state,
@@ -495,7 +509,9 @@ function toastForAction(action: Action): Toast['message'] | { message: string; k
     case 'TRIGGER_ALARM':
       return { message: action.alarm.drill ? 'Übung gestartet – Empfänger:innen werden als Übung benachrichtigt' : 'Alarm ausgelöst – Empfänger:innen werden benachrichtigt', kind: 'alarm' }
     case 'ALARM_UPDATE':
-      return action.kind === 'fehlalarm' ? 'Fehlalarm gemeldet – der Krisenstab gibt die Entwarnung' : 'Lagemeldung an alle Empfänger:innen gesendet'
+      return action.kind === 'fehlalarm' ? 'Fehlalarm gemeldet – der Krisenstab gibt die Entwarnung'
+        : action.kind === 'uebergabe' ? 'Führungsübergabe gemeldet'
+          : 'Lagemeldung an alle Empfänger:innen gesendet'
     case 'END_ALARM':
       return 'Alarm beendet – Entwarnung versendet'
     case 'ACK_ALARM':
@@ -764,6 +780,9 @@ async function serverEffekt(action: Action, state: AppState): Promise<boolean | 
       return true
     case 'ACK_ALARM':
       await api.ackAlarm(action.alarmId, action.ack)
+      return true
+    case 'TOGGLE_CHECKLIST':
+      await api.toggleChecklist(action.alarmId, action.stepIndex, action.checked)
       return true
     case 'START_LONE_WORK': {
       const s = action.session

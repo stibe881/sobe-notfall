@@ -1286,12 +1286,12 @@ router.post('/alarms/:id/update', auth, async (req: AuthRequest, res) => {
     return
   }
   const text = String(req.body?.message ?? '').trim()
-  const kind: AlarmUpdate['kind'] = req.body?.kind === 'fehlalarm' ? 'fehlalarm' : 'lage'
-  if (kind === 'lage' && !istFuehrung) {
-    res.status(403).json({ error: 'Lagemeldungen sind Krisenstab und Administration vorbehalten.' })
+  const kind: AlarmUpdate['kind'] = req.body?.kind === 'fehlalarm' ? 'fehlalarm' : req.body?.kind === 'uebergabe' ? 'uebergabe' : 'lage'
+  if ((kind === 'lage' || kind === 'uebergabe') && !istFuehrung) {
+    res.status(403).json({ error: 'Lagemeldungen und Übergaben sind Krisenstab und Administration vorbehalten.' })
     return
   }
-  if (kind === 'lage' && !text) {
+  if ((kind === 'lage' || kind === 'uebergabe') && !text) {
     res.status(400).json({ error: 'Bitte eine Meldung eingeben.' })
     return
   }
@@ -1303,15 +1303,18 @@ router.post('/alarms/:id/update', auth, async (req: AuthRequest, res) => {
     byUserId: person.id,
     message: kind === 'fehlalarm'
       ? `FEHLALARM gemeldet von ${name}${text ? `: ${text}` : ''} – bitte auf die Entwarnung durch den Krisenstab warten.`
-      : text,
+      : kind === 'uebergabe'
+        ? `${name} übergibt die Führung: ${text}`
+        : text,
   }
   const aktualisiert: Alarm = {
     ...alarm,
     updates: [...(alarm.updates ?? []), update],
-    log: [...alarm.log, { ts: jetzt, message: kind === 'fehlalarm' ? update.message : `Lagemeldung von ${name}: ${text}` }],
+    log: [...alarm.log, { ts: jetzt, message: kind === 'lage' ? `Lagemeldung von ${name}: ${text}` : update.message }],
   }
   saveAlarm(aktualisiert)
-  addAudit('alarm', `${alarm.drill ? `${UEBUNG}: ` : ''}${kind === 'fehlalarm' ? 'Fehlalarm gemeldet' : 'Lagemeldung'} von ${name}: ${text || '(ohne Text)'}`, person.id)
+  const artLabel = kind === 'fehlalarm' ? 'Fehlalarm gemeldet' : kind === 'uebergabe' ? 'Führungsübergabe gemeldet' : 'Lagemeldung'
+  addAudit('alarm', `${alarm.drill ? `${UEBUNG}: ` : ''}${artLabel} von ${name}: ${text || '(ohne Text)'}`, person.id)
   broadcast('state')
   res.json({ alarm: aktualisiert })
   // Ein gemeldeter Fehlalarm geht zusätzlich an den Krisenstab, damit jemand entwarnt
@@ -1322,6 +1325,38 @@ router.post('/alarms/:id/update', auth, async (req: AuthRequest, res) => {
   }
   await lagemeldungPush(aktualisiert, update, [...empfaenger])
   await sendeInfoKanaele(aktualisiert, kind, update.message)
+})
+
+/**
+ * Haken in der Krisenteam-Ansicht setzen oder entfernen – geteilt zwischen
+ * allen, die diese Ansicht gerade offen haben, damit sich zwei Koordinierende
+ * nicht doppelt um denselben Schritt kümmern. Die persönliche, rollenbezogene
+ * Ansicht bleibt bewusst unabhängig davon.
+ */
+router.post('/alarms/:id/checklist', auth, (req: AuthRequest, res) => {
+  const alarm = findAlarm(req.params.id)
+  if (!alarm) {
+    res.status(404).json({ error: 'Alarm nicht gefunden.' })
+    return
+  }
+  const person = req.user!
+  const istFuehrung = person.role === 'admin' || person.role === 'krisenstab' || person.groupIds.includes('gr-krisenstab')
+  if (!istFuehrung) {
+    res.status(403).json({ error: 'Die Krisenteam-Checkliste ist Krisenstab und Administration vorbehalten.' })
+    return
+  }
+  const stepIndex = Number(req.body?.stepIndex)
+  if (!Number.isInteger(stepIndex) || stepIndex < 0) {
+    res.status(400).json({ error: 'Ungültiger Schritt.' })
+    return
+  }
+  const checked = Boolean(req.body?.checked)
+  const bisher = new Set(alarm.sharedChecklist ?? [])
+  checked ? bisher.add(stepIndex) : bisher.delete(stepIndex)
+  const aktualisiert: Alarm = { ...alarm, sharedChecklist: [...bisher].sort((a, b) => a - b) }
+  saveAlarm(aktualisiert)
+  broadcast('state')
+  res.json({ alarm: aktualisiert })
 })
 
 /** Bereitschaft: Geräte pro Standort, Sicherung, Push-Dienst, letzte Testmeldung */

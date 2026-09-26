@@ -221,12 +221,16 @@ export async function sendeAlarmKanaele(alarm: Alarm, nurUserIds?: string[]): Pr
  */
 export async function sendeInfoKanaele(
   alarm: Alarm,
-  art: 'lage' | 'meldung' | 'fehlalarm' | 'entwarnung',
+  art: 'lage' | 'meldung' | 'fehlalarm' | 'entwarnung' | 'uebergabe',
   text: string,
 ): Promise<void> {
   const integ = ladeIntegrationen()
   const titelArt =
-    art === 'entwarnung' ? 'Entwarnung' : art === 'fehlalarm' ? 'Fehlalarm gemeldet' : art === 'meldung' ? 'Weitere Meldung' : 'Lagemeldung'
+    art === 'entwarnung' ? 'Entwarnung'
+      : art === 'fehlalarm' ? 'Fehlalarm gemeldet'
+        : art === 'meldung' ? 'Weitere Meldung'
+          : art === 'uebergabe' ? 'Führungsübergabe'
+            : 'Lagemeldung'
   const titel = `${UEBUNG_PRAEFIX(alarm)}${titelArt}: ${szenarioTitel(alarm)}`
 
   if (alarm.channels.includes('sms') && integ.smsGateway.enabled) {
