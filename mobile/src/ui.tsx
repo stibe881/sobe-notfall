@@ -63,6 +63,12 @@ export function HoldButton({ onTrigger, label, hint = 'Zum Auslösen gedrückt h
   const [holding, setHolding] = useState(false)
 
   function start() {
+    // Ohne diese Sperre löst ein zweites onPressIn während einer laufenden
+    // Haltung (z. B. wenn das Touch-System bei einem langen Druck ein
+    // erneutes PressIn ohne passendes PressOut dazwischen liefert) eine
+    // zweite, unabhängige Animation mit eigenem Callback aus – und damit
+    // denselben Alarm doppelt oder dreifach.
+    if (holding) return
     setHolding(true)
     Animated.timing(progress, { toValue: 1, duration: holdMs, easing: Easing.linear, useNativeDriver: false }).start(({ finished }) => {
       if (finished) {
