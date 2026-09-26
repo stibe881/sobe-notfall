@@ -70,7 +70,7 @@ export function HoldButton({ onTrigger, label, hint = 'Zum Auslösen gedrückt h
     // denselben Alarm doppelt oder dreifach.
     if (holding) return
     setHolding(true)
-    Animated.timing(progress, { toValue: 1, duration: holdMs, easing: Easing.linear, useNativeDriver: false }).start(({ finished }) => {
+    Animated.timing(progress, { toValue: 1, duration: holdMs, easing: Easing.linear, useNativeDriver: true }).start(({ finished }) => {
       if (finished) {
         progress.setValue(0)
         setHolding(false)
@@ -82,16 +82,18 @@ export function HoldButton({ onTrigger, label, hint = 'Zum Auslösen gedrückt h
 
   function stop() {
     setHolding(false)
-    Animated.timing(progress, { toValue: 0, duration: 120, useNativeDriver: false }).start()
+    Animated.timing(progress, { toValue: 0, duration: 120, useNativeDriver: true }).start()
   }
 
   return (
     <Pressable onPressIn={start} onPressOut={stop} style={styles.holdButton}>
       <Animated.View
-        style={[
-          styles.holdFill,
-          { width: progress.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }) },
-        ]}
+        // Läuft über den Native-Treiber statt über width%: Sonst hängt die
+        // Rückmeldung am JS-Thread – ist der gerade mit Zustands-Abgleich
+        // beschäftigt (z. B. während eines laufenden Alarms), wirkt der Knopf
+        // träge oder ganz ohne Reaktion, was zu wiederholtem, mehrfachem
+        // Drücken und damit mehrfacher Alarmauslösung verleitet.
+        style={[styles.holdFill, { transform: [{ scaleX: progress }] }]}
       />
       <Text style={styles.holdLabel}>{label}</Text>
       <Text style={styles.holdHint}>{holding ? 'Halten…' : hint}</Text>
@@ -135,6 +137,10 @@ const styles = StyleSheet.create({
     left: 0,
     top: 0,
     bottom: 0,
+    width: '100%',
+    // scaleX wächst von 0 auf 1 – Ursprung links, sonst wächst die Füllung
+    // (wie transform es sonst tut) aus der Mitte statt von links
+    transformOrigin: 'left',
     backgroundColor: colors.alarm,
   },
   holdLabel: {
