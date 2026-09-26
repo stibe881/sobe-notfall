@@ -737,6 +737,19 @@ KOERPER = r"""
     <figcaption><b>Abb.</b> &nbsp; Das Ereignisprotokoll. Erste Anlaufstelle, wenn zu klären ist, wer wann was ausgelöst hat.</figcaption>
   </figure>
 
+  <div class="hinweis">
+    <p class="marke-klein">Ein einzelnes Ereignis herausgeben</p>
+    <p>
+      Braucht die Schulkommission, der Kanton, eine Versicherung oder ein
+      Elternteil den Ablauf <b>eines</b> Ereignisses, ist das Protokoll der
+      falsche Ort &ndash; es enthält alles. In der
+      <span class="ui">Alarmzentrale</span> legt der Knopf
+      <span class="ui">Bericht</span> bei jedem beendeten Alarm den ganzen
+      Vorgang als eine Datei ab: Auslösung, Aufgebot, Rückmeldungen,
+      Lagemeldungen, Entwarnung. Siehe Handbuch 2, Abschnitt 10.
+    </p>
+  </div>
+
   <h3>Suchen und eingrenzen</h3>
   <p>
     Das Suchfeld durchsucht drei Dinge zugleich: den <b>Text</b> des Eintrags, die

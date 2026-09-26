@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { BellOff, CheckCircle2, ChevronDown, ChevronRight, MapPin, Megaphone, Send, Siren, XCircle } from 'lucide-react'
+import { BellOff, CheckCircle2, ChevronDown, ChevronRight, FileText, MapPin, Megaphone, Send, Siren, XCircle } from 'lucide-react'
 import { useStore } from '../store'
 import type { Alarm, Delivery } from '../types'
 import { Badge, Button, Card, formatDateTime, formatRelative, formatTime, inputClass, kanalName, usePrompt } from '../components/ui'
 import { ScenarioIcon } from '../components/ScenarioIcon'
+import { ereignisbericht } from '../lib/ereignisbericht'
+import { berichtDateiname, berichtHtml } from '../lib/berichtseite'
 import { IndoorKarte } from '../components/IndoorKarte'
 
 export default function AlarmMonitor() {
@@ -118,6 +120,28 @@ function AlarmCard({ alarm, collapsed = false }: { alarm: Alarm; collapsed?: boo
       'z. B. Rückkehr ab 10:30 über den Haupteingang',
     )
   }
+  /**
+   * Ereignisbericht sichern.
+   *
+   * Nach einem Todesfall, einem Kindesschutzfall oder einem Unfall braucht
+   * die Schulleitung ein Dokument für Schulkommission, Kanton, Versicherung
+   * und Eltern. Der Bericht entsteht aus dem Journal, das ohnehin geführt
+   * wird – als einzelne HTML-Datei, die sich ablegen, weitergeben und in
+   * fünf Jahren noch öffnen lässt. Aus dem Browser wird daraus mit
+   * «Drucken» ein PDF.
+   */
+  function bericht() {
+    const daten = ereignisbericht(alarm, state)
+    const html = berichtHtml(daten, state.integrations?.organization?.name ?? 'SOBE Notfall')
+    const url = URL.createObjectURL(new Blob([html], { type: 'text/html;charset=utf-8' }))
+    const a = document.createElement('a')
+    a.href = url
+    a.download = berichtDateiname(daten)
+    a.click()
+    // Der Browser braucht den Verweis noch einen Augenblick
+    setTimeout(() => URL.revokeObjectURL(url), 10_000)
+  }
+
   function lagemeldung() {
     const text = lage.trim()
     if (!text) return
@@ -163,9 +187,13 @@ function AlarmCard({ alarm, collapsed = false }: { alarm: Alarm; collapsed?: boo
           {alarm.requireAck && <div className="text-xs text-muted">{acked}/{userIds.length} quittiert</div>}
           {failed > 0 && <div className="text-xs text-alarm-600">{failed} fehlgeschlagen</div>}
         </div>
-        {alarm.status === 'active' && (
+        {alarm.status === 'active' ? (
           <Button variant="secondary" onClick={(e) => { e.stopPropagation(); beenden() }}>
             <BellOff size={14} /> Beenden
+          </Button>
+        ) : (
+          <Button variant="ghost" onClick={(e) => { e.stopPropagation(); bericht() }} title="Ereignisbericht als Datei sichern">
+            <FileText size={14} /> Bericht
           </Button>
         )}
       </div>
