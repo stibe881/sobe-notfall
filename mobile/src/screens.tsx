@@ -1128,7 +1128,12 @@ function EmpfaengerScreen({
   const alleSchritte = responseStepsOf(scenario)
   const gruppenName = (ids?: string[]) =>
     (ids ?? []).map((id) => state.groups.find((g) => g.id === id)?.name).filter(Boolean).join(', ')
-  const meineGruppen = state.groups.filter((g) => me.groupIds.includes(g.id) && g.id !== 'gr-alle').map((g) => g.name).join(', ')
+  // Nur die Gruppe nennen, der die gezeigten Schritte wirklich zugeordnet
+  // sind – nicht irgendeine andere Gruppe der Person. Sonst hiesse es «Ihre
+  // Schritte als Krisenstab», obwohl es die allgemeinen Schritte für alle
+  // sind und die Person nur zufällig auch im Krisenstab ist.
+  const eigeneRolle = bloecke.find((b) => b.groupId !== undefined)?.groupId
+  const eigeneRolleName = eigeneRolle ? gruppenName([eigeneRolle]) : ''
   const ausloeser = alarm ? state.users.find((u) => u.id === alarm.triggeredByUserId) : undefined
   const orte = alarm
     ? alarm.locationIds.map((id) => state.locations.find((l) => l.id === id)?.name).filter(Boolean).join(', ')
@@ -1246,7 +1251,7 @@ function EmpfaengerScreen({
           ? 'Alle Schritte aller Gruppen – antippen, wenn erledigt:'
           : nachRollen
             ? 'Ihre Schritte – antippen, wenn erledigt:'
-            : `Ihre Schritte${meineGruppen ? ` als ${meineGruppen}` : ''} – antippen, wenn erledigt:`}
+            : `Ihre Schritte${eigeneRolleName ? ` als ${eigeneRolleName}` : ''} – antippen, wenn erledigt:`}
       </Text>
       {!krisenteam && nachRollen && (
         <View style={{ backgroundColor: colors.amberBg, borderRadius: 10, padding: 10, marginTop: 2 }}>
