@@ -65,6 +65,21 @@ input[type='datetime-local'] {
   animation: toast-in 0.2s ease-out;
 }
 
+/*
+ * Für Vertrauensmomente: quittierte Teilnahme, Entwarnung, «keine aktiven
+ * Alarme». Ein kurzes Überschwingen macht spürbar, dass etwas Gutes gerade
+ * bestätigt wurde, statt dass die Meldung nur kommentarlos erscheint.
+ */
+@keyframes check-pop {
+  0% { opacity: 0; transform: scale(0.5); }
+  60% { opacity: 1; transform: scale(1.15); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.check-pop {
+  animation: check-pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
 :focus-visible {
   outline: 2px solid #64748b;
   outline-offset: 2px;
@@ -73,7 +88,8 @@ input[type='datetime-local'] {
 @media (prefers-reduced-motion: reduce) {
   .alarm-pulse,
   .animate-pulse,
-  .toast-in {
+  .toast-in,
+  .check-pop {
     animation: none;
   }
 }
