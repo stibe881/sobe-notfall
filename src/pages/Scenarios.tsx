@@ -5,7 +5,7 @@ import type { AlarmPlan, Channel, ResponseStep, Scenario, ScenarioPriority } fro
 import { Badge, Button, Card, Field, Modal, Toggle, inputClass, useConfirm, kanalName } from '../components/ui'
 import { AuswahlChip, Wizard } from '../components/Wizard'
 import { SCENARIO_ICONS, ScenarioIcon } from '../components/ScenarioIcon'
-import { isActive, responseStepsOf } from '../lib/scenarios'
+import { isActive, responseStepsOf, zeigePrioritaet } from '../lib/scenarios'
 import { PlanEditor } from './AlarmPlans'
 
 const CATEGORIES = ['Schüler:innen', 'Gesundheit', 'Sicherheit', 'Gebäude & Technik', 'Naturereignis', 'Organisation']
@@ -118,7 +118,10 @@ export default function Scenarios() {
                 <div className="flex gap-1.5 mt-1 flex-wrap">
                   {!aktiv && <Badge color="slate">ausgeblendet</Badge>}
                   <Badge>{s.category}</Badge>
-                  <Badge color={PRIORITY_META[s.priority].color}>{PRIORITY_META[s.priority].label}</Badge>
+                  {/* Steht alles auf «hoch», sagt das Kennzeichen nichts – dann entfällt es */}
+                  {zeigePrioritaet(s.priority, state.scenarios) && (
+                    <Badge color={PRIORITY_META[s.priority].color}>{PRIORITY_META[s.priority].label}</Badge>
+                  )}
                   {s.silentDefault && <Badge color="violet">stiller Alarm</Badge>}
                   {s.custom && <Badge color="blue">eigenes Szenario</Badge>}
                   {(s.legalBasis?.length ?? 0) > 0 && <Badge color="green">Rechtsgrundlagen</Badge>}

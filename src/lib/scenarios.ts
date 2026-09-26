@@ -1,4 +1,4 @@
-import type { ResponseStep, Scenario } from '../types'
+import type { ResponseStep, Scenario, ScenarioPriority } from '../types'
 
 /**
  * Nur aktive Szenarien erscheinen in der App und bei der Alarmauslösung.
@@ -115,4 +115,32 @@ export function rollenkonflikte(
 export function allClearStepsOf(scenario: Scenario): string[] {
   if (scenario.allClearSteps?.length) return scenario.allClearSteps
   return scenario.followUp ?? []
+}
+
+/**
+ * Lohnt sich das Prioritäts-Kennzeichen bei diesem Szenario?
+ *
+ * In der Praxis stehen fast alle aktiven Szenarien auf «hoch» – bei der
+ * Erstbefüllung sind es alle zwölf. Ein Kennzeichen, das überall gleich
+ * lautet, unterscheidet nichts: Es kostet Platz auf jeder Karte und stumpft
+ * gegen den Fall ab, in dem es wirklich etwas zu sagen hat.
+ *
+ * Deshalb erscheint es nur, wo die Priorität vom häufigsten Wert abweicht.
+ * Sobald die Prioritäten tatsächlich gestaffelt sind, kommt es von selbst
+ * zurück – es gibt nichts einzustellen.
+ */
+export function haeufigstePrioritaet(scenarios: Scenario[]): ScenarioPriority | null {
+  const aktiv = activeScenarios(scenarios)
+  if (aktiv.length < 2) return null
+  const zaehler = new Map<ScenarioPriority, number>()
+  for (const s of aktiv) zaehler.set(s.priority, (zaehler.get(s.priority) ?? 0) + 1)
+  const [[wert, anzahl]] = [...zaehler.entries()].sort((a, b) => b[1] - a[1])
+  // Erst ab einer klaren Mehrheit ist «üblich» ein sinnvoller Begriff
+  return anzahl > aktiv.length / 2 ? wert : null
+}
+
+/** Kennzeichen zeigen? Nur, wenn die Priorität vom Üblichen abweicht. */
+export function zeigePrioritaet(priority: ScenarioPriority, scenarios: Scenario[]): boolean {
+  const ueblich = haeufigstePrioritaet(scenarios)
+  return ueblich === null || priority !== ueblich
 }

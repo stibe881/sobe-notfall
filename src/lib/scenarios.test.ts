@@ -1,4 +1,4 @@
-import { brauchtRollentrennung, eigeneSchritteNachRolle, rollenkonflikte } from './scenarios'
+import { brauchtRollentrennung, eigeneSchritteNachRolle, rollenkonflikte, haeufigstePrioritaet, zeigePrioritaet } from './scenarios'
 import type { Scenario } from '../types'
 
 const brand = {
@@ -18,7 +18,9 @@ const medizin = {
 } as unknown as Scenario
 
 let fehler = 0
+let gezaehlt = 0
 function pruefe(name: string, bedingung: boolean): void {
+  gezaehlt++
   console.log(`${bedingung ? 'OK  ' : 'FEHL'} ${name}`)
   if (!bedingung) fehler++
 }
@@ -56,5 +58,31 @@ pruefe('Eine einzelne Rolle ist kein Konflikt', rollenkonflikte(['gr-evak'], [br
 pruefe('Inaktive Szenarien zählen nicht',
   rollenkonflikte(['gr-evak', 'gr-krisenstab'], [{ ...brand, active: false } as Scenario]).length === 0)
 
-console.log(`\n${13 - fehler} bestanden, ${fehler} fehlgeschlagen`)
+// ---------- Prioritäts-Kennzeichen ----------
+{
+  const sz = (id: string, priority: 'hoch' | 'mittel' | 'tief', active = true) =>
+    ({ id, priority, active, title: id, icon: '', category: '', instructions: [], followUp: [],
+       checklist: [], silentDefault: false, defaultChannels: [], responsibleGroupIds: [], contactIds: [] }) as unknown as Scenario
+
+  const alleHoch = ['a','b','c','d'].map((i) => sz(i, 'hoch'))
+  pruefe('steht alles auf hoch, sagt das Kennzeichen nichts – es entfällt',
+    !zeigePrioritaet('hoch', alleHoch))
+
+  const gemischt = [sz('a','hoch'), sz('b','hoch'), sz('c','hoch'), sz('d','tief')]
+  pruefe('der Ausreisser wird gezeigt', zeigePrioritaet('tief', gemischt))
+  pruefe('das Übliche bleibt stumm', !zeigePrioritaet('hoch', gemischt))
+
+  const ausgeglichen = [sz('a','hoch'), sz('b','tief')]
+  pruefe('ohne klare Mehrheit wird alles gezeigt',
+    zeigePrioritaet('hoch', ausgeglichen) && zeigePrioritaet('tief', ausgeglichen))
+
+  const mitInaktiven = [sz('a','hoch'), sz('b','hoch'), sz('c','hoch'), sz('d','tief', false), sz('e','tief', false)]
+  pruefe('abgeschaltete Szenarien zählen nicht mit',
+    haeufigstePrioritaet(mitInaktiven) === 'hoch' && zeigePrioritaet('tief', mitInaktiven))
+
+  pruefe('bei einem einzigen Szenario gibt es kein «üblich»',
+    haeufigstePrioritaet([sz('a','hoch')]) === null && zeigePrioritaet('hoch', [sz('a','hoch')]))
+}
+
+console.log(`\n${gezaehlt - fehler} bestanden, ${fehler} fehlgeschlagen`)
 if (fehler > 0) throw new Error(`${fehler} Prüfung(en) fehlgeschlagen`)

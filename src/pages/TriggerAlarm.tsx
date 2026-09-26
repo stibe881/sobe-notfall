@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ChevronDown, ChevronLeft, ChevronUp, Pencil, Search, Siren, Users } from 'lucide-react'
 import { createAlarm, resolveRecipients, useStore } from '../store'
-import { activeScenarios } from '../lib/scenarios'
+import { activeScenarios, zeigePrioritaet } from '../lib/scenarios'
 import type { AlarmPlan, Channel, Scenario } from '../types'
 import { CHANNEL_LABELS } from '../types'
 import { Badge, HoldButton, Toggle, Vorbereitet, inputClass, kanalName } from '../components/ui'
@@ -185,7 +185,9 @@ export default function TriggerAlarm() {
           <div className="min-w-0">
             <h1 className="text-xl font-bold text-slate-800 leading-tight">{scenario.title}</h1>
             <div className="flex flex-wrap gap-1.5 mt-1.5">
-              <Badge color={PRIORITY_COLOR[scenario.priority]}>Priorität {scenario.priority}</Badge>
+              {zeigePrioritaet(scenario.priority, state.scenarios) && (
+                <Badge color={PRIORITY_COLOR[scenario.priority]}>Priorität {scenario.priority}</Badge>
+              )}
               {planId && <Badge color="blue">{state.plans.find((p) => p.id === planId)?.name}</Badge>}
             </div>
           </div>
