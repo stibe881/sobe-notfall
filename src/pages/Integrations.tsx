@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom'
 import qrcode from 'qrcode-generator'
 import {
   Building2, CheckCircle2, ChevronDown, Copy, KeyRound, Link2, Loader2, LocateFixed, MapPin, MessageSquare, Phone, PhoneCall,
-  Plus, QrCode, Radio, RefreshCw, Search, ServerCog, Smartphone, Trash2, Users, XCircle, type LucideIcon,
+  Plus, QrCode, Radio, RefreshCw, Search, ServerCog, ShieldCheck, Smartphone, Trash2, Users, XCircle, type LucideIcon,
 } from 'lucide-react'
 import { api, logoUrl, serverUrl, type RedundanzConfig, type RedundanzStatus } from '../lib/api'
 import { uid, useStore } from '../store'
@@ -24,6 +24,7 @@ const BEREICHE = [
   { id: 'int-kanaele', titel: 'Alarmierungskanäle', hinweis: 'Push-Mitteilungen sind immer aktiv – hier kommen SMS, Teams und Telefonie dazu.' },
   { id: 'int-anmeldung', titel: 'Anmeldung & Konten', hinweis: 'Woher die Konten kommen und wie sich alle anmelden.' },
   { id: 'int-systeme', titel: 'Drittsysteme & Alarmknöpfe', hinweis: 'Physische Alarmknöpfe und Schnittstellen zu anderen Systemen.' },
+  { id: 'int-datenschutz', titel: 'Datenschutz & Aufbewahrung', hinweis: 'Wie lange Alarme und das Ereignisprotokoll aufbewahrt werden, bevor sie automatisch gelöscht werden.' },
   { id: 'int-betrieb', titel: 'Betrieb & Ausfallsicherheit', hinweis: 'Ein zweiter Alarmserver übernimmt, wenn dieser ausfällt.' },
 ] as const
 
@@ -206,6 +207,17 @@ export default function Integrations() {
           <Plus size={14} /> Webhook
         </Button>
       ),
+    },
+    {
+      id: 'int-aufbewahrung',
+      bereich: 'int-datenschutz',
+      titel: 'Aufbewahrungsfristen',
+      icon: ShieldCheck,
+      suchbegriffe: 'datenschutz nDSG löschen retention aufbewahrung audit protokoll DSGVO',
+      status: integ.retention.alarmeTage || integ.retention.uebungenTage || integ.retention.auditTage
+        ? { art: 'aktiv', text: 'Automatische Löschung eingerichtet' }
+        : { art: 'inaktiv', text: 'Noch keine Frist festgelegt – nichts wird automatisch gelöscht' },
+      inhalt: <AufbewahrungEinstellungen />,
     },
     {
       id: 'int-redundanz',
@@ -656,6 +668,69 @@ function GeofencingEinstellungen() {
         nie GPS-Koordinaten. Wer sich gerade an einem alarmierten Standort aufhält, wird zusätzlich
         alarmiert; ohne aktuelle Ortsmeldung gilt der Profilstandort. Radius je Standort unter
         «Standorte»; die Mitarbeitenden müssen der Standortfreigabe in der App zustimmen.
+      </p>
+    </div>
+  )
+}
+
+/**
+ * Automatische Löschung alter Alarme und Audit-Einträge. 0/leer heisst
+ * «unbegrenzt» – bis hier bewusst eine Zahl eingetragen wird, ändert sich am
+ * bisherigen Verhalten nichts.
+ */
+function AufbewahrungEinstellungen() {
+  const { state, dispatch } = useStore()
+  const integ = state.integrations
+  const r = integ.retention
+
+  function update(patch: Partial<typeof r>) {
+    dispatch({ type: 'UPDATE_INTEGRATIONS', integrations: { ...integ, retention: { ...r, ...patch } } })
+  }
+
+  const feld = (
+    label: string, hinweis: string, wert: number, setzen: (n: number) => void,
+  ) => (
+    <Field label={label}>
+      <div className="flex items-center gap-2">
+        <input
+          type="number" min={0} className={inputClass + ' w-28'}
+          value={wert || ''}
+          placeholder="unbegrenzt"
+          onChange={(e) => setzen(Math.max(0, Math.trunc(Number(e.target.value)) || 0))}
+        />
+        <span className="text-xs text-muted">Tage</span>
+      </div>
+      <p className="text-xs text-faint mt-1">{hinweis}</p>
+    </Field>
+  )
+
+  return (
+    <div className="space-y-4">
+      <p className="text-xs text-muted rounded-xl bg-slate-50 border border-slate-200 p-3">
+        Das Datenschutzrecht verlangt, Personendaten nicht länger aufzubewahren als nötig – ein Feld
+        leer zu lassen bedeutet aber nicht «löschen», sondern «noch keine Frist festgelegt». Für echte
+        Alarme mit Personenbezug lohnt sich eine Rücksprache mit der Schulleitung oder
+        Rechtsberatung: Personenschäden können in der Schweiz zivilrechtlich noch nach vielen Jahren
+        geltend gemacht werden, bei Minderjährigen unter Umständen erst ab deren Volljährigkeit.
+      </p>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {feld(
+          'Echte Alarme', 'Nicht-Übungsalarme – Auslösung, Verlauf, Ereignisbericht.',
+          r.alarmeTage, (n) => update({ alarmeTage: n }),
+        )}
+        {feld(
+          'Übungsalarme', 'Alarme, die als Übung markiert sind.',
+          r.uebungenTage, (n) => update({ uebungenTage: n }),
+        )}
+        {feld(
+          'Ereignisprotokoll (Audit-Log)', 'Alle protokollierten Aktionen im Portal.',
+          r.auditTage, (n) => update({ auditTage: n }),
+        )}
+      </div>
+      <p className="text-xs text-faint">
+        Beendete Alarme und Protokolleinträge, die älter als die jeweilige Frist sind, werden
+        automatisch gelöscht – spätestens innerhalb von 10 Minuten nach Ablauf. Laufende Alarme
+        werden nie gelöscht.
       </p>
     </div>
   )

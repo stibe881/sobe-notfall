@@ -459,6 +459,20 @@ export interface IntegrationSettings {
   geofencing: boolean
   webhooks: Webhook[]
   accessCodes: AccessCode[]
+  retention: RetentionSettings
+}
+
+/**
+ * Aufbewahrungsfristen für Alarme und Audit-Log, in Tagen. 0 bedeutet
+ * «unbegrenzt» – so lange, bis hier bewusst eine Zahl eingetragen wird, ändert
+ * sich am bisherigen Verhalten (alles bleibt erhalten) nichts.
+ */
+export interface RetentionSettings {
+  /** Echte (nicht-Übungs-)Alarme */
+  alarmeTage: number
+  /** Alarme mit drill: true */
+  uebungenTage: number
+  auditTage: number
 }
 
 export interface EmergencyContact {

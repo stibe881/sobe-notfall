@@ -206,6 +206,41 @@ export function addAudit(type: string, message: string, userId?: string): AuditE
   return entry
 }
 
+/**
+ * Aufbewahrungsfristen durchsetzen: alte Audit-Einträge und beendete Alarme
+ * löschen. Eine Frist von 0 bedeutet «noch nicht festgelegt» und wird als
+ * «nie löschen» behandelt, nicht als «sofort löschen» – bis eine bewusste
+ * Entscheidung (Integrationen → Aufbewahrung) eine Zahl einträgt, bleibt
+ * alles wie bisher erhalten.
+ *
+ * Übungsalarme (drill) und echte Alarme laufen unter getrennten Fristen:
+ * Ein tatsächlicher Vorfall mit Schüler:innen kann rechtlich lange
+ * nachweisbar bleiben müssen (Personenschäden verjähren in der Schweiz erst
+ * nach 20 Jahren, bei Minderjährigen unter Umständen noch später), eine
+ * reine Übung nicht.
+ */
+export function raeumeAufbewahrungAuf(cfg: { alarmeTage: number; uebungenTage: number; auditTage: number }): void {
+  const jetzt = Date.now()
+  if (cfg.auditTage > 0) {
+    db.prepare('DELETE FROM audit WHERE ts < ?').run(jetzt - cfg.auditTage * 86_400_000)
+  }
+  const aktiveFristen = [cfg.alarmeTage, cfg.uebungenTage].filter((t) => t > 0)
+  if (aktiveFristen.length === 0) return
+  // Nie laufende Alarme löschen – ein aktives Ereignis soll nicht mitten im
+  // Betrieb verschwinden. Die Vorauswahl nimmt die kürzeste aktive Frist,
+  // damit kein Kandidat für die genauere Prüfung je Alarm fehlt.
+  const vorauswahlGrenze = jetzt - Math.min(...aktiveFristen) * 86_400_000
+  const kandidaten = db
+    .prepare("SELECT id, doc FROM alarms WHERE status != 'active' AND triggeredAt < ?")
+    .all(vorauswahlGrenze) as { id: string; doc: string }[]
+  const loeschen = db.prepare('DELETE FROM alarms WHERE id = ?')
+  for (const { id, doc } of kandidaten) {
+    const alarm = JSON.parse(doc) as Alarm
+    const frist = alarm.drill ? cfg.uebungenTage : cfg.alarmeTage
+    if (frist > 0 && jetzt - alarm.triggeredAt > frist * 86_400_000) loeschen.run(id)
+  }
+}
+
 // ---------- Geofencing: Aufenthaltsort pro Person ----------
 
 /**

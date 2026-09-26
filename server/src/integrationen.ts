@@ -2,7 +2,7 @@ import { randomBytes } from 'node:crypto'
 import { fetchMitFrist } from './netz.js'
 import { sendeTwilioSms } from './twilio.js'
 import { getSetting, setSetting } from './db.js'
-import type { IntegrationSettings, LorawanSettings, MeridianKarte, MeridianSettings, SmsGatewaySettings, TeamsSettings, TelephonySettings } from './types.js'
+import type { IntegrationSettings, LorawanSettings, MeridianKarte, MeridianSettings, RetentionSettings, SmsGatewaySettings, TeamsSettings, TelephonySettings } from './types.js'
 
 /**
  * Grundlagen der Integrationen: Vorgaben, Geheimnis-Maskierung und die reinen
@@ -24,6 +24,7 @@ export const INTEGRATION_VORGABEN: IntegrationSettings = {
   geofencing: false,
   webhooks: [],
   accessCodes: [],
+  retention: { alarmeTage: 0, uebungenTage: 0, auditTage: 0 },
 }
 
 /**
@@ -47,6 +48,7 @@ export function mitVorgaben(roh: Partial<IntegrationSettings> | null | undefined
     hotline: { ...INTEGRATION_VORGABEN.hotline, ...r.hotline },
     webhooks: r.webhooks ?? [],
     accessCodes: r.accessCodes ?? [],
+    retention: { ...INTEGRATION_VORGABEN.retention, ...r.retention },
   }
 }
 
@@ -95,6 +97,7 @@ export function mergeIntegrationen(neu: Partial<IntegrationSettings>, alt: Integ
     ergebnis.organization.color = alt.organization.color
   }
   ergebnis.meridian = bereinigeMeridian(ergebnis.meridian)
+  ergebnis.retention = bereinigeRetention(ergebnis.retention)
   return ergebnis
 }
 
@@ -119,6 +122,15 @@ function bereinigeMeridian(m: MeridianSettings): MeridianSettings {
     apiToken: String(m.apiToken ?? '').trim(),
     karten,
   }
+}
+
+/** Nur ganze, nicht-negative Tageszahlen – ungültige Eingaben fallen auf 0 (unbegrenzt) zurück */
+function bereinigeRetention(r: RetentionSettings): RetentionSettings {
+  const tage = (wert: unknown): number => {
+    const n = Math.trunc(Number(wert))
+    return Number.isFinite(n) && n > 0 ? n : 0
+  }
+  return { alarmeTage: tage(r.alarmeTage), uebungenTage: tage(r.uebungenTage), auditTage: tage(r.auditTage) }
 }
 
 // ---------- Lesen und Schreiben ----------

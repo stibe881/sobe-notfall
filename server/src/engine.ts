@@ -11,7 +11,7 @@ import { standbyPassiv } from './replikation.js'
 import { eskalationsentscheid } from './eskalation.js'
 import {
   addAudit, allAlarms, allButtons, allGroups, allLoneWork, allScenarios, allStoredUsers, buildDeliveries, createAlarm,
-  integrations, purgePresence, resolveRecipients, saveAlarm, upsertDoc,
+  integrations, purgePresence, raeumeAufbewahrungAuf, resolveRecipients, saveAlarm, upsertDoc,
 } from './store.js'
 import { CHANNEL_LABELS, LONE_WORK_DEFAULT_GROUPS, type Alarm, type AlarmLogEntry, type AlarmUpdate, type LoneWorkSession } from './types.js'
 
@@ -241,6 +241,9 @@ export async function tick(): Promise<void> {
     await monatlicherBereitschaftsbericht(jetzt)
     // Alte Aufenthaltsmeldungen entfernen – es entsteht nie eine Bewegungshistorie
     purgePresence()
+    // Aufbewahrungsfristen für Alarme/Audit-Log durchsetzen, sofern unter
+    // Integrationen konfiguriert (0 = unbegrenzt, dann passiert nichts)
+    raeumeAufbewahrungAuf(integrations().retention)
   }
 }
 
