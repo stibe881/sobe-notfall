@@ -1,0 +1,26 @@
+name: Wiederkehrende Sicherheitsprüfung (npm audit)
+
+# Bewusst nur diese eine, eng begrenzte Prüfung – keine volle CI-Pipeline
+# (kein automatischer Test-/Typecheck-Lauf bei jedem Push). Meldet neue
+# bekannte Schwachstellen in den Abhängigkeiten alle Berichte, statt dass sie
+# sich unbemerkt ansammeln, bis jemand von Hand nachschaut.
+on:
+  schedule:
+    - cron: '0 6 * * 1' # jeden Montag, 06:00 UTC
+  workflow_dispatch: {}
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        projekt: ['.', 'server', 'mobile']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: npm audit (${{ matrix.projekt }})
+        working-directory: ${{ matrix.projekt }}
+        run: npm audit --audit-level=high
