@@ -7,7 +7,7 @@ import {
   Siren, Timer, User, Users, Volume2, X,
 } from 'lucide-react'
 import { alleinarbeitEmpfaenger, createAlarm, resolveRecipients, uid, useStore } from '../store'
-import { LONE_WORK_DEFAULT_GROUPS, ROLE_LABELS, type Alarm, type Channel, type LoneWorkSession, type Scenario, type User as AppUser } from '../types'
+import { CHANNEL_LABELS, LONE_WORK_DEFAULT_GROUPS, ROLE_LABELS, type Alarm, type Channel, type LoneWorkSession, type Scenario, type User as AppUser } from '../types'
 import { handbuecherFuer } from '../lib/handbuecher'
 import { serverUrl } from '../lib/api'
 import { anwendungsname } from '../lib/branding'
@@ -857,12 +857,17 @@ function ScenarioView({
           Geführt starten – ich habe es entdeckt
         </button>
         {responseStepsOf(scenario).length > 0 && (
-          <button
-            className="mt-2 w-full rounded-2xl bg-white border border-slate-300 text-slate-700 py-3 font-semibold"
-            onClick={() => setModus('empfaenger')}
-          >
-            Ich wurde alarmiert – was jetzt?
-          </button>
+          <>
+            <button
+              className="mt-2 w-full rounded-2xl bg-white border border-slate-300 text-slate-700 py-3 font-semibold"
+              onClick={() => setModus('empfaenger')}
+            >
+              Ich wurde alarmiert – was jetzt?
+            </button>
+            <p className="text-xs text-faint text-center mt-1">
+              Auch zum Einüben: zeigt Ihre persönlichen Schritte, ohne dass jemand benachrichtigt wird.
+            </p>
+          </>
         )}
       </div>
     )
@@ -1510,6 +1515,12 @@ function EmpfaengerAnsicht({
             {orte && <span className="flex items-center gap-1"><MapPin size={11} /> {orte}</span>}
             {alarm.silent && <Badge color="violet">still</Badge>}
           </div>
+          {alarm.channels.length > 1 && (
+            <p className="text-xs text-faint mt-1">
+              Sie erhalten diesen Alarm über mehrere Wege gleichzeitig ({alarm.channels.map((c) => CHANNEL_LABELS[c]).join(', ')}) –
+              das ist gewollt, damit er auch bei einem gestörten Weg ankommt.
+            </p>
+          )}
           <Rueckmeldestand alarm={alarm} />
           <Lagemeldungen alarm={alarm} />
           {krisenteam && <Zeitstrahl alarm={alarm} />}

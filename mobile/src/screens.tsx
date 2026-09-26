@@ -15,7 +15,7 @@ import { setzeAufenthaltVonHand, useAufenthalt } from './geofencing'
 import { notrufbild } from './notrufsymbole'
 import { lagetext, notrufAnbieten } from './alarmversand'
 import { useIndoor, type IndoorStatus } from './indoor'
-import { LONE_WORK_DEFAULT_GROUPS, type Alarm, type IndoorPosition, type IntegrationSettings, type LoneWorkSession, type Scenario, type User } from './types'
+import { CHANNEL_LABELS, LONE_WORK_DEFAULT_GROUPS, type Alarm, type IndoorPosition, type IntegrationSettings, type LoneWorkSession, type Scenario, type User } from './types'
 import { Badge, Card, HoldButton, colors, formatDuration, formatRelative } from './ui'
 import { MIN_PASSWORD_LENGTH, passwordProblem } from './auth'
 import { activeScenarios, allClearStepsOf, brauchtRollentrennung, eigeneSchritteNachRolle, haeufigeSzenarien, responseStepsFor, responseStepsOf } from './scenarios'
@@ -803,9 +803,14 @@ export function ScenarioDetailScreen({
           <Text style={styles.bigButtonText}>Geführt starten – ich habe es entdeckt</Text>
         </Pressable>
         {responseStepsOf(scenario).length > 0 && (
-          <Pressable style={styles.outlineButton} onPress={() => setModus('empfaenger')}>
-            <Text style={styles.outlineButtonText}>Ich wurde alarmiert – was jetzt?</Text>
-          </Pressable>
+          <>
+            <Pressable style={styles.outlineButton} onPress={() => setModus('empfaenger')}>
+              <Text style={styles.outlineButtonText}>Ich wurde alarmiert – was jetzt?</Text>
+            </Pressable>
+            <Text style={[styles.faint, { textAlign: 'center', marginTop: -2 }]}>
+              Auch zum Einüben: zeigt Ihre persönlichen Schritte, ohne dass jemand benachrichtigt wird.
+            </Text>
+          </>
         )}
       </ScrollView>
     )
@@ -1258,6 +1263,12 @@ function EmpfaengerScreen({
             {formatRelative(alarm.triggeredAt)}
             {orte ? ` · ${orte}` : ''}
           </Text>
+          {alarm.channels.length > 1 && (
+            <Text style={[styles.faint, { marginTop: 2 }]}>
+              Sie erhalten diesen Alarm über mehrere Wege gleichzeitig ({alarm.channels.map((c) => CHANNEL_LABELS[c]).join(', ')}) –
+              das ist gewollt, damit er auch bei einem gestörten Weg ankommt.
+            </Text>
+          )}
           <Rueckmeldestand alarm={alarm} />
           <Lagemeldungen alarm={alarm} />
           {krisenteam && <Zeitstrahl alarm={alarm} />}

@@ -284,7 +284,9 @@ export function HoldButton({
       />
       <span className="relative z-10 flex flex-col items-center justify-center gap-0.5 px-6 py-4">
         <span className="flex items-center gap-2 text-lg">{children}</span>
-        <span className="text-xs font-normal opacity-80">{progress > 0 ? 'Halten…' : hint}</span>
+        <span className="text-xs font-normal opacity-80">
+          {progress > 0 ? `noch ${Math.max(1, Math.ceil((1 - progress) * (holdMs / 1000)))}…` : hint}
+        </span>
       </span>
     </button>
   )
