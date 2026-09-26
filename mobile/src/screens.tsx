@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react'
 import { Alert, Linking, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native'
 import {
-  BellRing, BookOpen, Check, CheckCircle2, ChevronLeft, Clock, ExternalLink, KeyRound, LogOut, MapPin, Phone, Play,
-  Search as SearchIcon, Scale, ShieldAlert, ShieldCheck, Siren, Timer, Users, X,
+  Ambulance, Baby, BellRing, BookOpen, Check, CheckCircle2, ChevronLeft, Clock, ExternalLink, Flame, FlaskConical,
+  Globe, HeartHandshake, KeyRound, LogOut, MapPin, Phone, PhoneCall, PlaneTakeoff, Play,
+  Search as SearchIcon, Scale, Shield, ShieldAlert, ShieldCheck, Siren, Timer, Users, X,
 } from 'lucide-react-native'
 import { alleinarbeitEmpfaenger, createAlarm, resolveRecipients, uid, useStore } from './store'
 import { ScenarioIcon } from './ScenarioIcon'
@@ -11,6 +12,7 @@ import { ensurePermissions } from './notifications'
 import { androidCountdownVerfuegbar } from './androidTimer'
 import { serverUrl } from './api'
 import { useAufenthalt } from './geofencing'
+import { notrufbild } from './notrufsymbole'
 import { useIndoor, type IndoorStatus } from './indoor'
 import { LONE_WORK_DEFAULT_GROUPS, type Alarm, type IndoorPosition, type IntegrationSettings, type LoneWorkSession, type Scenario, type User } from './types'
 import { Badge, Card, HoldButton, colors, formatDuration, formatRelative } from './ui'
@@ -1464,22 +1466,45 @@ export function LoneWorkScreen() {
 
 // ---------- Notruf ----------
 
+/** Symbole zu den Notrufnummern – die Zuordnung selbst steht in notrufsymbole.ts */
+const NOTRUFSYMBOLE = {
+  shield: Shield, flame: Flame, ambulance: Ambulance, plane: PlaneTakeoff,
+  flask: FlaskConical, hand: HeartHandshake, baby: Baby, globe: Globe, phone: PhoneCall,
+} as const
+
+const NOTRUFFARBEN = {
+  rot: { vorn: colors.alarm, hinten: colors.alarmBg },
+  bernstein: { vorn: colors.amber, hinten: colors.amberBg },
+  grau: { vorn: colors.brand, hinten: colors.brandBg },
+} as const
+
 export function ContactsScreen() {
   const { state } = useStore()
   return (
     <ScrollView contentContainerStyle={styles.screen}>
-      {state.contacts.map((c) => (
-        <Pressable key={c.id} style={styles.contactRow} onPress={() => Linking.openURL(`tel:${c.number}`)}>
-          <View style={styles.contactIcon}>
-            <Phone size={17} color={colors.brand} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.cardTitle}>{c.name}</Text>
-            <Text style={styles.faint} numberOfLines={1}>{c.description}</Text>
-          </View>
-          <Text style={styles.contactNumber}>{c.number}</Text>
-        </Pressable>
-      ))}
+      <View style={styles.kachelGitter}>
+        {state.contacts.map((c) => {
+          const bild = notrufbild(c.name, c.number)
+          const Symbol = NOTRUFSYMBOLE[bild.symbol]
+          const farbe = NOTRUFFARBEN[bild.farbe]
+          return (
+            <Pressable
+              key={c.id}
+              style={styles.notrufkachel}
+              onPress={() => Linking.openURL(`tel:${c.number}`)}
+              accessibilityRole="button"
+              accessibilityLabel={`${c.name} anrufen, ${c.number}`}
+            >
+              <View style={[styles.kachelSymbol, { backgroundColor: farbe.hinten }]}>
+                <Symbol size={30} color={farbe.vorn} />
+              </View>
+              <Text style={[styles.kachelNummer, { color: farbe.vorn }]}>{c.number}</Text>
+              <Text style={styles.kachelName} numberOfLines={2}>{c.name}</Text>
+              {!!c.description && <Text style={styles.kachelText} numberOfLines={2}>{c.description}</Text>}
+            </Pressable>
+          )
+        })}
+      </View>
       <Text style={[styles.faint, { textAlign: 'center' }]}>Antippen ruft direkt an.</Text>
     </ScrollView>
   )
@@ -1754,9 +1779,13 @@ const styles = StyleSheet.create({
   stepNumberText: { color: '#fff', fontWeight: '800', fontSize: 12 },
   checkRow: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: 12, padding: 11, marginBottom: 7 },
   checkbox: { width: 20, height: 20, borderRadius: 5, borderWidth: 1.5, borderColor: '#cbd5e1', alignItems: 'center', justifyContent: 'center' },
-  contactRow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: 16, padding: 14 },
-  contactIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.brandBg, alignItems: 'center', justifyContent: 'center' },
-  contactNumber: { fontSize: 18, fontWeight: '800', color: colors.brand },
+  kachelGitter: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  // Zwei Spalten: knapp unter der Hälfte, damit die Lücke dazwischen Platz hat
+  notrufkachel: { width: '48%', flexGrow: 1, alignItems: 'center', gap: 4, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: 16, paddingVertical: 16, paddingHorizontal: 10 },
+  kachelSymbol: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
+  kachelNummer: { fontSize: 22, fontWeight: '800' },
+  kachelName: { fontSize: 14, fontWeight: '700', color: colors.text, textAlign: 'center' },
+  kachelText: { fontSize: 12, color: colors.faint, textAlign: 'center' },
   countdown: { fontSize: 52, fontWeight: '800', color: colors.text, fontVariant: ['tabular-nums'], marginVertical: 6 },
   input: { borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, color: colors.text },
   chip: { borderRadius: 999, borderWidth: 1, borderColor: '#cbd5e1', paddingHorizontal: 12, paddingVertical: 6, backgroundColor: colors.card },

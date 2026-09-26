@@ -425,11 +425,21 @@ KOERPER = r"""
 <section id="c9">
   <h2 class="abschnitt"><span class="zahl">9</span> Notrufnummern</h2>
   <p>
-    Alle wichtigen Nummern an einem Ort. Antippen ruft direkt an &ndash; das
+    Alle wichtigen Nummern an einem Ort, als <b>Kacheln</b> mit je einem eigenen
+    Sinnbild: Schild für die Polizei, Flamme für die Feuerwehr, Rettungswagen
+    für die Sanität. Unter Druck sucht niemand eine Zeile in einer Liste &ndash;
+    man sucht eine Form und eine Farbe. Antippen ruft direkt an; das
     funktioniert auch, wenn sonst nichts mehr geht.
   </p>
+  <p>
+    Die Farbe sagt, um welche Art Hilfe es geht: <b>rot</b> bei Gefahr in Verzug
+    (117, 118, 144, 112, 1414), <b>bernsteinfarben</b> bei Beratung (145 Tox Info,
+    143 Dargebotene Hand, 147 Pro Juventute). Eigene Einträge &ndash; etwa die
+    Gemeindepolizei oder der Hauswart &ndash; bekommen automatisch das passende
+    Sinnbild, sonst den Telefonhörer. Sie müssen dafür nichts erfassen.
+  </p>
   <figure class="geraet">
-    <img src="bilder/app-11-notruf.webp" alt="Liste der Notrufnummern von Polizei bis Pro Juventute">
+    <img src="bilder/app-11-notruf.webp" alt="Kacheln der Notrufnummern von Polizei bis Pro Juventute">
     <figcaption><b>Abb.</b> &nbsp; 117 Polizei &middot; 118 Feuerwehr &middot; 144 Sanität &middot; 112 europäischer Notruf &middot; 145 Tox Info Suisse &middot; 1414 Rega &middot; 143 Dargebotene Hand &middot; 147 Pro Juventute.</figcaption>
   </figure>
 </section>

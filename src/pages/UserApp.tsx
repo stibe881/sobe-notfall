@@ -1,14 +1,17 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  ArrowRight, BellRing, BookOpen, Check, CheckCircle2, ChevronLeft, ClipboardCheck, Clock, ExternalLink, KeyRound, LayoutDashboard,
-  ListChecks, LogOut, MapPin, Megaphone, Phone, PhoneCall, Play, Scale, Search, ShieldAlert, ShieldCheck, Siren, Timer, User, Users, Volume2, X,
+  Ambulance, ArrowRight, Baby, BellRing, BookOpen, Check, CheckCircle2, ChevronLeft, ClipboardCheck, Clock, ExternalLink,
+  Flame, FlaskConical, Globe, HeartHandshake, KeyRound, LayoutDashboard,
+  ListChecks, LogOut, MapPin, Megaphone, Phone, PhoneCall, PlaneTakeoff, Play, Scale, Search, Shield, ShieldAlert, ShieldCheck,
+  Siren, Timer, User, Users, Volume2, X,
 } from 'lucide-react'
 import { alleinarbeitEmpfaenger, createAlarm, resolveRecipients, uid, useStore } from '../store'
 import { LONE_WORK_DEFAULT_GROUPS, ROLE_LABELS, type Alarm, type Channel, type LoneWorkSession, type Scenario, type User as AppUser } from '../types'
 import { handbuecherFuer } from '../lib/handbuecher'
 import { serverUrl } from '../lib/api'
 import { anwendungsname } from '../lib/branding'
+import { notrufbild } from '../lib/notrufsymbole'
 import { Badge, HoldButton, Toggle, formatDuration, formatRelative, inputClass, kanalName, useConfirm, usePrompt } from '../components/ui'
 import { ScenarioIcon } from '../components/ScenarioIcon'
 import { MIN_PASSWORD_LENGTH, passwordProblem } from '../lib/auth'
@@ -1439,26 +1442,49 @@ function EmpfaengerAnsicht({
 
 // ---------- Notruf ----------
 
+/** Symbole zu den Notrufnummern – die Zuordnung selbst steht in lib/notrufsymbole.ts */
+const NOTRUFSYMBOLE = {
+  shield: Shield, flame: Flame, ambulance: Ambulance, plane: PlaneTakeoff,
+  flask: FlaskConical, hand: HeartHandshake, baby: Baby, globe: Globe, phone: PhoneCall,
+} as const
+
+const NOTRUFFARBEN = {
+  rot: 'bg-alarm-50 text-alarm-600',
+  bernstein: 'bg-amber-50 text-amber-700',
+  grau: 'bg-brand-50 text-brand-600',
+} as const
+
+const NOTRUFSCHRIFT = {
+  rot: 'text-alarm-600',
+  bernstein: 'text-amber-700',
+  grau: 'text-brand-600',
+} as const
+
 function ContactsTab() {
   const { state } = useStore()
   return (
-    <div className="space-y-2.5">
-      {state.contacts.map((c) => (
-        <a
-          key={c.id}
-          href={`tel:${c.number}`}
-          className="flex items-center gap-3 rounded-2xl bg-white border border-slate-200 p-4 active:scale-[0.99] transition"
-        >
-          <div className="w-11 h-11 rounded-full bg-brand-50 text-brand-600 flex items-center justify-center shrink-0">
-            <Phone size={18} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="text-sm font-semibold text-slate-800">{c.name}</div>
-            <div className="text-xs text-slate-400 truncate">{c.description}</div>
-          </div>
-          <span className="text-xl font-bold text-alarm-600">{c.number}</span>
-        </a>
-      ))}
+    <div className="space-y-3">
+      <div className="grid grid-cols-2 gap-3">
+        {state.contacts.map((c) => {
+          const bild = notrufbild(c.name, c.number)
+          const Symbol = NOTRUFSYMBOLE[bild.symbol]
+          return (
+            <a
+              key={c.id}
+              href={`tel:${c.number}`}
+              aria-label={`${c.name} anrufen, ${c.number}`}
+              className="flex flex-col items-center text-center gap-1 rounded-2xl bg-white border border-slate-200 px-3 py-4 active:scale-[0.99] transition"
+            >
+              <div className={`w-14 h-14 rounded-full flex items-center justify-center mb-1 ${NOTRUFFARBEN[bild.farbe]}`}>
+                <Symbol size={28} />
+              </div>
+              <div className={`text-xl font-bold ${NOTRUFSCHRIFT[bild.farbe]}`}>{c.number}</div>
+              <div className="text-sm font-semibold text-slate-800 leading-tight">{c.name}</div>
+              {!!c.description && <div className="text-xs text-slate-400 leading-tight">{c.description}</div>}
+            </a>
+          )
+        })}
+      </div>
       <div className="text-xs text-center text-slate-400 pt-1">Antippen ruft direkt an.</div>
     </div>
   )
