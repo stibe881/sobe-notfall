@@ -6,7 +6,8 @@
   "description": "Notfall- und Krisenmanagement-Plattform: Alarmserver, Multikanal-Alarmierung, Alleinarbeiterschutz",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "vite build",
+    "typecheck": "tsc",
     "test": "tsx src/lib/umriss.test.ts && tsx src/lib/geraetebefehle.test.ts && tsx src/lib/ansicht.test.ts && tsx src/lib/scenarios.test.ts && tsx src/lib/notrufsymbole.test.ts && tsx src/lib/alarmversand.test.ts && tsx src/lib/kontrast.test.ts && tsx src/lib/ereignisbericht.test.ts && tsx src/lib/planwahl.test.ts",
     "preview": "vite preview"
   },
