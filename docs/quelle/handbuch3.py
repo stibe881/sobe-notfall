@@ -435,6 +435,21 @@ KOERPER = r"""
 </section>
 
 <section id="c10">
+  <div class="hinweis hinweis--warnung">
+    <p class="marke-klein">Wenn Sie mehrere Rollen haben</p>
+    <p>
+      Sind Sie in mehreren alarmierten Gruppen &ndash; etwa im Krisenstab <b>und</b> im
+      Evakuationsteam &ndash;, zeigt Ihnen die App die Aufgaben <b>getrennt nach Rolle</b>,
+      mit einem Hinweis zuoberst. Der Grund: Beim Brand hiesse das «Sammelplatz sichern»
+      und «Führungsraum beziehen» &ndash; zwei Orte zur selben Zeit.
+    </p>
+    <p>
+      <b>Sie können nicht beides tun.</b> Entscheiden Sie, welche Rolle in dieser Lage
+      Vorrang hat, tun Sie diese &ndash; und sagen Sie der Einsatzleitung, welche Sie nicht
+      übernehmen. Nur so weiss sie, dass die andere Aufgabe offen ist.
+    </p>
+  </div>
+
   <h2 class="abschnitt"><span class="zahl">10</span> Ihr Profil</h2>
   <p>
     Hier stehen Ihr Standort und Ihre Gruppen &ndash; sie entscheiden, welche Alarme

@@ -1,9 +1,45 @@
 import { useRef, useState } from 'react'
 import { KeyRound, Pencil, Plus, Trash2, Upload } from 'lucide-react'
 import { isLastAdmin, uid, useStore } from '../store'
+import { rollenkonflikte } from '../lib/scenarios'
 import { ROLE_LABELS, type Role, type User } from '../types'
 import { Badge, Button, Card, Field, Modal, inputClass, useConfirm } from '../components/ui'
 import { MIN_PASSWORD_LENGTH, hasPassword, passwordProblem } from '../lib/auth'
+
+/**
+ * Warnung bei Rollen, die sich in derselben Lage widersprechen.
+ *
+ * Wer in zwei alarmierten Gruppen ist, bekommt in einem Szenario zwei
+ * Aufgabenlisten – im Brandfall etwa «Sammelplatz sichern» und «Führungsraum
+ * beziehen». Das sind zwei Orte zur selben Zeit. Die Software kann das nicht
+ * auflösen; sie kann es nur zeigen, solange die Zuteilung noch änderbar ist.
+ *
+ * Bewusst eine Warnung, keine Sperre: Bei kleinen Teams ist eine Doppelrolle
+ * manchmal unvermeidbar. Dann soll man sie bewusst vergeben, nicht versehentlich.
+ */
+function Rollenkonflikt({ groupIds }: { groupIds: string[] }) {
+  const { state } = useStore()
+  const konflikte = rollenkonflikte(groupIds, state.scenarios)
+  if (konflikte.length === 0) return null
+  const name = (id: string) => state.groups.find((g) => g.id === id)?.name ?? id
+  return (
+    <div className="mt-2 rounded-xl bg-amber-50 border border-amber-200 p-3 text-xs text-amber-900">
+      <div className="font-semibold mb-1">Doppelrolle in {konflikte.length} Szenario{konflikte.length > 1 ? 'en' : ''}</div>
+      <ul className="space-y-0.5">
+        {konflikte.slice(0, 5).map((k) => (
+          <li key={k.scenario.id}>
+            <b>{k.scenario.title}</b>: Aufgaben als {k.groupIds.map(name).join(' und ')}
+          </li>
+        ))}
+        {konflikte.length > 5 && <li>und {konflikte.length - 5} weitere</li>}
+      </ul>
+      <p className="mt-1.5">
+        Diese Person müsste im Ernstfall an zwei Orten sein. Die App zeigt ihr die Aufgaben getrennt
+        nach Rolle – entscheiden muss sie trotzdem selbst. Prüfen Sie, ob die Doppelrolle gewollt ist.
+      </p>
+    </div>
+  )
+}
 
 export default function UsersPage() {
   const { state, dispatch } = useStore()
@@ -294,6 +330,7 @@ function UserEditor({ user, onClose }: { user: User; onClose: () => void }) {
             </label>
           ))}
         </div>
+        <Rollenkonflikt groupIds={draft.groupIds} />
       </Field>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Field label="Ferienabwesenheit von">

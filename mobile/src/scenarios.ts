@@ -37,6 +37,77 @@ export function responseStepsFor(scenario: Scenario, groupIds: string[]): { eige
   return { eigene, andere }
 }
 
+/** Ein Block eigener Schritte, entweder rollenlos oder zu einer Gruppe gehörend */
+export interface SchrittBlock {
+  /** Gruppen-Id; fehlt bei Schritten, die allen Alarmierten gelten */
+  groupId?: string
+  schritte: ResponseStep[]
+}
+
+/**
+ * Eigene Schritte nach Rolle getrennt.
+ *
+ * Wer in mehreren alarmierten Gruppen ist, bekommt Aufgaben aus jeder – beim
+ * Brand etwa «Gebäude verlassen» (alle), «Sammelplatz sichern»
+ * (Evakuationsteam) und «Führungsraum beziehen» (Krisenstab). Das sind drei
+ * Aufgaben an drei Orten; niemand kann sie gleichzeitig erfüllen.
+ *
+ * In einer einzigen Liste untereinander sieht das aus, als gehöre es zusammen,
+ * und man arbeitet unter Druck von oben nach unten. Getrennt nach Rolle sieht
+ * man sofort, dass man zwei Hüte aufhat – und kann entscheiden, statt
+ * abzuarbeiten.
+ *
+ * Hat jemand nur eine Rolle, entsteht genau ein Block ohne Überschrift; für
+ * den Regelfall ändert sich also nichts.
+ */
+export function eigeneSchritteNachRolle(scenario: Scenario, groupIds: string[]): SchrittBlock[] {
+  const { eigene } = responseStepsFor(scenario, groupIds)
+  const bloecke: SchrittBlock[] = []
+  for (const schritt of eigene) {
+    // Ein Schritt, der auf mehrere eigene Gruppen passt, gehört unter die
+    // erste davon – doppelt aufführen hiesse, ihn doppelt zu tun.
+    const rolle = schritt.groupIds?.find((g) => groupIds.includes(g))
+    const vorhanden = bloecke.find((b) => b.groupId === rolle)
+    if (vorhanden) vorhanden.schritte.push(schritt)
+    else bloecke.push({ groupId: rolle, schritte: [schritt] })
+  }
+  return bloecke
+}
+
+/**
+ * Lohnt die Aufteilung nach Rollen überhaupt?
+ *
+ * Nur wenn wirklich mehr als ein Block mit Rollenbezug entsteht. Sonst wäre
+ * eine Überschrift über der einzigen Liste bloss Lärm.
+ */
+export function brauchtRollentrennung(bloecke: SchrittBlock[]): boolean {
+  return bloecke.filter((b) => b.groupId !== undefined).length > 1
+}
+
+/**
+ * Szenarien, in denen diese Gruppenzugehörigkeiten zu widersprüchlichen
+ * Aufgaben führen.
+ *
+ * Zwei Rollen in derselben Lage heissen zwei Aufgabenlisten – und im Ernstfall
+ * eine Person, die an zwei Orten sein müsste. Die Software kann das nicht
+ * auflösen; sie kann es nur zeigen, solange man die Zuteilung noch ändern kann.
+ */
+export function rollenkonflikte(
+  groupIds: string[],
+  scenarios: Scenario[],
+): { scenario: Scenario; groupIds: string[] }[] {
+  const treffer: { scenario: Scenario; groupIds: string[] }[] = []
+  for (const scenario of scenarios) {
+    if (scenario.active === false) continue
+    const betroffen = new Set<string>()
+    for (const schritt of responseStepsOf(scenario)) {
+      for (const g of schritt.groupIds ?? []) if (groupIds.includes(g)) betroffen.add(g)
+    }
+    if (betroffen.size > 1) treffer.push({ scenario, groupIds: [...betroffen] })
+  }
+  return treffer
+}
+
 /**
  * Was nach der Entwarnung zu tun ist. Fehlt das Feld (selbst erstelltes
  * Szenario), greifen die weiterführenden Massnahmen.

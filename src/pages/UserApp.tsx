@@ -12,7 +12,7 @@ import { anwendungsname } from '../lib/branding'
 import { Badge, HoldButton, Toggle, formatDuration, formatRelative, inputClass, kanalName, useConfirm, usePrompt } from '../components/ui'
 import { ScenarioIcon } from '../components/ScenarioIcon'
 import { MIN_PASSWORD_LENGTH, passwordProblem } from '../lib/auth'
-import { activeScenarios, allClearStepsOf, responseStepsFor, responseStepsOf } from '../lib/scenarios'
+import { activeScenarios, allClearStepsOf, brauchtRollentrennung, eigeneSchritteNachRolle, responseStepsFor, responseStepsOf } from '../lib/scenarios'
 
 type Tab = 'start' | 'szenarien' | 'alleinarbeit' | 'notruf' | 'profil'
 
@@ -1286,6 +1286,15 @@ function EmpfaengerAnsicht({
   const [zeigeAndere, setZeigeAndere] = useState(false)
   // Nur die Schritte der eigenen Gruppen – die übrigen bleiben auf Wunsch einsehbar
   const { eigene, andere } = responseStepsFor(scenario, me.groupIds)
+  // Mehrere Rollen: getrennte Blöcke, durchlaufende Nummerierung – siehe
+  // eigeneSchritteNachRolle in lib/scenarios.ts
+  const bloecke = eigeneSchritteNachRolle(scenario, me.groupIds)
+  const nachRollen = brauchtRollentrennung(bloecke)
+  let lfd = -1
+  const bloeckeMitNummer = bloecke.map((b) => ({
+    ...b,
+    schritte: b.schritte.map((step) => ({ step, nr: ++lfd })),
+  }))
   const gruppenName = (ids?: string[]) =>
     (ids ?? []).map((id) => state.groups.find((g) => g.id === id)?.name).filter(Boolean).join(', ')
   const meineGruppen = state.groups.filter((g) => me.groupIds.includes(g.id) && g.id !== 'gr-alle')
@@ -1357,29 +1366,45 @@ function EmpfaengerAnsicht({
       </div>
 
       <div className="text-xs text-slate-400 mb-1 flex flex-wrap items-center gap-1">
-        <span>Ihre Schritte{meineGruppen.length > 0 ? ' als' : ''}</span>
-        {meineGruppen.map((g) => <Badge key={g.id}>{g.name}</Badge>)}
+        <span>Ihre Schritte{!nachRollen && meineGruppen.length > 0 ? ' als' : ''}</span>
+        {!nachRollen && meineGruppen.map((g) => <Badge key={g.id}>{g.name}</Badge>)}
         <span>– antippen, wenn erledigt:</span>
       </div>
-      <div className="space-y-2">
-        {eigene.map((step, i) => (
-          <button
-            key={i}
-            className="w-full flex gap-2.5 text-sm bg-white rounded-xl border border-slate-200 p-3 text-left"
-            onClick={() => setErledigt({ ...erledigt, [i]: !erledigt[i] })}
-          >
-            <span className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${erledigt[i] ? 'bg-emerald-500 text-white' : 'bg-amber-500 text-white'}`}>
-              {erledigt[i] ? <Check size={14} /> : i + 1}
-            </span>
-            <span className="min-w-0 pt-0.5">
-              <span className={erledigt[i] ? 'text-slate-400 line-through' : 'text-slate-700'}>{step.text}</span>
-              {step.groupIds && step.groupIds.length > 0 && (
-                <span className="block text-[11px] text-amber-700 mt-0.5">{gruppenName(step.groupIds)}</span>
-              )}
-            </span>
-          </button>
-        ))}
-      </div>
+      {nachRollen && (
+        <div className="rounded-xl bg-amber-50 border border-amber-200 p-3 text-xs text-amber-900 mb-2">
+          Sie haben in dieser Lage <b>mehrere Rollen</b>. Die Aufgaben stehen getrennt – Sie können
+          nicht alle gleichzeitig erfüllen. Entscheiden Sie, welche Rolle Vorrang hat, und melden Sie
+          es der Einsatzleitung.
+        </div>
+      )}
+      {bloeckeMitNummer.map((block, bi) => (
+        <div key={bi} className={nachRollen ? 'mb-3' : ''}>
+          {nachRollen && (
+            <div className="text-xs font-semibold text-slate-500 mb-1.5">
+              {block.groupId ? `Als ${gruppenName([block.groupId])}` : 'Für alle Alarmierten'}
+            </div>
+          )}
+          <div className="space-y-2">
+            {block.schritte.map(({ step, nr }) => (
+              <button
+                key={nr}
+                className="w-full flex gap-2.5 text-sm bg-white rounded-xl border border-slate-200 p-3 text-left"
+                onClick={() => setErledigt({ ...erledigt, [nr]: !erledigt[nr] })}
+              >
+                <span className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${erledigt[nr] ? 'bg-emerald-500 text-white' : 'bg-amber-500 text-white'}`}>
+                  {erledigt[nr] ? <Check size={14} /> : nr + 1}
+                </span>
+                <span className="min-w-0 pt-0.5">
+                  <span className={erledigt[nr] ? 'text-slate-400 line-through' : 'text-slate-700'}>{step.text}</span>
+                  {!nachRollen && step.groupIds && step.groupIds.length > 0 && (
+                    <span className="block text-[11px] text-amber-700 mt-0.5">{gruppenName(step.groupIds)}</span>
+                  )}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      ))}
 
       {andere.length > 0 && (
         <div className="mt-3">

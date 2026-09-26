@@ -15,7 +15,7 @@ import { useIndoor, type IndoorStatus } from './indoor'
 import { LONE_WORK_DEFAULT_GROUPS, type Alarm, type IndoorPosition, type IntegrationSettings, type LoneWorkSession, type Scenario, type User } from './types'
 import { Badge, Card, HoldButton, colors, formatDuration, formatRelative } from './ui'
 import { MIN_PASSWORD_LENGTH, passwordProblem } from './auth'
-import { activeScenarios, allClearStepsOf, responseStepsFor, responseStepsOf } from './scenarios'
+import { activeScenarios, allClearStepsOf, brauchtRollentrennung, eigeneSchritteNachRolle, responseStepsFor, responseStepsOf } from './scenarios'
 
 // ---------- Start: Alarme + SOS ----------
 
@@ -986,6 +986,17 @@ function EmpfaengerScreen({
   const [zeigeAndere, setZeigeAndere] = useState(false)
   // Nur die Schritte der eigenen Gruppen – die übrigen bleiben auf Wunsch einsehbar
   const { eigene, andere } = responseStepsFor(scenario, me.groupIds)
+  // Wer mehrere Rollen hat, bekommt Aufgaben aus jeder – untereinander sieht
+  // das aus, als gehöre es zusammen. Getrennt nach Rolle ist erkennbar, dass
+  // man zwei Hüte aufhat. Die Nummerierung läuft trotzdem durch, damit die
+  // Häkchen dieselben Schritte meinen wie in einer flachen Liste.
+  const bloecke = eigeneSchritteNachRolle(scenario, me.groupIds)
+  const nachRollen = brauchtRollentrennung(bloecke)
+  let lfd = -1
+  const bloeckeMitNummer = bloecke.map((b) => ({
+    ...b,
+    schritte: b.schritte.map((step) => ({ step, nr: ++lfd })),
+  }))
   const gruppenName = (ids?: string[]) =>
     (ids ?? []).map((id) => state.groups.find((g) => g.id === id)?.name).filter(Boolean).join(', ')
   const meineGruppen = state.groups.filter((g) => me.groupIds.includes(g.id) && g.id !== 'gr-alle').map((g) => g.name).join(', ')
@@ -1065,24 +1076,44 @@ function EmpfaengerScreen({
       </View>
 
       <Text style={styles.faint}>
-        Ihre Schritte{meineGruppen ? ` als ${meineGruppen}` : ''} – antippen, wenn erledigt:
+        {nachRollen
+          ? 'Ihre Schritte – antippen, wenn erledigt:'
+          : `Ihre Schritte${meineGruppen ? ` als ${meineGruppen}` : ''} – antippen, wenn erledigt:`}
       </Text>
-      {eigene.map((step, i) => (
-        <Pressable
-          key={i}
-          style={[styles.row, { alignItems: 'flex-start', backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: 12, padding: 12 }]}
-          onPress={() => setErledigt({ ...erledigt, [i]: !erledigt[i] })}
-        >
-          <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: erledigt[i] ? colors.green : '#d97706', alignItems: 'center', justifyContent: 'center' }}>
-            {erledigt[i] ? <Check size={14} color="#fff" /> : <Text style={{ color: '#fff', fontWeight: '800', fontSize: 12 }}>{i + 1}</Text>}
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.body, { marginTop: 0, color: erledigt[i] ? colors.faint : colors.text, textDecorationLine: erledigt[i] ? 'line-through' : 'none' }]}>{step.text}</Text>
-            {step.groupIds && step.groupIds.length > 0 && (
-              <Text style={{ fontSize: 11, color: '#b45309', marginTop: 2 }}>{gruppenName(step.groupIds)}</Text>
-            )}
-          </View>
-        </Pressable>
+      {nachRollen && (
+        <View style={{ backgroundColor: colors.amberBg, borderRadius: 10, padding: 10, marginTop: 2 }}>
+          <Text style={{ fontSize: 12, color: '#92400e' }}>
+            Sie haben in dieser Lage <Text style={{ fontWeight: '700' }}>mehrere Rollen</Text>. Die Aufgaben
+            stehen getrennt – Sie können nicht alle gleichzeitig erfüllen. Entscheiden Sie, welche Rolle
+            Vorrang hat, und melden Sie es der Einsatzleitung.
+          </Text>
+        </View>
+      )}
+      {bloeckeMitNummer.map((block, bi) => (
+        <View key={bi} style={{ marginTop: nachRollen ? 8 : 0 }}>
+          {nachRollen && (
+            <Text style={{ fontSize: 12, fontWeight: '700', color: colors.muted, marginBottom: 4 }}>
+              {block.groupId ? `Als ${gruppenName([block.groupId])}` : 'Für alle Alarmierten'}
+            </Text>
+          )}
+          {block.schritte.map(({ step, nr }) => (
+            <Pressable
+              key={nr}
+              style={[styles.row, { alignItems: 'flex-start', backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: 12, padding: 12 }]}
+              onPress={() => setErledigt({ ...erledigt, [nr]: !erledigt[nr] })}
+            >
+              <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: erledigt[nr] ? colors.green : '#d97706', alignItems: 'center', justifyContent: 'center' }}>
+                {erledigt[nr] ? <Check size={14} color="#fff" /> : <Text style={{ color: '#fff', fontWeight: '800', fontSize: 12 }}>{nr + 1}</Text>}
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.body, { marginTop: 0, color: erledigt[nr] ? colors.faint : colors.text, textDecorationLine: erledigt[nr] ? 'line-through' : 'none' }]}>{step.text}</Text>
+                {!nachRollen && step.groupIds && step.groupIds.length > 0 && (
+                  <Text style={{ fontSize: 11, color: '#b45309', marginTop: 2 }}>{gruppenName(step.groupIds)}</Text>
+                )}
+              </View>
+            </Pressable>
+          ))}
+        </View>
       ))}
 
       {andere.length > 0 && (
