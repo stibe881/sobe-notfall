@@ -368,6 +368,8 @@ export interface IntegrationSettings {
   geofencing: boolean
   webhooks: Webhook[]
   accessCodes: AccessCode[]
+  /** Aufbewahrungsfristen für Alarme/Audit-Log (Tage, 0 = unbegrenzt); fehlt bei älteren Alarmservern */
+  retention?: { alarmeTage: number; uebungenTage: number; auditTage: number }
 }
 
 export interface EmergencyContact {

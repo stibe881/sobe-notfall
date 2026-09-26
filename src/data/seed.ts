@@ -1071,6 +1071,7 @@ export const SEED_INTEGRATIONS: IntegrationSettings = {
     { code: 'ME-7Q1R8T', locationId: 'loc-menzingen', role: 'mitarbeiter', createdAt: Date.now() - 86400_000 * 30, used: 21 },
     { code: 'KL-2P5W9V', locationId: 'loc-kloten', role: 'mitarbeiter', createdAt: Date.now() - 86400_000 * 30, used: 17 },
   ],
+  retention: { alarmeTage: 0, uebungenTage: 0, auditTage: 0 },
 }
 
 /** Vorgaben für die Integrationen – ergänzt Speicherstände aus früheren Versionen */
@@ -1088,6 +1089,7 @@ export const INTEGRATION_VORGABEN: IntegrationSettings = {
   geofencing: false,
   webhooks: [],
   accessCodes: [],
+  retention: { alarmeTage: 0, uebungenTage: 0, auditTage: 0 },
 }
 
 /**
@@ -1110,6 +1112,7 @@ export function integrationenMitVorgaben(roh: Partial<IntegrationSettings> | und
     hotline: { ...INTEGRATION_VORGABEN.hotline, ...r.hotline },
     webhooks: r.webhooks ?? [],
     accessCodes: r.accessCodes ?? [],
+    retention: { ...INTEGRATION_VORGABEN.retention, ...r.retention },
   }
 }
 
@@ -1150,6 +1153,7 @@ export function createLiveInitialState(): AppState {
       geofencing: false,
       webhooks: [],
       accessCodes: [],
+      retention: { alarmeTage: 0, uebungenTage: 0, auditTage: 0 },
     },
     contacts: SEED_CONTACTS,
     audit: [

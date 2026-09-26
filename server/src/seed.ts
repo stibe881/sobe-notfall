@@ -1068,5 +1068,6 @@ export const SEED_INTEGRATIONS: IntegrationSettings = {
     { code: 'ME-7Q1R8T', locationId: 'loc-menzingen', role: 'mitarbeiter', createdAt: Date.now() - 86400_000 * 30, used: 21 },
     { code: 'KL-2P5W9V', locationId: 'loc-kloten', role: 'mitarbeiter', createdAt: Date.now() - 86400_000 * 30, used: 17 },
   ],
+  retention: { alarmeTage: 0, uebungenTage: 0, auditTage: 0 },
 }
 
