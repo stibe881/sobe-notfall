@@ -1,0 +1,22 @@
+{
+  "name": "@sobe/shared-types",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Gemeinsame Domänentypen für Server, Webportal und App – Alarme, Szenarien, Gruppen, Integrationen. Bewusst OHNE User/StoredUser: die sind pro Projekt verschieden (Server: interne Passwortfelder, Clients: eigene flache Sicht).",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "prepare": "tsc"
+  },
+  "devDependencies": {
+    "typescript": "~5.9.2"
+  }
+}

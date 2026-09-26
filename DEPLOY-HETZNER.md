@@ -100,17 +100,23 @@ etwa auf dem eigenen Rechner vor dem Hochladen. Im Server bleibt es bei
 `server/dist/`, es gibt keinen Bundler, der das übernehmen könnte. Der
 Update-Knopf (Schritt 9) baut später beides genauso.
 
+Portal, Server und App liegen als **ein** npm-workspace-Projekt vor (dazu
+`packages/shared-types`, die gemeinsamen Domänentypen). Ein einziges
+`npm install` **im Projektstamm** installiert und verknüpft alle drei plus
+das gemeinsame Typen-Paket – ein zweites `npm install` in `server/` ist nicht
+mehr nötig und würde ohnehin nur denselben Workspace-weiten Vorgang erneut
+anstossen:
+
 ```bash
 cd ~/public_html/temp-gross-ict.ch
-npm install --no-audit --no-fund
+npm install --no-audit --no-fund    # installiert Portal, server/, mobile/ und packages/shared-types
 npm run build                       # erzeugt dist/ - das Portal
 
 cd server
-npm install --no-audit --no-fund
 npm run build                       # erzeugt server/dist/
 ```
 
-**Prüfen** – die dritte Zeile muss **im Verzeichnis `server`** laufen, denn dort
+**Prüfen** – die letzte Zeile muss **im Verzeichnis `server`** laufen, denn dort
 liegt das Paket:
 
 ```bash

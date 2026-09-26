@@ -4,6 +4,13 @@ name: Wiederkehrende Sicherheitsprüfung (npm audit)
 # (kein automatischer Test-/Typecheck-Lauf bei jedem Push). Meldet neue
 # bekannte Schwachstellen in den Abhängigkeiten alle Berichte, statt dass sie
 # sich unbemerkt ansammeln, bis jemand von Hand nachschaut.
+#
+# Seit der Umstellung auf npm workspaces (Portal, server/, mobile/ und
+# packages/shared-types) gibt es nur noch EIN package-lock.json im
+# Projektstamm statt drei getrennte. Ein `npm audit` dort prüft bereits den
+# gesamten Abhängigkeitsbaum aller Workspaces – die frühere Matrix über die
+# drei Verzeichnisse würde jetzt für server/ und mobile/ nur noch an einem
+# fehlenden eigenen package-lock.json scheitern.
 on:
   schedule:
     - cron: '0 6 * * 1' # jeden Montag, 06:00 UTC
@@ -12,15 +19,10 @@ on:
 jobs:
   audit:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        projekt: ['.', 'server', 'mobile']
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: npm audit (${{ matrix.projekt }})
-        working-directory: ${{ matrix.projekt }}
+      - name: npm audit (gesamter Workspace)
         run: npm audit --audit-level=high

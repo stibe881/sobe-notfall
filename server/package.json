@@ -18,6 +18,7 @@
     "pruefe-datenbank": "node scripts/pruefe-datenbank.mjs"
   },
   "dependencies": {
+    "@sobe/shared-types": "1.0.0",
     "better-sqlite3": "^12.11.1",
     "cors": "^2.8.5",
     "express": "^4.21.2"
