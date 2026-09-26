@@ -92,8 +92,13 @@ heraus.
 
 ## 2. Abhängigkeiten installieren und bauen
 
-Beides braucht die Entwicklungspakete: `npm run build` ruft TypeScript und Vite
-auf, und der Update-Knopf tut später dasselbe.
+Beides braucht die Entwicklungspakete. Im Portal ruft `npm run build` nur noch
+Vite auf (esbuild übersetzt, ohne den deutlich speicherhungrigeren
+TypeScript-Typecheck) – der lässt sich separat mit `npm run typecheck` prüfen,
+etwa auf dem eigenen Rechner vor dem Hochladen. Im Server bleibt es bei
+`tsc`: Dort erzeugt der TypeScript-Compiler selbst die Dateien in
+`server/dist/`, es gibt keinen Bundler, der das übernehmen könnte. Der
+Update-Knopf (Schritt 9) baut später beides genauso.
 
 ```bash
 cd ~/public_html/temp-gross-ict.ch
@@ -609,6 +614,16 @@ Webserver des Hosters ihn, kommen sie verspätet an. Der Server setzt dagegen
 bereits `X-Accel-Buffering: no`; hilft das nicht, muss der Hoster die Pufferung
 für `/api/events` abschalten. Alarme gehen davon unabhängig raus – betroffen
 ist nur die Anzeige im Portal.
+
+**`npm run build` bricht mit „JavaScript heap out of memory“ ab**
+Das Hosting-Kontingent (Panel-Prozesslimit) reicht nicht für den Build-Schritt.
+Betrifft das den Server (`tsc` erzeugt `server/dist/`), hilft nur mehr
+Arbeitsspeicher – beim Hoster nachfragen oder auf dem eigenen Rechner bauen und
+`server/dist/` hochladen. Betrifft es das Portal, ist das unerwartet: `npm run
+build` ruft dort seit der Speicheroptimierung nur noch das deutlich
+sparsamere Vite/esbuild auf, keinen vollen TypeScript-Typecheck mehr – dann
+lohnt sich ein Blick, ob `npm install` versehentlich eine ältere Version ohne
+diese Änderung installiert hat.
 
 **Nach einer Aktualisierung ist der Server weg**
 Das Panel startet ihn nicht neu. Siehe Schritt 9, `SOBE_AUTO_RESTART=false`.
