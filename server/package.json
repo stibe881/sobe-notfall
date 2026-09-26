@@ -13,7 +13,7 @@
     "reset-admin": "tsx src/reset-admin.ts",
     "accounts": "tsx src/accounts.ts",
     "sitzungen": "tsx src/sitzungen.ts",
-    "test": "tsx src/twilio.test.ts && tsx src/netz.test.ts && tsx src/pushnutzlast.test.ts && tsx src/planwahl.test.ts && tsx src/eskalation.test.ts && tsx src/test.ts",
+    "test": "tsx src/twilio.test.ts && tsx src/netz.test.ts && tsx src/pushnutzlast.test.ts && tsx src/planwahl.test.ts && tsx src/eskalation.test.ts && tsx src/aufbewahrung.test.ts && tsx src/test.ts",
     "sicherung": "node scripts/sicherung.mjs",
     "pruefe-datenbank": "node scripts/pruefe-datenbank.mjs"
   },
