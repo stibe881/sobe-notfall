@@ -1279,7 +1279,7 @@ router.post('/alarms/:id/update', auth, async (req: AuthRequest, res) => {
     return
   }
   const person = req.user!
-  const istFuehrung = person.role === 'admin' || person.role === 'krisenstab'
+  const istFuehrung = person.role === 'admin' || person.role === 'krisenstab' || person.groupIds.includes('gr-krisenstab')
   const istAusloeser = alarm.triggeredByUserId === person.id
   if (!istFuehrung && !istAusloeser) {
     res.status(403).json({ error: 'Lagemeldungen sind Krisenstab, Administration und der auslösenden Person vorbehalten.' })
@@ -1434,7 +1434,7 @@ router.post('/alarms/:id/end', auth, async (req: AuthRequest, res) => {
     return
   }
   const person = req.user!
-  const istFuehrung = person.role === 'admin' || person.role === 'krisenstab'
+  const istFuehrung = person.role === 'admin' || person.role === 'krisenstab' || person.groupIds.includes('gr-krisenstab')
   if (!istFuehrung && !darfSelbstEntwarnen(alarm, person)) {
     res.status(403).json({ error: 'Alarme beenden dürfen Administration und Krisenstab – oder die betroffene Person ihren eigenen SOS- oder Alleinarbeits-Alarm.' })
     return

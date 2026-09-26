@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   Ambulance, ArrowRight, Baby, BellRing, BookOpen, Check, CheckCircle2, ChevronLeft, ClipboardCheck, Clock, ExternalLink,
   Flame, FlaskConical, Globe, HeartHandshake, KeyRound, LayoutDashboard,
-  ListChecks, LogOut, MapPin, Megaphone, Phone, PhoneCall, PlaneTakeoff, Play, Scale, Search, Shield, ShieldAlert, ShieldCheck,
+  ListChecks, LogOut, MapPin, Megaphone, Phone, PhoneCall, PlaneTakeoff, Play, Scale, Search, Send, Shield, ShieldAlert, ShieldCheck,
   Siren, Timer, User, Users, Volume2, X,
 } from 'lucide-react'
 import { alleinarbeitEmpfaenger, createAlarm, resolveRecipients, uid, useStore } from '../store'
@@ -212,6 +212,12 @@ function Lagemeldungen({ alarm }: { alarm: Alarm }) {
       ))}
     </div>
   )
+}
+
+/** Richtet sich der Alarm aktuell an diese Gruppe – beim Erstaussand oder einer bereits ausgelösten Eskalationsstufe? */
+function alarmBetrifftGruppe(alarm: Alarm, groupId: string): boolean {
+  if (alarm.groupIds.length === 0 || alarm.groupIds.includes(groupId)) return true
+  return alarm.escalation.slice(0, alarm.escalationStage).some((e) => e.groupIds.includes(groupId))
 }
 
 /** Live: Wie viele wurden benachrichtigt, wie viele kommen, wie viele sind nicht verfügbar */
@@ -1344,8 +1350,19 @@ function EmpfaengerAnsicht({
   const me = state.users.find((u) => u.id === (state.previewUserId ?? state.currentUserId)) ?? state.users[0]
   const [erledigt, setErledigt] = useState<Record<number, boolean>>({})
   const [zeigeAndere, setZeigeAndere] = useState(false)
-  // Nur die Schritte der eigenen Gruppen – die übrigen bleiben auf Wunsch einsehbar
-  const { eigene, andere } = responseStepsFor(scenario, me.groupIds)
+  const [lage, setLage] = useState('')
+  const { frage, promptEl } = usePrompt()
+  // Mitglieder des Krisenstabs können zwischen der eigenen Empfänger-Ansicht und der
+  // Koordinationsansicht wechseln; öffnet direkt auf der passenden, je nachdem, ob
+  // der Alarm (aktuell, inkl. bereits ausgelöster Eskalation) den Krisenstab betrifft.
+  const istKrisenstab = me.groupIds.includes('gr-krisenstab')
+  const [ansicht, setAnsicht] = useState<'normal' | 'krisenteam'>(() =>
+    istKrisenstab && alarm && alarmBetrifftGruppe(alarm, 'gr-krisenstab') ? 'krisenteam' : 'normal',
+  )
+  const krisenteam = istKrisenstab && ansicht === 'krisenteam'
+  // Normal: nur die Schritte der eigenen Gruppen – die übrigen bleiben auf Wunsch einsehbar.
+  // Krisenteam: alle Schritte aller Gruppen auf einen Blick, ohne Einklappen.
+  const { andere } = responseStepsFor(scenario, me.groupIds)
   // Mehrere Rollen: getrennte Blöcke, durchlaufende Nummerierung – siehe
   // eigeneSchritteNachRolle in lib/scenarios.ts
   const bloecke = eigeneSchritteNachRolle(scenario, me.groupIds)
@@ -1355,6 +1372,10 @@ function EmpfaengerAnsicht({
     ...b,
     schritte: b.schritte.map((step) => ({ step, nr: ++lfd })),
   }))
+  // Krisenteam-Ansicht: alle Schritte aller Gruppen auf einen Blick, ohne die
+  // Rollentrennung – die ist für Empfänger:innen mit mehreren Rollen gedacht,
+  // nicht für die Koordinationsübersicht.
+  const alleSchritte = responseStepsOf(scenario)
   const gruppenName = (ids?: string[]) =>
     (ids ?? []).map((id) => state.groups.find((g) => g.id === id)?.name).filter(Boolean).join(', ')
   const meineGruppen = state.groups.filter((g) => me.groupIds.includes(g.id) && g.id !== 'gr-alle')
@@ -1364,8 +1385,20 @@ function EmpfaengerAnsicht({
     : ''
   const myAck = alarm?.deliveries.find((d) => d.userId === me.id)?.ack ?? 'none'
 
+  function lagemeldungSenden() {
+    const text = lage.trim()
+    if (!text || !alarm) return
+    dispatch({ type: 'ALARM_UPDATE', alarmId: alarm.id, message: text, kind: 'lage' })
+    setLage('')
+  }
+  function entwarnungGeben() {
+    if (!alarm) return
+    frage('Entwarnung geben', ENTWARNUNG_TEXT, (text) => dispatch({ type: 'END_ALARM', alarmId: alarm.id, byUserId: state.currentUserId, note: text }), 'Entwarnung senden', 'z. B. Rückkehr ab 10:30 über den Haupteingang')
+  }
+
   return (
     <div>
+      {promptEl}
       <button className="flex items-center gap-1 text-sm text-muted mb-3" onClick={onBack}>
         <ChevronLeft size={16} /> Zurück
       </button>
@@ -1379,6 +1412,23 @@ function EmpfaengerAnsicht({
         </div>
       </div>
 
+      {istKrisenstab && (
+        <div className="flex gap-2 mb-4">
+          <button
+            className={`flex-1 rounded-xl py-2 text-sm font-semibold transition ${ansicht === 'normal' ? 'bg-slate-800 text-white' : 'bg-white border border-slate-300 text-slate-600'}`}
+            onClick={() => setAnsicht('normal')}
+          >
+            Normale Ansicht
+          </button>
+          <button
+            className={`flex-1 rounded-xl py-2 text-sm font-semibold transition ${ansicht === 'krisenteam' ? 'bg-slate-800 text-white' : 'bg-white border border-slate-300 text-slate-600'}`}
+            onClick={() => setAnsicht('krisenteam')}
+          >
+            Krisenteam-Ansicht
+          </button>
+        </div>
+      )}
+
       {alarm ? (
         <div className={`rounded-2xl border-2 p-4 bg-white mb-3 ${alarm.silent ? 'border-violet-400' : 'border-alarm-500'}`}>
           {alarm.drill && <div className="mb-1"><Badge color="amber">ÜBUNG – kein Ernstfall</Badge></div>}
@@ -1391,6 +1441,33 @@ function EmpfaengerAnsicht({
           </div>
           <Rueckmeldestand alarm={alarm} />
           <Lagemeldungen alarm={alarm} />
+          {krisenteam && (
+            <>
+              <div className="flex gap-2 mt-3 items-start">
+                <Megaphone size={16} className="text-violet-600 mt-2.5 shrink-0" />
+                <input
+                  className={inputClass}
+                  placeholder="Lagemeldung an alle Empfänger:innen"
+                  value={lage}
+                  onChange={(e) => setLage(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') lagemeldungSenden() }}
+                />
+                <button
+                  className="shrink-0 flex items-center gap-1.5 rounded-xl bg-slate-800 text-white px-3 py-2 text-sm font-semibold disabled:opacity-50"
+                  onClick={lagemeldungSenden}
+                  disabled={!lage.trim()}
+                >
+                  <Send size={14} /> Senden
+                </button>
+              </div>
+              <button
+                className="w-full mt-3 rounded-xl bg-alarm-600 text-white py-2.5 text-sm font-semibold"
+                onClick={entwarnungGeben}
+              >
+                Entwarnung geben
+              </button>
+            </>
+          )}
           {alarm.requireAck && myAck === 'none' && (
             <div className="flex gap-2 mt-3">
               <button
@@ -1426,47 +1503,75 @@ function EmpfaengerAnsicht({
       </div>
 
       <div className="text-xs text-faint mb-1 flex flex-wrap items-center gap-1">
-        <span>Ihre Schritte{!nachRollen && meineGruppen.length > 0 ? ' als' : ''}</span>
-        {!nachRollen && meineGruppen.map((g) => <Badge key={g.id}>{g.name}</Badge>)}
-        <span>– antippen, wenn erledigt:</span>
+        {krisenteam ? (
+          <span>Alle Schritte aller Gruppen – antippen, wenn erledigt:</span>
+        ) : (
+          <>
+            <span>Ihre Schritte{!nachRollen && meineGruppen.length > 0 ? ' als' : ''}</span>
+            {!nachRollen && meineGruppen.map((g) => <Badge key={g.id}>{g.name}</Badge>)}
+            <span>– antippen, wenn erledigt:</span>
+          </>
+        )}
       </div>
-      {nachRollen && (
+      {!krisenteam && nachRollen && (
         <div className="rounded-xl bg-amber-50 border border-amber-200 p-3 text-xs text-amber-900 mb-2">
           Sie haben in dieser Lage <b>mehrere Rollen</b>. Die Aufgaben stehen getrennt – Sie können
           nicht alle gleichzeitig erfüllen. Entscheiden Sie, welche Rolle Vorrang hat, und melden Sie
           es der Einsatzleitung.
         </div>
       )}
-      {bloeckeMitNummer.map((block, bi) => (
-        <div key={bi} className={nachRollen ? 'mb-3' : ''}>
-          {nachRollen && (
-            <div className="text-xs font-semibold text-muted mb-1.5">
-              {block.groupId ? `Als ${gruppenName([block.groupId])}` : 'Für alle Alarmierten'}
-            </div>
-          )}
-          <div className="space-y-2">
-            {block.schritte.map(({ step, nr }) => (
-              <button
-                key={nr}
-                className="w-full flex gap-2.5 text-sm bg-white rounded-xl border border-slate-200 p-3 text-left"
-                onClick={() => setErledigt({ ...erledigt, [nr]: !erledigt[nr] })}
-              >
-                <span className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${erledigt[nr] ? 'bg-emerald-500 text-white' : 'bg-amber-500 text-white'}`}>
-                  {erledigt[nr] ? <Check size={14} /> : nr + 1}
-                </span>
-                <span className="min-w-0 pt-0.5">
-                  <span className={erledigt[nr] ? 'text-faint line-through' : 'text-slate-700'}>{step.text}</span>
-                  {!nachRollen && step.groupIds && step.groupIds.length > 0 && (
-                    <span className="block text-[11px] text-amber-700 mt-0.5">{gruppenName(step.groupIds)}</span>
-                  )}
-                </span>
-              </button>
-            ))}
-          </div>
+      {krisenteam ? (
+        <div className="space-y-2">
+          {alleSchritte.map((step, i) => (
+            <button
+              key={i}
+              className="w-full flex gap-2.5 text-sm bg-white rounded-xl border border-slate-200 p-3 text-left"
+              onClick={() => setErledigt({ ...erledigt, [i]: !erledigt[i] })}
+            >
+              <span className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${erledigt[i] ? 'bg-emerald-500 text-white' : 'bg-amber-500 text-white'}`}>
+                {erledigt[i] ? <Check size={14} /> : i + 1}
+              </span>
+              <span className="min-w-0 pt-0.5">
+                <span className={erledigt[i] ? 'text-faint line-through' : 'text-slate-700'}>{step.text}</span>
+                {step.groupIds && step.groupIds.length > 0 && (
+                  <span className="block text-[11px] text-amber-700 mt-0.5">{gruppenName(step.groupIds)}</span>
+                )}
+              </span>
+            </button>
+          ))}
         </div>
-      ))}
+      ) : (
+        bloeckeMitNummer.map((block, bi) => (
+          <div key={bi} className={nachRollen ? 'mb-3' : ''}>
+            {nachRollen && (
+              <div className="text-xs font-semibold text-muted mb-1.5">
+                {block.groupId ? `Als ${gruppenName([block.groupId])}` : 'Für alle Alarmierten'}
+              </div>
+            )}
+            <div className="space-y-2">
+              {block.schritte.map(({ step, nr }) => (
+                <button
+                  key={nr}
+                  className="w-full flex gap-2.5 text-sm bg-white rounded-xl border border-slate-200 p-3 text-left"
+                  onClick={() => setErledigt({ ...erledigt, [nr]: !erledigt[nr] })}
+                >
+                  <span className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${erledigt[nr] ? 'bg-emerald-500 text-white' : 'bg-amber-500 text-white'}`}>
+                    {erledigt[nr] ? <Check size={14} /> : nr + 1}
+                  </span>
+                  <span className="min-w-0 pt-0.5">
+                    <span className={erledigt[nr] ? 'text-faint line-through' : 'text-slate-700'}>{step.text}</span>
+                    {!nachRollen && step.groupIds && step.groupIds.length > 0 && (
+                      <span className="block text-[11px] text-amber-700 mt-0.5">{gruppenName(step.groupIds)}</span>
+                    )}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        ))
+      )}
 
-      {andere.length > 0 && (
+      {!krisenteam && andere.length > 0 && (
         <div className="mt-3">
           <button
             className="text-xs text-muted underline underline-offset-2"

@@ -66,6 +66,12 @@ export function rueckmeldungen(alarm: Alarm): { benachrichtigt: number; kommen: 
   return { benachrichtigt: werte.length, kommen, nichtVerfuegbar, offen: werte.length - kommen - nichtVerfuegbar }
 }
 
+/** Richtet sich der Alarm aktuell an diese Gruppe – beim Erstaussand oder einer bereits ausgelösten Eskalationsstufe? */
+function alarmBetrifftGruppe(alarm: Alarm, groupId: string): boolean {
+  if (alarm.groupIds.length === 0 || alarm.groupIds.includes(groupId)) return true
+  return alarm.escalation.slice(0, alarm.escalationStage).some((e) => e.groupIds.includes(groupId))
+}
+
 function Rueckmeldestand({ alarm }: { alarm: Alarm }) {
   const r = rueckmeldungen(alarm)
   return (
@@ -1093,8 +1099,18 @@ function EmpfaengerScreen({
   const me = state.users.find((u) => u.id === state.currentUserId) ?? state.users[0]
   const [erledigt, setErledigt] = useState<Record<number, boolean>>({})
   const [zeigeAndere, setZeigeAndere] = useState(false)
-  // Nur die Schritte der eigenen Gruppen – die übrigen bleiben auf Wunsch einsehbar
-  const { eigene, andere } = responseStepsFor(scenario, me.groupIds)
+  const [lage, setLage] = useState('')
+  // Mitglieder des Krisenstabs können zwischen der eigenen Empfänger-Ansicht und der
+  // Koordinationsansicht wechseln; öffnet direkt auf der passenden, je nachdem, ob
+  // der Alarm (aktuell, inkl. bereits ausgelöster Eskalation) den Krisenstab betrifft.
+  const istKrisenstab = me.groupIds.includes('gr-krisenstab')
+  const [ansicht, setAnsicht] = useState<'normal' | 'krisenteam'>(() =>
+    istKrisenstab && alarm && alarmBetrifftGruppe(alarm, 'gr-krisenstab') ? 'krisenteam' : 'normal',
+  )
+  const krisenteam = istKrisenstab && ansicht === 'krisenteam'
+  // Normal: nur die Schritte der eigenen Gruppen – die übrigen bleiben auf Wunsch einsehbar.
+  // Krisenteam: alle Schritte aller Gruppen auf einen Blick, ohne Einklappen.
+  const { andere } = responseStepsFor(scenario, me.groupIds)
   // Wer mehrere Rollen hat, bekommt Aufgaben aus jeder – untereinander sieht
   // das aus, als gehöre es zusammen. Getrennt nach Rolle ist erkennbar, dass
   // man zwei Hüte aufhat. Die Nummerierung läuft trotzdem durch, damit die
@@ -1106,6 +1122,10 @@ function EmpfaengerScreen({
     ...b,
     schritte: b.schritte.map((step) => ({ step, nr: ++lfd })),
   }))
+  // Krisenteam-Ansicht: alle Schritte aller Gruppen auf einen Blick, ohne die
+  // Rollentrennung – die ist für Empfänger:innen mit mehreren Rollen gedacht,
+  // nicht für die Koordinationsübersicht.
+  const alleSchritte = responseStepsOf(scenario)
   const gruppenName = (ids?: string[]) =>
     (ids ?? []).map((id) => state.groups.find((g) => g.id === id)?.name).filter(Boolean).join(', ')
   const meineGruppen = state.groups.filter((g) => me.groupIds.includes(g.id) && g.id !== 'gr-alle').map((g) => g.name).join(', ')
@@ -1114,6 +1134,13 @@ function EmpfaengerScreen({
     ? alarm.locationIds.map((id) => state.locations.find((l) => l.id === id)?.name).filter(Boolean).join(', ')
     : ''
   const myAck = alarm?.deliveries.find((d) => d.userId === me.id)?.ack ?? 'none'
+
+  function lagemeldungSenden() {
+    const text = lage.trim()
+    if (!text || !alarm) return
+    dispatch({ type: 'ALARM_UPDATE', alarmId: alarm.id, message: text, kind: 'lage' })
+    setLage('')
+  }
 
   return (
     <ScrollView contentContainerStyle={styles.screen}>
@@ -1131,6 +1158,17 @@ function EmpfaengerScreen({
         </View>
       </View>
 
+      {istKrisenstab && (
+        <View style={[styles.row, { marginBottom: 12 }]}>
+          <Pressable style={[styles.segment, ansicht === 'normal' && styles.segmentAktiv]} onPress={() => setAnsicht('normal')}>
+            <Text style={[styles.segmentText, ansicht === 'normal' && styles.segmentTextAktiv]}>Normale Ansicht</Text>
+          </Pressable>
+          <Pressable style={[styles.segment, ansicht === 'krisenteam' && styles.segmentAktiv]} onPress={() => setAnsicht('krisenteam')}>
+            <Text style={[styles.segmentText, ansicht === 'krisenteam' && styles.segmentTextAktiv]}>Krisenteam-Ansicht</Text>
+          </Pressable>
+        </View>
+      )}
+
       {alarm ? (
         <Card style={{ borderColor: alarm.silent ? colors.violet : colors.brandLight, borderWidth: 2 }}>
           {alarm.drill && (
@@ -1146,6 +1184,25 @@ function EmpfaengerScreen({
           </Text>
           <Rueckmeldestand alarm={alarm} />
           <Lagemeldungen alarm={alarm} />
+          {krisenteam && (
+            <>
+              <View style={[styles.row, { marginTop: 8, gap: 8, alignItems: 'flex-start' }]}>
+                <TextInput
+                  style={[styles.input, { flex: 1 }]}
+                  placeholder="Lagemeldung an alle Empfänger:innen"
+                  value={lage}
+                  onChangeText={setLage}
+                  onSubmitEditing={lagemeldungSenden}
+                />
+                <Pressable style={[styles.outlineButton, { marginTop: 0, paddingHorizontal: 16, opacity: lage.trim() ? 1 : 0.5 }]} onPress={lagemeldungSenden}>
+                  <Text style={styles.outlineButtonText}>Senden</Text>
+                </Pressable>
+              </View>
+              <Pressable style={[styles.outlineButton, { backgroundColor: colors.alarmLight, borderColor: colors.alarmLight }]} onPress={() => entwarnungGeben(dispatch, alarm.id)}>
+                <Text style={[styles.outlineButtonText, { color: '#fff' }]}>Entwarnung geben</Text>
+              </Pressable>
+            </>
+          )}
           {alarm.requireAck && myAck === 'none' && (
             <View style={[styles.row, { marginTop: 8, gap: 8 }]}>
               <Pressable
@@ -1185,11 +1242,13 @@ function EmpfaengerScreen({
       </View>
 
       <Text style={styles.faint}>
-        {nachRollen
-          ? 'Ihre Schritte – antippen, wenn erledigt:'
-          : `Ihre Schritte${meineGruppen ? ` als ${meineGruppen}` : ''} – antippen, wenn erledigt:`}
+        {krisenteam
+          ? 'Alle Schritte aller Gruppen – antippen, wenn erledigt:'
+          : nachRollen
+            ? 'Ihre Schritte – antippen, wenn erledigt:'
+            : `Ihre Schritte${meineGruppen ? ` als ${meineGruppen}` : ''} – antippen, wenn erledigt:`}
       </Text>
-      {nachRollen && (
+      {!krisenteam && nachRollen && (
         <View style={{ backgroundColor: colors.amberBg, borderRadius: 10, padding: 10, marginTop: 2 }}>
           <Text style={{ fontSize: 12, color: '#92400e' }}>
             Sie haben in dieser Lage <Text style={{ fontWeight: '700' }}>mehrere Rollen</Text>. Die Aufgaben
@@ -1198,34 +1257,52 @@ function EmpfaengerScreen({
           </Text>
         </View>
       )}
-      {bloeckeMitNummer.map((block, bi) => (
-        <View key={bi} style={{ marginTop: nachRollen ? 8 : 0 }}>
-          {nachRollen && (
-            <Text style={{ fontSize: 12, fontWeight: '700', color: colors.muted, marginBottom: 4 }}>
-              {block.groupId ? `Als ${gruppenName([block.groupId])}` : 'Für alle Alarmierten'}
-            </Text>
-          )}
-          {block.schritte.map(({ step, nr }) => (
+      {krisenteam
+        ? alleSchritte.map((step, i) => (
             <Pressable
-              key={nr}
+              key={i}
               style={[styles.row, { alignItems: 'flex-start', backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: 12, padding: 12 }]}
-              onPress={() => setErledigt({ ...erledigt, [nr]: !erledigt[nr] })}
+              onPress={() => setErledigt({ ...erledigt, [i]: !erledigt[i] })}
             >
-              <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: erledigt[nr] ? colors.green : '#d97706', alignItems: 'center', justifyContent: 'center' }}>
-                {erledigt[nr] ? <Check size={14} color="#fff" /> : <Text style={{ color: '#fff', fontWeight: '800', fontSize: 12 }}>{nr + 1}</Text>}
+              <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: erledigt[i] ? colors.green : '#d97706', alignItems: 'center', justifyContent: 'center' }}>
+                {erledigt[i] ? <Check size={14} color="#fff" /> : <Text style={{ color: '#fff', fontWeight: '800', fontSize: 12 }}>{i + 1}</Text>}
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.body, { marginTop: 0, color: erledigt[nr] ? colors.faint : colors.text, textDecorationLine: erledigt[nr] ? 'line-through' : 'none' }]}>{step.text}</Text>
-                {!nachRollen && step.groupIds && step.groupIds.length > 0 && (
+                <Text style={[styles.body, { marginTop: 0, color: erledigt[i] ? colors.faint : colors.text, textDecorationLine: erledigt[i] ? 'line-through' : 'none' }]}>{step.text}</Text>
+                {step.groupIds && step.groupIds.length > 0 && (
                   <Text style={{ fontSize: 11, color: '#b45309', marginTop: 2 }}>{gruppenName(step.groupIds)}</Text>
                 )}
               </View>
             </Pressable>
+          ))
+        : bloeckeMitNummer.map((block, bi) => (
+            <View key={bi} style={{ marginTop: nachRollen ? 8 : 0 }}>
+              {nachRollen && (
+                <Text style={{ fontSize: 12, fontWeight: '700', color: colors.muted, marginBottom: 4 }}>
+                  {block.groupId ? `Als ${gruppenName([block.groupId])}` : 'Für alle Alarmierten'}
+                </Text>
+              )}
+              {block.schritte.map(({ step, nr }) => (
+                <Pressable
+                  key={nr}
+                  style={[styles.row, { alignItems: 'flex-start', backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: 12, padding: 12 }]}
+                  onPress={() => setErledigt({ ...erledigt, [nr]: !erledigt[nr] })}
+                >
+                  <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: erledigt[nr] ? colors.green : '#d97706', alignItems: 'center', justifyContent: 'center' }}>
+                    {erledigt[nr] ? <Check size={14} color="#fff" /> : <Text style={{ color: '#fff', fontWeight: '800', fontSize: 12 }}>{nr + 1}</Text>}
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.body, { marginTop: 0, color: erledigt[nr] ? colors.faint : colors.text, textDecorationLine: erledigt[nr] ? 'line-through' : 'none' }]}>{step.text}</Text>
+                    {!nachRollen && step.groupIds && step.groupIds.length > 0 && (
+                      <Text style={{ fontSize: 11, color: '#b45309', marginTop: 2 }}>{gruppenName(step.groupIds)}</Text>
+                    )}
+                  </View>
+                </Pressable>
+              ))}
+            </View>
           ))}
-        </View>
-      ))}
 
-      {andere.length > 0 && (
+      {!krisenteam && andere.length > 0 && (
         <View style={{ marginTop: 6 }}>
           <Pressable onPress={() => setZeigeAndere(!zeigeAndere)}>
             <Text style={[styles.muted, { textDecorationLine: 'underline', fontSize: 12 }]}>
@@ -2013,6 +2090,10 @@ const styles = StyleSheet.create({
   input: { borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, color: colors.text },
   chip: { borderRadius: 999, borderWidth: 1, borderColor: '#cbd5e1', paddingHorizontal: 12, paddingVertical: 6, backgroundColor: colors.card },
   chipText: { fontSize: 13, color: colors.text, fontWeight: '600' },
+  segment: { flex: 1, borderRadius: 10, borderWidth: 1, borderColor: '#cbd5e1', paddingVertical: 9, alignItems: 'center', backgroundColor: colors.card },
+  segmentAktiv: { backgroundColor: colors.dark, borderColor: colors.dark },
+  segmentText: { fontSize: 13, fontWeight: '600', color: colors.text },
+  segmentTextAktiv: { color: '#fff' },
   avatar: { width: 46, height: 46, borderRadius: 23, backgroundColor: colors.dark, alignItems: 'center', justifyContent: 'center' },
   avatarText: { color: '#fff', fontWeight: '800', fontSize: 16 },
   radio: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: '#cbd5e1', alignItems: 'center', justifyContent: 'center' },
