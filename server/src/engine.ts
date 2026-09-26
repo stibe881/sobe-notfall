@@ -1,4 +1,5 @@
 import { broadcast } from './events.js'
+import { fetchMitFrist } from './netz.js'
 import { sendeAlarmKanaele } from './kanaele.js'
 import {
   geraeteProPerson, letzterTestpush, markiereOhneGeraet, merkeTestpush, pruefeEmpfangsbestaetigungen,
@@ -116,7 +117,7 @@ export async function ausgehendeWebhooks(alarm: Alarm): Promise<void> {
   })
   for (const wh of integrations().webhooks?.filter((w) => w.active && w.direction === 'outbound') ?? []) {
     try {
-      await fetch(wh.url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: nutzlast })
+      await fetchMitFrist(wh.url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: nutzlast })
     } catch {
       // Zielsystem nicht erreichbar – der Alarm bleibt trotzdem erfasst
     }
@@ -244,6 +245,8 @@ export async function tick(): Promise<void> {
 }
 
 let letzteDienstpruefung = 0
+/** Eine Übung je Quartal – danach mahnt der Monatsbericht */
+const UEBUNG_ABSTAND_TAGE = 90
 
 /**
  * Bericht über die Erreichbarkeit – einmal im Monat an die Administration.
@@ -280,13 +283,23 @@ async function monatlicherBereitschaftsbericht(jetzt: number): Promise<void> {
   }
   if (ohneGeraet.length === 0 && ohneCritical.length === 0) zeilen.push('Alle Personen sind erreichbar.')
 
+  // Der einzige Test der ganzen Kette bis zum Menschen ist ein Probealarm mit
+  // Übungskennzeichen. Erreichbarkeit auf dem Papier genügt nicht: Ob die
+  // Meldung ankommt, gelesen und quittiert wird, zeigt nur die Übung.
+  const uebungen = allAlarms().filter((a) => a.drill).map((a) => a.triggeredAt)
+  const tageSeitUebung = uebungen.length ? Math.floor((jetzt - Math.max(...uebungen)) / 86_400_000) : null
+  const uebungFaellig = tageSeitUebung === null || tageSeitUebung > UEBUNG_ABSTAND_TAGE
+  if (tageSeitUebung === null) zeilen.push('Im Protokoll steht keine Übung. Bitte einen Probealarm mit Übungskennzeichen planen – er ist der einzige Test der ganzen Kette bis zum Menschen.')
+  else if (uebungFaellig) zeilen.push(`Die letzte Übung liegt ${tageSeitUebung} Tage zurück; empfohlen ist eine je Quartal. Bitte einen Probealarm planen.`)
+  else zeilen.push(`Letzte Übung vor ${tageSeitUebung} Tagen.`)
+
   const text = zeilen.join(' ')
   addAudit('system', `Monatlicher Bereitschaftsbericht: ${text}`)
   await sendPush(admins.map((u) => u.id), {
     title: 'Bereitschaft: monatlicher Bericht',
     body: text,
     data: { kind: 'bereitschaft' },
-    wichtig: ohneGeraet.length > 0 || ohneCritical.length > 0,
+    wichtig: ohneGeraet.length > 0 || ohneCritical.length > 0 || uebungFaellig,
   })
 }
 
@@ -425,8 +438,28 @@ export function alleinarbeitEmpfaenger(sitzung: LoneWorkSession): { groupIds: st
   return { groupIds, recipientUserIds: [...new Set([...ausGruppen, ...einzelne])].filter((id) => id !== sitzung.userId) }
 }
 
+/**
+ * Ein Durchlauf aufs Mal.
+ *
+ * setInterval wartet nicht auf den vorherigen Aufruf. Dauerte ein Durchlauf
+ * länger als fünf Sekunden – ein zäher Push-Dienst genügte –, liefen mehrere
+ * gleichzeitig, jeder mit demselben Alarm im Zustand «Stufe fällig»: dieselbe
+ * Eskalation mehrfach, doppelte Pushes, verwirrtes Journal. Jetzt wird ein
+ * laufender Durchlauf nicht überholt; dauert er auffällig lange, steht das
+ * im Protokoll des Servers.
+ */
+let durchlaufSeit: number | null = null
+
 export function startEngine(): NodeJS.Timeout {
   return setInterval(() => {
-    tick().catch((fehler) => console.error('[engine] Fehler im Durchlauf:', fehler))
+    if (durchlaufSeit !== null) {
+      const dauer = Date.now() - durchlaufSeit
+      if (dauer > 60_000 && dauer % 60_000 < 5_000) console.warn(`[engine] Durchlauf läuft seit ${Math.round(dauer / 1000)} s – wird nicht überholt`)
+      return
+    }
+    durchlaufSeit = Date.now()
+    tick()
+      .catch((fehler) => console.error('[engine] Fehler im Durchlauf:', fehler))
+      .finally(() => { durchlaufSeit = null })
   }, 5_000)
 }

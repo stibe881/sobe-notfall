@@ -261,7 +261,7 @@ function UserEditor({ user, onClose }: { user: User; onClose: () => void }) {
       return setPasswordError('Dies ist der einzige Administrator – die Rolle kann nicht geändert werden. Legen Sie zuerst einen weiteren Administrator an.')
     }
     if (password) {
-      const problem = passwordProblem(password)
+      const problem = passwordProblem(password, draft.role)
       if (problem) return setPasswordError(problem)
     }
     // Passwort gehört in dieselbe Aktion: sonst laufen Anlegen und Passwortvergabe

@@ -1,4 +1,5 @@
 import { db, getSetting, setSetting } from './db.js'
+import { fetchMitFrist } from './netz.js'
 import { broadcast } from './events.js'
 import { allAlarms, findAlarm, saveAlarm } from './store.js'
 import type { DeliveryStatus } from './types.js'
@@ -121,7 +122,7 @@ export async function sendPush(userIds: string[], nachricht: PushNachricht): Pro
   const nachrichten = ziele.map((ziel) => pushNutzlast(ziel, nachricht, abzeichen.get(ziel.userId) ?? 0))
 
   try {
-    const antwort = await fetch(EXPO_PUSH_URL, {
+    const antwort = await fetchMitFrist(EXPO_PUSH_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
       body: JSON.stringify(nachrichten),
@@ -171,7 +172,7 @@ export function pushDienstStatus(): { ok: boolean; geprueft: number } | null {
 /** Erreichbarkeit des Push-Dienstes prüfen, ohne jemandem eine Nachricht zu schicken */
 export async function pruefePushDienst(): Promise<boolean> {
   try {
-    const antwort = await fetch(EXPO_RECEIPTS_URL, {
+    const antwort = await fetchMitFrist(EXPO_RECEIPTS_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
       body: JSON.stringify({ ids: [] }),
@@ -201,7 +202,7 @@ export async function pruefeEmpfangsbestaetigungen(): Promise<number> {
 
   let quittungen: Record<string, { status: string; details?: { error?: string } }>
   try {
-    const antwort = await fetch(EXPO_RECEIPTS_URL, {
+    const antwort = await fetchMitFrist(EXPO_RECEIPTS_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
       body: JSON.stringify({ ids: offen.map((t) => t.id) }),

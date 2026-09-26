@@ -4,6 +4,7 @@ import { db, getSetting, setSetting } from './db.js'
 import {
   createSession, destroySession, destroyUserSessions, hashPassword, herkunftAus, merkeAktivitaet, newSalt,
   normalizeEmail, passwordProblem, publicUser, sessionUserId, verifyPassword,
+ PORTAL_SESSION_TTL_MS, SESSION_TTL_MS,
 } from './auth.js'
 import { addClient } from './events.js'
 import { broadcast } from './events.js'
@@ -282,7 +283,8 @@ router.get('/auth/sso/callback', async (req, res) => {
   }
 
   const ssoHerkunft = herkunftAus(req)
-  const { token } = createSession(user.id, ssoHerkunft)
+  // SSO läuft nur über das Portal – kurze Sitzung
+  const { token } = createSession(user.id, ssoHerkunft, PORTAL_SESSION_TTL_MS)
   addAudit(
     'anmeldung',
     `Anmeldung über Microsoft: ${user.firstName} ${user.lastName} (${user.email})` +
@@ -308,7 +310,7 @@ router.post('/integrations/sso/test', auth, adminOnly, async (_req, res) => {
 })
 
 router.post('/auth/login', (req, res) => {
-  const { email, password } = req.body ?? {}
+  const { email, password, client } = req.body ?? {}
   const herkunft = herkunftAus(req)
   const woher = herkunft.ip ? ` von ${herkunft.ip}` : ''
   if (!email || !password) {
@@ -350,7 +352,10 @@ router.post('/auth/login', (req, res) => {
   }
 
   const vorausgegangen = fehlversuche(adresse)
-  const { token, expiresAt } = createSession(user.id, herkunft)
+  // Das Portal bekommt eine kurze Sitzung: Ein offener Browser im Sekretariat
+  // soll nicht 30 Tage lang alarmieren können. Die App behält die lange – ein
+  // Telefon, das im Ernstfall erst nach dem Passwort fragt, wäre gefährlicher.
+  const { token, expiresAt } = createSession(user.id, herkunft, client === 'portal' ? PORTAL_SESSION_TTL_MS : SESSION_TTL_MS)
   upsertUser({ ...user, lastLoginAt: Date.now() })
   addAudit(
     'anmeldung',
@@ -383,7 +388,7 @@ router.post('/auth/password', auth, (req: AuthRequest, res) => {
     res.status(400).json({ error: 'Das aktuelle Passwort ist falsch.' })
     return
   }
-  const problem = passwordProblem(String(newPassword ?? ''))
+  const problem = passwordProblem(String(newPassword ?? ''), req.user!.role)
   if (problem) {
     res.status(400).json({ error: problem })
     return
@@ -473,7 +478,7 @@ router.post('/users', auth, adminOnly, (req, res) => {
 
   // Passwort optional mitgeben – es wird nie im Klartext gespeichert
   if (eingabe.password) {
-    const problem = passwordProblem(String(eingabe.password))
+    const problem = passwordProblem(String(eingabe.password), String(eingabe.role ?? bestehend?.role ?? ''))
     if (problem) {
       res.status(400).json({ error: problem })
       return

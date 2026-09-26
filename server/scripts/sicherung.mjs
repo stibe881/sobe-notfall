@@ -10,7 +10,7 @@
  * in der Kopie. Das Ergebnis ist eine einzelne Datei ohne Begleitdateien.
  */
 import Database from 'better-sqlite3'
-import { existsSync, mkdirSync, readdirSync, rmSync, statSync } from 'node:fs'
+import { copyFileSync, existsSync, mkdirSync, readdirSync, rmSync, statSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { datenbankPfad, ladeEnv } from './pfade.mjs'
@@ -73,6 +73,32 @@ try {
   process.exitCode = 2
 } finally {
   pruef.close()
+}
+
+/**
+ * Zweite Kopie an einen anderen Ort.
+ *
+ * Eine Sicherung auf demselben Rechner wie die Datenbank ist keine: Stirbt
+ * der Host oder verschlüsselt ein Angreifer das Konto, sind beide weg.
+ * SOBE_BACKUP_ZWEITZIEL zeigt auf einen Ordner, der woanders liegt – eine
+ * eingebundene Storage Box, ein anderer Server, ein anderer Anbieter. Der
+ * Server meldet, wenn dort nichts Frisches liegt (sicherungswache.ts).
+ */
+const zweitziel = process.env.SOBE_BACKUP_ZWEITZIEL ? resolve(process.env.SOBE_BACKUP_ZWEITZIEL) : null
+if (zweitziel) {
+  try {
+    mkdirSync(zweitziel, { recursive: true })
+    const kopie = join(zweitziel, `sobe-${heute}.sqlite`)
+    copyFileSync(datei, kopie)
+    console.log(`Zweitziel: ${kopie}`)
+  } catch (fehler) {
+    console.error('')
+    console.error(`WARNUNG: Kopie ins Zweitziel ${zweitziel} fehlgeschlagen (${fehler.message}).`)
+    console.error('Die Sicherung liegt damit nur auf diesem Rechner.')
+    process.exitCode = 2
+  }
+} else {
+  console.log('Zweitziel: nicht gesetzt (SOBE_BACKUP_ZWEITZIEL) – die Sicherung liegt nur auf diesem Rechner.')
 }
 
 // Alte Sicherungen entfernen

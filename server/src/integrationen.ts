@@ -1,4 +1,5 @@
 import { randomBytes } from 'node:crypto'
+import { fetchMitFrist } from './netz.js'
 import { getSetting, setSetting } from './db.js'
 import type { IntegrationSettings, LorawanSettings, MeridianKarte, MeridianSettings, SmsGatewaySettings, TeamsSettings, TelephonySettings } from './types.js'
 
@@ -157,7 +158,7 @@ export async function sendeSms(sms: SmsGatewaySettings, nummern: string[], text:
   if (sms.provider === 'aspsms') {
     // ASPSMS JSON-Schnittstelle – ein Aufruf für alle Empfänger
     try {
-      const antwort = await fetch('https://json.aspsms.com/SendSimpleTextSMS', {
+      const antwort = await fetchMitFrist('https://json.aspsms.com/SendSimpleTextSMS', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -185,11 +186,11 @@ export async function sendeSms(sms: SmsGatewaySettings, nummern: string[], text:
           .replace('{to}', encodeURIComponent(ziel))
           .replace('{text}', encodeURIComponent(text))
           .replace('{from}', encodeURIComponent(sms.senderId))
-        const antwort = await fetch(url)
+        const antwort = await fetchMitFrist(url)
         ergebnis.set(ziel, antwort.ok ? { ok: true } : { ok: false, fehler: `HTTP ${antwort.status}` })
       } else {
         // eCall REST-Schnittstelle (Vorgabe)
-        const antwort = await fetch('https://rest.ecall.ch/api/sms', {
+        const antwort = await fetchMitFrist('https://rest.ecall.ch/api/sms', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -249,7 +250,7 @@ export function baueTeamsNachricht(karte: TeamsKarte): unknown {
 export async function sendeTeamsKarte(teams: TeamsSettings, karte: TeamsKarte): Promise<SmsErgebnis> {
   if (!teams.webhookUrl) return { ok: false, fehler: 'Keine Kanal-Webhook-URL hinterlegt.' }
   try {
-    const antwort = await fetch(teams.webhookUrl, {
+    const antwort = await fetchMitFrist(teams.webhookUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(baueTeamsNachricht(karte)),
@@ -268,7 +269,7 @@ const GRAPH = 'https://graph.microsoft.com/v1.0'
 
 /** Zugriffstoken über die App-Registrierung (Client Credentials) */
 export async function graphToken(tel: TelephonySettings): Promise<string> {
-  const antwort = await fetch(`https://login.microsoftonline.com/${encodeURIComponent(tel.tenantId)}/oauth2/v2.0/token`, {
+  const antwort = await fetchMitFrist(`https://login.microsoftonline.com/${encodeURIComponent(tel.tenantId)}/oauth2/v2.0/token`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
@@ -295,7 +296,7 @@ export interface KonferenzInfo {
 export async function erstelleKonferenz(tel: TelephonySettings, betreff: string): Promise<KonferenzInfo> {
   const token = await graphToken(tel)
   const jetzt = new Date()
-  const antwort = await fetch(`${GRAPH}/users/${encodeURIComponent(tel.organizerEmail)}/onlineMeetings`, {
+  const antwort = await fetchMitFrist(`${GRAPH}/users/${encodeURIComponent(tel.organizerEmail)}/onlineMeetings`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify({
@@ -321,7 +322,7 @@ export async function erstelleKonferenz(tel: TelephonySettings, betreff: string)
 
 /** Teams-Konto einer Person über die E-Mail-Adresse auflösen */
 async function graphBenutzerId(token: string, email: string): Promise<string | null> {
-  const antwort = await fetch(`${GRAPH}/users/${encodeURIComponent(email)}?$select=id`, {
+  const antwort = await fetchMitFrist(`${GRAPH}/users/${encodeURIComponent(email)}?$select=id`, {
     headers: { Authorization: `Bearer ${token}` },
   })
   if (!antwort.ok) return null
@@ -355,7 +356,7 @@ export async function starteAnrufe(tel: TelephonySettings, emails: string[], bet
       continue
     }
     try {
-      const antwort = await fetch(`${GRAPH}/communications/calls`, {
+      const antwort = await fetchMitFrist(`${GRAPH}/communications/calls`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({

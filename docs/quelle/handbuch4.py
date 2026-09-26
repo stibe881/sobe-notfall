@@ -126,9 +126,14 @@ KOERPER = r"""
     </li>
     <li>
       <b>Starten</b> &ndash; für den Dauerbetrieb über die mitgelieferte
-      Startschleife <code>bash scripts/run.sh</code> (sie startet den Server nach
-      einer Aktualisierung selbständig neu) oder als systemd-Dienst nach der
-      Vorlage <code>server/scripts/sobe-notfall.service</code>.
+      Startschleife <code>bash scripts/run.sh</code> oder als systemd-Dienst nach der
+      Vorlage <code>server/scripts/sobe-notfall.service</code>. Die Startschleife
+      startet den Server nach einem Absturz und nach einer Aktualisierung neu
+      &ndash; und sie ist ein <b>Wachhund</b>: Alle 30 Sekunden fragt sie
+      <code>/api/health</code> ab. Bleibt die Antwort dreimal in Folge aus, beendet
+      sie den Prozess und startet ihn frisch. Ein Server, der läuft, aber nicht
+      antwortet, stürzt nicht ab; ohne Wachhund bliebe er so stehen. Dafür
+      braucht das Hosting <code>curl</code>.
     </li>
     <li>
       <b>Prüfen</b> &ndash; <code>https://ihre-domain.ch/api/health</code> muss
@@ -168,6 +173,7 @@ KOERPER = r"""
         <tr><td><code>SOBE_PUBLIC_URL</code></td><td>Öffentliche Adresse des Servers &ndash; für SSO-Rücksprünge und den LoRaWAN-Endpunkt</td><td>aus der Anfrage abgeleitet</td></tr>
         <tr><td><code>SOBE_SEED_PROFILE</code></td><td>Erstbefüllung: <code>standard</code> (neutral, mit Einrichtungsassistent) oder <code>sonnenberg</code></td><td><code>standard</code></td></tr>
         <tr><td><code>SOBE_BACKUP_DIR</code></td><td>Ordner der Sicherungen (Abschnitt 11)</td><td><code>~/sicherung</code></td></tr>
+        <tr><td><code>SOBE_BACKUP_ZWEITZIEL</code></td><td>Zweiter Ordner an einem anderen Ort für eine Kopie jeder Sicherung (Abschnitt 11)</td><td>leer &ndash; dann warnt das Dashboard</td></tr>
         <tr><td><code>EXPO_TOKEN</code></td><td>Zugangstoken von expo.dev &ndash; nur für den App-Build nötig</td><td>&ndash;</td></tr>
         <tr><td><code>GITHUB_TOKEN</code></td><td>Zugangstoken fürs Repository &ndash; empfohlen auf Shared Hostings, sonst drosselt GitHub das Holen gelegentlich (Abschnitt 12)</td><td>&ndash;</td></tr>
       </tbody>
@@ -762,6 +768,20 @@ KOERPER = r"""
     als täglichen Cron-Auftrag ein; die Kachel <b>Bereitschaft</b> im Dashboard
     zeigt, wann die letzte Sicherung lief.
   </p>
+  <div class="hinweis hinweis--stopp">
+    <p class="marke-klein">Eine Sicherung auf demselben Rechner ist keine</p>
+    <p>
+      Stirbt der Host, brennt die Platte oder verschlüsselt ein Angreifer das
+      Konto, sind Datenbank <b>und</b> Sicherungen weg. Setzen Sie deshalb
+      <code>SOBE_BACKUP_ZWEITZIEL</code> auf einen Ordner, der woanders liegt:
+      eine eingebundene Storage Box in einem anderen Rechenzentrum, ein
+      zweiter Server, ein anderer Anbieter. Der Sicherungslauf legt dort eine
+      Kopie ab. Der Server prüft täglich, ob dort etwas Frisches liegt, und
+      meldet der Administration, wenn nicht &ndash; auch, wenn das Zweitziel gar
+      nicht gesetzt ist. Im Dashboard steht es als eigene Zeile
+      <b>Sicherung extern</b>.
+    </p>
+  </div>
   <div class="hinweis hinweis--warnung">
     <p class="marke-klein">Wichtig</p>
     <p>
@@ -895,6 +915,19 @@ npm run pruefe-datenbank</code></pre>
     drei Tage zurückliegt oder ganz fehlt. Auch hier zählen die Pfade ab
     <code>server/</code>, das Arbeitsverzeichnis des Cron-Eintrags spielt keine Rolle
     mehr.
+  </p>
+
+  <h4>Wer merkt es, wenn der Alarmserver tot ist?</h4>
+  <p>
+    Der Alarmserver kann über seinen eigenen Ausfall nicht alarmieren. Der
+    Wachhund in <code>run.sh</code> fängt einen hängenden Prozess, der Standby
+    übernimmt bei einem toten Hauptserver und meldet das seit September 2026 per
+    Push an die Administration &ndash; aber fällt der ganze Host oder das Netz
+    aus, schweigt alles. Dafür braucht es eine <b>Überwachung von aussen</b>: ein
+    Dienst bei einem anderen Anbieter, der <code>/api/health</code> jede Minute
+    abfragt und bei Ausfall <em>anruft</em>, nicht nur mailt. Solche Dienste
+    kosten wenige Franken im Monat. Ohne diese Überwachung erfährt die Schule
+    vom Ausfall erst, wenn ein Alarm nicht ankommt.
   </p>
 
   <h4>Portal erreichbar, aber «Alarmserver nicht erreichbar»</h4>

@@ -29,6 +29,22 @@ const webVorhanden = existsSync(resolve(WEB_ROOT, 'index.html'))
 const app = express()
 // Hinter dem Proxy des Hosters steht die echte Adresse im Weiterleitungskopf
 app.set('trust proxy', true)
+app.disable('x-powered-by')
+// Sicherheitskopfzeilen ohne zusätzliche Abhängigkeit. CORS bleibt offen:
+// Die Anmeldung läuft über Bearer-Token im Kopf, nicht über Cookies – ein
+// fremder Ursprung kann damit keine Sitzung mitbenutzen (kein CSRF). Eine
+// Content-Security-Policy fehlt bewusst: Sie bräuchte eine Abstimmung mit dem
+// Vite-Build und würde das Portal bei einem Fehler stumm zerlegen.
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff')
+  res.setHeader('X-Frame-Options', 'DENY')
+  res.setHeader('Referrer-Policy', 'no-referrer')
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(self)')
+  // HSTS nur, wenn die Verbindung wirklich verschlüsselt ankam – sonst sperrte
+  // sich eine Testinstallation über http selbst aus
+  if (req.secure) res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')
+  next()
+})
 app.use(cors())
 app.use(express.json({ limit: '2mb' }))
 

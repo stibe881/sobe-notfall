@@ -1,4 +1,5 @@
 import { createHash, randomBytes } from 'node:crypto'
+import { fetchMitFrist } from './netz.js'
 import type { Role, SsoSettings } from './types.js'
 
 /**
@@ -98,7 +99,7 @@ export async function ssoCallback(sso: SsoSettings, callbackUrl: string, code: s
     throw new Error('Die Anmeldung ist abgelaufen – bitte erneut mit Microsoft anmelden.')
   }
 
-  const antwort = await fetch(`${LOGIN}/${encodeURIComponent(sso.tenantId)}/oauth2/v2.0/token`, {
+  const antwort = await fetchMitFrist(`${LOGIN}/${encodeURIComponent(sso.tenantId)}/oauth2/v2.0/token`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
@@ -148,9 +149,9 @@ export function rolleAusGruppen(sso: SsoSettings, groups: string[]): Role | null
 
 /** Verbindungstest: Mandant erreichbar und Geheimnis gültig? */
 export async function ssoTest(sso: SsoSettings): Promise<void> {
-  const entdeckung = await fetch(`${LOGIN}/${encodeURIComponent(sso.tenantId)}/v2.0/.well-known/openid-configuration`)
+  const entdeckung = await fetchMitFrist(`${LOGIN}/${encodeURIComponent(sso.tenantId)}/v2.0/.well-known/openid-configuration`)
   if (!entdeckung.ok) throw new Error(`Mandant «${sso.tenantId}» bei Microsoft nicht gefunden (HTTP ${entdeckung.status}).`)
-  const antwort = await fetch(`${LOGIN}/${encodeURIComponent(sso.tenantId)}/oauth2/v2.0/token`, {
+  const antwort = await fetchMitFrist(`${LOGIN}/${encodeURIComponent(sso.tenantId)}/oauth2/v2.0/token`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({

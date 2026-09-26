@@ -1867,7 +1867,8 @@ export function ProfileScreen() {
 
 /** Eigenes Passwort ändern */
 function PasswordCard() {
-  const { changePassword } = useStore()
+  const { changePassword, state } = useStore()
+  const eigeneRolle = state.users.find((u) => u.id === state.currentUserId)?.role
   const [open, setOpen] = useState(false)
   const [current, setCurrent] = useState('')
   const [next, setNext] = useState('')
@@ -1875,7 +1876,7 @@ function PasswordCard() {
   const [error, setError] = useState<string | null>(null)
 
   async function save() {
-    const problem = passwordProblem(next)
+    const problem = passwordProblem(next, eigeneRolle)
     if (problem) return setError(problem)
     if (next !== repeat) return setError('Die beiden neuen Passwörter stimmen nicht überein.')
     const ergebnis = await changePassword(current, next)

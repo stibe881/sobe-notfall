@@ -15,6 +15,15 @@ const DIGEST = 'sha256'
 export const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000
 
 export const MIN_PASSWORD_LENGTH = 8
+/**
+ * Wer im Portal 200 Menschen alarmieren und Pläne ändern kann, braucht eine
+ * bessere Tür: zwölf Zeichen für Administration und Krisenstab. Der zweite
+ * Faktor kommt über Microsoft Entra ID (SSO) – bis dahin ist die Länge das,
+ * was hilft.
+ */
+export const MIN_PASSWORD_LENGTH_FUEHRUNG = 12
+/** Portalsitzungen sind kurz: Ein offener Browser im Sekretariat soll nicht 30 Tage lang alarmieren können */
+export const PORTAL_SESSION_TTL_MS = 12 * 60 * 60 * 1000
 
 export function hashPassword(password: string, salt: string): string {
   return pbkdf2Sync(password, salt, ITERATIONS, KEY_LENGTH, DIGEST).toString('hex')
@@ -32,8 +41,11 @@ export function verifyPassword(user: StoredUser, password: string): boolean {
   return candidate.length === stored.length && timingSafeEqual(candidate, stored)
 }
 
-export function passwordProblem(password: string): string | null {
-  if (password.length < MIN_PASSWORD_LENGTH) return `Das Passwort muss mindestens ${MIN_PASSWORD_LENGTH} Zeichen lang sein.`
+export function passwordProblem(password: string, rolle?: string): string | null {
+  const mindest = rolle === 'admin' || rolle === 'krisenstab' ? MIN_PASSWORD_LENGTH_FUEHRUNG : MIN_PASSWORD_LENGTH
+  if (password.length < mindest) {
+    return `Das Passwort muss mindestens ${mindest} Zeichen lang sein${mindest > MIN_PASSWORD_LENGTH ? ' – für Administration und Krisenstab gilt die längere Regel' : ''}.`
+  }
   if (!/[A-Za-zÀ-ÿ]/.test(password)) return 'Das Passwort muss mindestens einen Buchstaben enthalten.'
   if (!/[0-9]/.test(password)) return 'Das Passwort muss mindestens eine Ziffer enthalten.'
   return null
@@ -67,10 +79,10 @@ export function herkunftAus(req: { ip?: string; get?: (n: string) => string | un
   }
 }
 
-export function createSession(userId: string, herkunft: Herkunft = {}): { token: string; expiresAt: number } {
+export function createSession(userId: string, herkunft: Herkunft = {}, ttlMs = SESSION_TTL_MS): { token: string; expiresAt: number } {
   const token = randomBytes(32).toString('hex')
   const now = Date.now()
-  const expiresAt = now + SESSION_TTL_MS
+  const expiresAt = now + ttlMs
   db.prepare(
     'INSERT INTO sessions (token, userId, createdAt, expiresAt, ip, geraet, letzteAktivitaet) VALUES (?, ?, ?, ?, ?, ?, ?)',
   ).run(token, userId, now, expiresAt, herkunft.ip ?? null, herkunft.geraet ?? null, now)

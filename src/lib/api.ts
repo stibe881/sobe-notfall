@@ -146,6 +146,8 @@ export interface Bereitschaft {
     standZeit?: number
     fehlend?: number
     text: string
+    /** Kopie an einem anderen Ort – eine Sicherung auf demselben Rechner ist keine */
+    extern?: { lage: 'gut' | 'veraltet' | 'fehlt' | 'nicht-konfiguriert'; datei?: string; standZeit?: number; text: string }
   }
   pushDienst: { ok: boolean; geprueft: number } | null
   letzterTestpush: number | null
@@ -211,7 +213,8 @@ export const api = {
   login: (email: string, password: string) =>
     anfrage<{ token: string; expiresAt: number; user: User }>('/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ email, password }),
+      // «portal» → kurze Sitzung (12 h); die App bekommt die lange
+      body: JSON.stringify({ email, password, client: 'portal' }),
     }),
 
   logout: () => anfrage<{ ok: boolean }>('/auth/logout', { method: 'POST' }),

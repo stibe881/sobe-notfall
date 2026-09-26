@@ -222,6 +222,17 @@ function BereitschaftKarte() {
                     : 'keine Sicherung gefunden'
               }
             />
+            {daten.sicherung?.extern && (
+              <StatusRow
+                label="Sicherung extern"
+                ok={daten.sicherung.extern.lage === 'gut'}
+                detail={
+                  daten.sicherung.extern.lage === 'gut' && daten.sicherung.extern.standZeit
+                    ? `${daten.sicherung.extern.datei} · Stand ${formatRelative(daten.sicherung.extern.standZeit)}`
+                    : daten.sicherung.extern.text
+                }
+              />
+            )}
             <StatusRow
               label="Wöchentliche Testmeldung"
               ok={Boolean(daten.letzterTestpush && Date.now() - daten.letzterTestpush < 8 * 24 * 3600_000)}

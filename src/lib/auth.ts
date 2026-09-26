@@ -34,8 +34,14 @@ export function normalizeEmail(email: string): string {
 }
 
 /** Neues Passwort auf Mindestanforderungen prüfen – Rückgabe: Fehlertext oder null */
-export function passwordProblem(password: string): string | null {
-  if (password.length < MIN_PASSWORD_LENGTH) return `Das Passwort muss mindestens ${MIN_PASSWORD_LENGTH} Zeichen lang sein.`
+/** Zwölf Zeichen für Administration und Krisenstab – dieselbe Regel wie auf dem Server */
+export const MIN_PASSWORD_LENGTH_FUEHRUNG = 12
+
+export function passwordProblem(password: string, rolle?: string): string | null {
+  const mindest = rolle === 'admin' || rolle === 'krisenstab' ? MIN_PASSWORD_LENGTH_FUEHRUNG : MIN_PASSWORD_LENGTH
+  if (password.length < mindest) {
+    return `Das Passwort muss mindestens ${mindest} Zeichen lang sein${mindest > MIN_PASSWORD_LENGTH ? ' – für Administration und Krisenstab gilt die längere Regel' : ''}.`
+  }
   if (!/[A-Za-zÀ-ÿ]/.test(password)) return 'Das Passwort muss mindestens einen Buchstaben enthalten.'
   if (!/[0-9]/.test(password)) return 'Das Passwort muss mindestens eine Ziffer enthalten.'
   return null

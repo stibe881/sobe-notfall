@@ -1,7 +1,8 @@
 import { randomBytes, timingSafeEqual } from 'node:crypto'
 import { db, getSetting, setSetting } from './db.js'
 import { broadcast } from './events.js'
-import { addAudit } from './store.js'
+import { addAudit, allStoredUsers } from './store.js'
+import { sendPush } from './push.js'
 import type { RedundanzConfig, RedundanzStatus, ServerInfo } from './types.js'
 
 /**
@@ -220,6 +221,16 @@ async function peerAnfrage(pfad: string, optionen: RequestInit = {}): Promise<Re
   }
 }
 
+/** Dringende Systemmeldung an alle Administrationskonten – nie werfend */
+async function meldeAdministration(titel: string, text: string): Promise<void> {
+  try {
+    const admins = allStoredUsers().filter((u) => u.role === 'admin').map((u) => u.id)
+    if (admins.length) await sendPush(admins, { title: titel, body: text, data: { kind: 'system' }, wichtig: true })
+  } catch (fehler) {
+    console.warn('[redundanz] Meldung an die Administration fehlgeschlagen:', (fehler as Error).message)
+  }
+}
+
 async function abgleichsRunde(): Promise<void> {
   const cfg = redundanzConfig()
   if (!cfg.enabled || cfg.role !== 'standby' || !cfg.peerUrl || !cfg.secret) return
@@ -244,6 +255,7 @@ async function abgleichsRunde(): Promise<void> {
     if (failoverAktiv) {
       failoverAktiv = false
       addAudit('system', 'Redundanz: Hauptserver wieder erreichbar – dieser Server ist zurück im Standby-Betrieb. Während des Ausfalls Erfasstes wurde zurückgemeldet.')
+      void meldeAdministration('Alarmserver: Hauptserver wieder da', 'Der Hauptserver antwortet wieder. Der Standby ist zurück im Spiegelbetrieb; während des Ausfalls Erfasstes wurde übertragen.')
     }
     broadcast('state')
   } catch (fehler) {
@@ -256,6 +268,13 @@ async function abgleichsRunde(): Promise<void> {
       failoverAktiv = true
       addAudit('system', `Redundanz: Hauptserver unter ${cfg.peerUrl} nicht erreichbar – dieser Standby-Server übernimmt die Alarmverarbeitung.`)
       broadcast('state')
+      // Ein Protokolleintrag, den niemand liest, ist keine Meldung. Die
+      // Administration erfährt es aufs Telefon – der Standby kann das, denn er
+      // hält Konten und Push-Token gespiegelt.
+      void meldeAdministration(
+        'Alarmserver: Standby hat übernommen',
+        `Der Hauptserver ist seit über ${Math.round(karenz / 60_000)} Minuten nicht erreichbar. Der Standby verarbeitet jetzt Alarme. Bitte Ursache prüfen.`,
+      )
     }
   }
 }

@@ -38,6 +38,47 @@ export interface Sicherungsbefund {
   fehlend?: number
   /** Klartext für Portal und Meldung */
   text: string
+  /**
+   * Die Kopie an einem anderen Ort (SOBE_BACKUP_ZWEITZIEL). Eine Sicherung
+   * auf demselben Rechner wie die Datenbank ist keine: Stirbt der Host oder
+   * verschlüsselt ein Angreifer das Konto, sind beide weg.
+   */
+  extern: { lage: 'gut' | 'veraltet' | 'fehlt' | 'nicht-konfiguriert'; datei?: string; standZeit?: number; text: string }
+}
+
+/** Jüngste Sicherungsdatei in einem Ordner – oder null */
+function juengsteDatei(ordner: string): { pfad: string; datei: string; ts: number } | null {
+  let neuste: { pfad: string; datei: string; ts: number } | null = null
+  for (const name of readdirSync(ordner)) {
+    if (!/^sobe-.*\.sqlite$/.test(name)) continue
+    const pfad = join(ordner, name)
+    const ts = statSync(pfad).mtimeMs
+    if (!neuste || ts > neuste.ts) neuste = { pfad, datei: name, ts }
+  }
+  return neuste
+}
+
+/** Zustand der externen Kopie – nach Inhalt, nicht nach Dateidatum */
+export function pruefeExterneKopie(jetzt = Date.now()): Sicherungsbefund['extern'] {
+  const ziel = process.env.SOBE_BACKUP_ZWEITZIEL
+  if (!ziel) {
+    return { lage: 'nicht-konfiguriert', text: 'Kein zweites Sicherungsziel gesetzt (SOBE_BACKUP_ZWEITZIEL) – die Sicherung liegt nur auf diesem Rechner.' }
+  }
+  let neuste: ReturnType<typeof juengsteDatei>
+  try {
+    neuste = juengsteDatei(resolve(ziel))
+  } catch {
+    return { lage: 'fehlt', text: `Zweites Sicherungsziel ${ziel} nicht lesbar – dort liegt keine Kopie.` }
+  }
+  if (!neuste) return { lage: 'fehlt', text: `Keine Kopie im zweiten Sicherungsziel ${ziel}.` }
+  const zahlen = kennzahlen(neuste.pfad)
+  if (!zahlen || zahlen.juengster === 0 || jetzt - zahlen.juengster > HOECHSTALTER_MS) {
+    return {
+      lage: 'veraltet', datei: neuste.datei, standZeit: zahlen?.juengster,
+      text: `Die externe Kopie ${neuste.datei} ist veraltet oder unlesbar – der Sicherungslauf erreicht das Zweitziel nicht mehr.`,
+    }
+  }
+  return { lage: 'gut', datei: neuste.datei, standZeit: zahlen.juengster, text: `Externe Kopie ${neuste.datei}, Stand ${new Date(zahlen.juengster).toLocaleString('de-CH')}.` }
 }
 
 function sicherungsordner(): string {
@@ -67,6 +108,7 @@ function kennzahlen(pfad: string): { anzahl: number; juengster: number } | null 
  * heute Morgen, deren jüngster Eintrag drei Wochen alt ist, gilt als veraltet.
  */
 export function pruefeSicherung(jetzt = Date.now()): Sicherungsbefund {
+  const extern = pruefeExterneKopie(jetzt)
   const ordner = sicherungsordner()
   let neuste: { pfad: string; datei: string; ts: number } | null = null
   try {
@@ -77,16 +119,16 @@ export function pruefeSicherung(jetzt = Date.now()): Sicherungsbefund {
       if (!neuste || ts > neuste.ts) neuste = { pfad, datei: name, ts }
     }
   } catch {
-    return { lage: 'keine', text: `Sicherungsordner ${ordner} nicht lesbar – es wird nichts gesichert.` }
+    return { lage: 'keine', text: `Sicherungsordner ${ordner} nicht lesbar – es wird nichts gesichert.`, extern }
   }
   if (!neuste) {
-    return { lage: 'keine', text: `Keine Sicherung in ${ordner} gefunden – es wird nichts gesichert.` }
+    return { lage: 'keine', text: `Keine Sicherung in ${ordner} gefunden – es wird nichts gesichert.`, extern }
   }
 
   const gesichert = kennzahlen(neuste.pfad)
   if (!gesichert) {
     return {
-      lage: 'unlesbar', datei: neuste.datei, dateiZeit: neuste.ts,
+      lage: 'unlesbar', datei: neuste.datei, dateiZeit: neuste.ts, extern,
       text: `Die jüngste Sicherung ${neuste.datei} lässt sich nicht lesen – sie taugt nicht zur Wiederherstellung.`,
     }
   }
@@ -100,7 +142,7 @@ export function pruefeSicherung(jetzt = Date.now()): Sicherungsbefund {
   if (gesichert.juengster === 0 || rueckstand > HOECHSTALTER_MS) {
     const tage = Math.floor(rueckstand / 86_400_000)
     return {
-      lage: 'veraltet', datei: neuste.datei, dateiZeit: neuste.ts, standZeit: gesichert.juengster, fehlend,
+      lage: 'veraltet', datei: neuste.datei, dateiZeit: neuste.ts, standZeit: gesichert.juengster, fehlend, extern,
       text:
         `Die jüngste Sicherung ${neuste.datei} trägt zwar das Datum vom ${new Date(neuste.ts).toLocaleString('de-CH')}, ` +
         `enthält aber nur Einträge bis ${gesichert.juengster ? new Date(gesichert.juengster).toLocaleString('de-CH') : 'unbekannt'}` +
@@ -110,7 +152,7 @@ export function pruefeSicherung(jetzt = Date.now()): Sicherungsbefund {
   }
 
   return {
-    lage: 'gut', datei: neuste.datei, dateiZeit: neuste.ts, standZeit: gesichert.juengster, fehlend,
+    lage: 'gut', datei: neuste.datei, dateiZeit: neuste.ts, standZeit: gesichert.juengster, fehlend, extern,
     text: `Sicherung ${neuste.datei} vom ${new Date(gesichert.juengster).toLocaleString('de-CH')}, ${gesichert.anzahl} Protokolleinträge.`,
   }
 }
@@ -137,21 +179,26 @@ export async function ueberwacheSicherung(
   protokoll: (text: string) => void,
 ): Promise<Sicherungsbefund> {
   const befund = pruefeSicherung(jetzt)
+  // Für die Meldung zählt die schlechtere der beiden Lagen: Eine gute lokale
+  // Sicherung ohne externe Kopie ist ein Mangel, den jemand erfahren muss.
+  const externSchlecht = befund.extern.lage !== 'gut'
+  const lageGesamt = befund.lage !== 'gut' ? befund.lage : externSchlecht ? `extern-${befund.extern.lage}` : 'gut'
   const vorher = zuletztGemeldet()
-  const gleich = vorher.lage === befund.lage
+  const gleich = vorher.lage === lageGesamt
   if (gleich && jetzt - vorher.ts < MELDUNG_ABSTAND_MS) return befund
   // Ein stiller Normalzustand: «gut» wird nur gemeldet, wenn vorher etwas war
-  if (befund.lage === 'gut' && (vorher.lage === '' || vorher.lage === 'gut')) {
+  if (lageGesamt === 'gut' && (vorher.lage === '' || vorher.lage === 'gut')) {
     setSetting('sicherungswacheGemeldet', JSON.stringify({ lage: 'gut', ts: jetzt }))
     return befund
   }
-  setSetting('sicherungswacheGemeldet', JSON.stringify({ lage: befund.lage, ts: jetzt }))
-  if (befund.lage === 'gut') {
-    protokoll(`Sicherung wieder in Ordnung: ${befund.text}`)
-    await melden('Die Sicherung ist wieder in Ordnung.')
+  setSetting('sicherungswacheGemeldet', JSON.stringify({ lage: lageGesamt, ts: jetzt }))
+  if (lageGesamt === 'gut') {
+    protokoll(`Sicherung wieder in Ordnung: ${befund.text} ${befund.extern.text}`)
+    await melden('Die Sicherung ist wieder in Ordnung – lokal und extern.')
     return befund
   }
-  protokoll(`Sicherung beanstandet: ${befund.text}`)
-  await melden(befund.text)
+  const text = befund.lage !== 'gut' ? befund.text : befund.extern.text
+  protokoll(`Sicherung beanstandet: ${text}`)
+  await melden(text)
   return befund
 }

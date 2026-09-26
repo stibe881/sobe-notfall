@@ -276,7 +276,7 @@ export function ForcePasswordChange({ user }: { user: User }) {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
-    const problem = passwordProblem(password)
+    const problem = passwordProblem(password, user.role)
     if (problem) return setError(problem)
     if (password !== repeat) return setError('Die beiden Passwörter stimmen nicht überein.')
     const ergebnis = await changePassword(knownPassword ?? aktuell, password)
