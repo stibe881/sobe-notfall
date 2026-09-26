@@ -61,6 +61,19 @@ export function HoldButton({ onTrigger, label, hint = 'Zum Auslösen gedrückt h
 }) {
   const progress = useRef(new Animated.Value(0)).current
   const [holding, setHolding] = useState(false)
+  // Sichtbare Restzeit in Sekunden, während gehalten wird – unabhängig von der
+  // nativen Füllanimation, damit unsicheren Personen klar ist, wie lange noch
+  // durchgehalten werden muss, statt aus Ungeduld erneut zu drücken.
+  const [restSek, setRestSek] = useState<number | null>(null)
+  const timer = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  function timerStoppen() {
+    if (timer.current) {
+      clearInterval(timer.current)
+      timer.current = null
+    }
+    setRestSek(null)
+  }
 
   function start() {
     // Ohne diese Sperre löst ein zweites onPressIn während einer laufenden
@@ -70,7 +83,13 @@ export function HoldButton({ onTrigger, label, hint = 'Zum Auslösen gedrückt h
     // denselben Alarm doppelt oder dreifach.
     if (holding) return
     setHolding(true)
+    const beginn = Date.now()
+    setRestSek(Math.ceil(holdMs / 1000))
+    timer.current = setInterval(() => {
+      setRestSek(Math.max(0, Math.ceil((holdMs - (Date.now() - beginn)) / 1000)))
+    }, 100)
     Animated.timing(progress, { toValue: 1, duration: holdMs, easing: Easing.linear, useNativeDriver: true }).start(({ finished }) => {
+      timerStoppen()
       if (finished) {
         progress.setValue(0)
         setHolding(false)
@@ -81,12 +100,22 @@ export function HoldButton({ onTrigger, label, hint = 'Zum Auslösen gedrückt h
   }
 
   function stop() {
+    timerStoppen()
     setHolding(false)
     Animated.timing(progress, { toValue: 0, duration: 120, useNativeDriver: true }).start()
   }
 
   return (
-    <Pressable onPressIn={start} onPressOut={stop} style={styles.holdButton}>
+    <Pressable
+      onPressIn={start}
+      onPressOut={stop}
+      style={styles.holdButton}
+      accessibilityRole="button"
+      // Ein Screenreader liest sonst Label und Hinweis als zwei getrennte,
+      // in unklarer Reihenfolge vorgelesene Textknoten – hier als ein
+      // zusammenhängender, verständlicher Satz.
+      accessibilityLabel={`${label}. ${holding ? `Wird ausgelöst, noch ${restSek ?? Math.ceil(holdMs / 1000)} Sekunden halten` : hint}`}
+    >
       <Animated.View
         // Läuft über den Native-Treiber statt über width%: Sonst hängt die
         // Rückmeldung am JS-Thread – ist der gerade mit Zustands-Abgleich
@@ -96,7 +125,7 @@ export function HoldButton({ onTrigger, label, hint = 'Zum Auslösen gedrückt h
         style={[styles.holdFill, { transform: [{ scaleX: progress }] }]}
       />
       <Text style={styles.holdLabel}>{label}</Text>
-      <Text style={styles.holdHint}>{holding ? 'Halten…' : hint}</Text>
+      <Text style={styles.holdHint}>{holding ? `noch ${restSek ?? Math.ceil(holdMs / 1000)}…` : hint}</Text>
     </Pressable>
   )
 }
