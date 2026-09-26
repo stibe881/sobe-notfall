@@ -7,7 +7,25 @@ import { Badge, Button, Card, formatDateTime, formatRelative, formatTime, inputC
 import { ScenarioIcon } from '../components/ScenarioIcon'
 import { ereignisbericht } from '../lib/ereignisbericht'
 import { berichtDateiname, berichtHtml } from '../lib/berichtseite'
+import { logoUrl } from '../lib/api'
 import { IndoorKarte } from '../components/IndoorKarte'
+
+/** Logo für den Ereignisbericht als data:-URI – schlägt der Abruf fehl, bleibt der Bericht ohne Logo statt ganz zu scheitern */
+async function logoAlsDataUrl(version: string): Promise<string | undefined> {
+  try {
+    const antwort = await fetch(logoUrl(version))
+    if (!antwort.ok) return undefined
+    const blob = await antwort.blob()
+    return await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(reader.result as string)
+      reader.onerror = () => reject(reader.error)
+      reader.readAsDataURL(blob)
+    })
+  } catch {
+    return undefined
+  }
+}
 
 export default function AlarmMonitor() {
   const { state } = useStore()
@@ -130,9 +148,15 @@ function AlarmCard({ alarm, collapsed = false }: { alarm: Alarm; collapsed?: boo
    * fünf Jahren noch öffnen lässt. Aus dem Browser wird daraus mit
    * «Drucken» ein PDF.
    */
-  function bericht() {
+  async function bericht() {
     const daten = ereignisbericht(alarm, state)
-    const html = berichtHtml(daten, state.integrations?.organization?.name ?? 'SOBE Notfall')
+    // Logo eingebettet als data:-URI, damit der Bericht wie vorgesehen eine
+    // einzelne, in sich geschlossene Datei ohne Fremdbezüge bleibt – ein
+    // gescheiterter Abruf (Logo gelöscht, Netz weg) lässt den Bericht trotzdem
+    // entstehen, nur ohne Logo, statt die Ablage ganz zu verhindern.
+    const logoVersion = state.integrations?.organization?.logoVersion
+    const logoDataUrl = logoVersion ? await logoAlsDataUrl(logoVersion) : undefined
+    const html = berichtHtml(daten, state.integrations?.organization?.name ?? 'SOBE Notfall', Date.now(), logoDataUrl)
     const url = URL.createObjectURL(new Blob([html], { type: 'text/html;charset=utf-8' }))
     const a = document.createElement('a')
     a.href = url

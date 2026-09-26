@@ -29,6 +29,8 @@ const STIL = `
        margin: 34px 0 10px; padding-bottom: 6px; border-bottom: 1.5px solid var(--haus); }
   .kopf { border-bottom: 1.5px solid var(--haus); padding-bottom: 14px; }
   .kopf p { margin: 2px 0; color: var(--leise); font-size: 14px; }
+  .kopf-mit-logo { display: flex; align-items: flex-start; gap: 18px; }
+  .kopf-mit-logo .logo { height: 52px; max-width: 180px; object-fit: contain; }
   .marke { display: inline-block; font-size: 12px; font-weight: 700; letter-spacing: .1em;
            text-transform: uppercase; padding: 3px 9px; border-radius: 3px; margin-bottom: 8px; }
   .marke-uebung { background: #fef3c7; color: #92400e; }
@@ -45,6 +47,9 @@ const STIL = `
   .zahl span { font-size: 12.5px; color: var(--leise); }
   .offen { background: #f5f7f6; border-left: 3px solid var(--haus); padding: 12px 16px; margin-top: 8px; }
   .offen ul { margin: 6px 0 0; padding-left: 1.2em; }
+  table.freigabe { margin-top: 26px; }
+  table.freigabe td { border: none; padding: 4px 10px 22px 0; font-size: 13px; color: var(--leise); white-space: nowrap; }
+  table.freigabe td.linie { border-bottom: 1px solid #14201e; white-space: normal; width: 100%; }
   footer { margin-top: 44px; padding-top: 14px; border-top: 1px solid var(--linie);
            font-size: 12.5px; color: var(--leise); }
   @media print {
@@ -55,7 +60,7 @@ const STIL = `
   }
 `
 
-export function berichtHtml(b: Ereignisbericht, organisation: string, erzeugtAm = Date.now()): string {
+export function berichtHtml(b: Ereignisbericht, organisation: string, erzeugtAm = Date.now(), logoDataUrl?: string): string {
   const z = bilanz(b)
   const titel = `Ereignisbericht ${b.szenario} ${new Date(b.ausgeloestAm).toLocaleDateString('de-CH')}`
 
@@ -68,12 +73,15 @@ export function berichtHtml(b: Ereignisbericht, organisation: string, erzeugtAm 
 <title>${sicher(titel)}</title>
 <style>${STIL}</style>
 
-<div class="kopf">
-  ${b.uebung ? '<span class="marke marke-uebung">Übung – kein Ereignis</span>' : ''}
-  ${b.fehlalarmGemeldet ? '<span class="marke marke-fehlalarm">Fehlalarm gemeldet</span>' : ''}
-  <h1>Ereignisbericht</h1>
-  <p>${sicher(organisation)}</p>
-  <p>${sicher(b.szenario)} &middot; ${zeit(b.ausgeloestAm)}</p>
+<div class="kopf${logoDataUrl ? ' kopf-mit-logo' : ''}">
+  ${logoDataUrl ? `<img class="logo" src="${logoDataUrl}" alt="">` : ''}
+  <div>
+    ${b.uebung ? '<span class="marke marke-uebung">Übung – kein Ereignis</span>' : ''}
+    ${b.fehlalarmGemeldet ? '<span class="marke marke-fehlalarm">Fehlalarm gemeldet</span>' : ''}
+    <h1>Ereignisbericht</h1>
+    <p>${sicher(organisation)}</p>
+    <p>${sicher(b.szenario)} &middot; ${zeit(b.ausgeloestAm)}</p>
+  </div>
 </div>
 
 <h2>Das Ereignis</h2>
@@ -134,6 +142,12 @@ ${b.verlauf.length === 0 ? '<p><i>Keine Einträge.</i></p>' : `<table>
      sie dazu und sind vor der Weitergabe zu ergänzen:</p>
   <ul>${b.offeneFelder.map((f) => `<li>${sicher(f)}</li>`).join('')}</ul>
 </div>
+
+<h2>Freigabe</h2>
+<table class="freigabe">
+  <tr><td>Erstellt/geprüft von</td><td class="linie"></td><td>Datum</td><td class="linie"></td></tr>
+  <tr><td>Unterschrift</td><td class="linie" colspan="3"></td></tr>
+</table>
 
 <footer>
   <p>Erzeugt am ${zeit(erzeugtAm)} aus dem Alarmjournal von SOBE Notfall.</p>
