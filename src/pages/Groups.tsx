@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Pencil, Plus, Trash2, UsersRound } from 'lucide-react'
 import { uid, useStore } from '../store'
 import type { Group } from '../types'
-import { Badge, Button, Card, Field, Modal, Toggle, inputClass, useConfirm } from '../components/ui'
+import { Badge, Button, Card, EmptyState, Field, Modal, Toggle, inputClass, useConfirm } from '../components/ui'
 
 export default function Groups() {
   const { state, dispatch } = useStore()
@@ -21,6 +21,12 @@ export default function Groups() {
         </Button>
       </div>
 
+      {state.groups.length === 0 && (
+        <EmptyState>
+          Noch keine Gruppe angelegt. Gruppen bestimmen, wer bei welchem Szenario alarmiert wird und wer als
+          Krisenteam gilt – legen Sie mindestens eine an, bevor Sie Szenarien und Alarmpläne einrichten.
+        </EmptyState>
+      )}
       <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
         {state.groups.map((g) => {
           const members = state.users.filter((u) => u.groupIds.includes(g.id))

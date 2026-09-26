@@ -2,7 +2,7 @@ import { Suspense, lazy, useState } from 'react'
 import { Building2, Loader2, MapPin, Pencil, Plus, Search, Trash2 } from 'lucide-react'
 import { uid, useStore } from '../store'
 import type { Location } from '../types'
-import { Badge, Button, Card, Field, Modal, inputClass, useConfirm } from '../components/ui'
+import { Badge, Button, Card, EmptyState, Field, Modal, inputClass, useConfirm } from '../components/ui'
 // Leaflet samt Kartenstil nur laden, wenn ein Standort bearbeitet wird – das
 // hält das Bündel für alle anderen Seiten klein
 const StandortKarte = lazy(() => import('../components/StandortKarte').then((m) => ({ default: m.StandortKarte })))
@@ -33,6 +33,12 @@ export default function Locations() {
         <Button onClick={() => setEditing(newLocation())}><Plus size={16} /> Neuer Standort</Button>
       </div>
 
+      {state.locations.length === 0 && (
+        <EmptyState>
+          Noch kein Standort angelegt. Ohne Standort kann niemandem ein Profilstandort zugewiesen und keine
+          Geofencing-Grenze gezogen werden – legen Sie mindestens einen an.
+        </EmptyState>
+      )}
       <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
         {state.locations.map((l) => {
           const userCount = state.users.filter((u) => u.locationId === l.id).length

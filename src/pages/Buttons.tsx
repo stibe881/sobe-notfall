@@ -5,7 +5,7 @@ import { createAlarm, uid, useStore } from '../store'
 import { api } from '../lib/api'
 import { HALTEZEIT, haltezeitBefehl } from '../lib/geraetebefehle'
 import type { AlarmButton } from '../types'
-import { Badge, Button, Card, Field, Modal, Toggle, formatDateTime, inputClass, useConfirm } from '../components/ui'
+import { Badge, Button, Card, EmptyState, Field, Modal, Toggle, formatDateTime, inputClass, useConfirm } from '../components/ui'
 
 /**
  * Haltezeit der Alarmtaste.
@@ -159,6 +159,12 @@ export default function Buttons() {
         </div>
       )}
 
+      {state.buttons.length === 0 && (
+        <EmptyState>
+          Noch kein Alarmknopf erfasst. Physische Alarmknöpfe (LoRaWAN oder GSM) tragen Sie hier ein, sobald sie
+          angeschlossen sind – ohne Eintrag ordnet der Server einen Tastendruck niemandem zu.
+        </EmptyState>
+      )}
       <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
         {state.buttons.map((b) => {
           const location = state.locations.find((l) => l.id === b.locationId)
