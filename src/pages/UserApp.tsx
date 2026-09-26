@@ -15,7 +15,7 @@ import { notrufbild } from '../lib/notrufsymbole'
 import { Badge, HoldButton, Toggle, formatDuration, formatRelative, inputClass, kanalName, useConfirm, usePrompt } from '../components/ui'
 import { ScenarioIcon } from '../components/ScenarioIcon'
 import { MIN_PASSWORD_LENGTH, passwordProblem } from '../lib/auth'
-import { activeScenarios, allClearStepsOf, brauchtRollentrennung, eigeneSchritteNachRolle, responseStepsFor, responseStepsOf } from '../lib/scenarios'
+import { activeScenarios, allClearStepsOf, brauchtRollentrennung, eigeneSchritteNachRolle, haeufigeSzenarien, responseStepsFor, responseStepsOf } from '../lib/scenarios'
 
 type Tab = 'start' | 'szenarien' | 'alleinarbeit' | 'notruf' | 'profil'
 
@@ -79,12 +79,15 @@ export default function UserApp() {
             {me.firstName} {me.lastName} · <MapPin size={10} /> {myLocation?.name}
           </div>
         </div>
+        {/* Ein Weg zur Szenarienwahl, keine Auslösung. Vorher gefüllt rot wie
+            der SOS-Knopf darunter – zwei gleich dringliche rote Flächen mit
+            unterschiedlicher Wirkung kosten unter Druck Sekunden. */}
         <button
-          className="shrink-0 flex items-center gap-1.5 rounded-full bg-alarm-600 text-white text-xs font-bold px-3 py-1.5 active:scale-95 transition"
+          className="shrink-0 flex items-center gap-1.5 rounded-full border-[1.5px] border-alarm-400 text-alarm-200 text-xs font-bold px-3 py-1.5 active:scale-95 transition"
           onClick={() => { setOpenScenario(null); setAlarmWahl(true) }}
-          aria-label="Alarm auslösen"
+          aria-label="Ereignis wählen und Alarm auslösen"
         >
-          <Siren size={14} /> Alarm auslösen
+          <Siren size={14} /> Ereignis wählen
         </button>
       </header>
 
@@ -137,7 +140,10 @@ export default function UserApp() {
         ) : alarmWahl ? (
           <AlarmAuswahl onPick={(s) => oeffneSzenario(s, 'entdecker', null, 0)} onBack={() => setAlarmWahl(false)} />
         ) : tab === 'start' ? (
-          <StartTab onOpenScenario={(s, a, modus) => oeffneSzenario(s, modus ?? 'empfaenger', a)} />
+          <StartTab
+            onOpenScenario={(s, a, modus) => oeffneSzenario(s, modus ?? 'empfaenger', a)}
+            onWaehleSzenario={(s) => oeffneSzenario(s, 'entdecker', null, 0)}
+          />
         ) : tab === 'szenarien' ? (
           <ScenarioListTab onOpen={(s) => oeffneSzenario(s)} />
         ) : tab === 'alleinarbeit' ? (
@@ -227,7 +233,11 @@ function Rueckmeldestand({ alarm }: { alarm: Alarm }) {
 const FEHLALARM_TEXT = 'Alle Empfänger:innen und der Krisenstab erhalten Ihre Meldung; die Entwarnung gibt der Krisenstab. Kurze Begründung (optional):'
 const ENTWARNUNG_TEXT = 'Der Alarm wird beendet und alle Empfänger:innen erhalten die Entwarnung. Hinweis für die Empfänger:innen (optional):'
 
-function StartTab({ onOpenScenario }: { onOpenScenario: (s: Scenario, alarm: Alarm, modus?: 'empfaenger' | 'entwarnung') => void }) {
+function StartTab({ onOpenScenario, onWaehleSzenario }: {
+  onOpenScenario: (s: Scenario, alarm: Alarm, modus?: 'empfaenger' | 'entwarnung') => void
+  /** Kachel angetippt: direkt in die Phase «Alarmieren» dieses Szenarios */
+  onWaehleSzenario: (s: Scenario) => void
+}) {
   const { state, dispatch } = useStore()
   const { ask, confirmEl } = useConfirm()
   const { frage, promptEl } = usePrompt()
@@ -237,6 +247,9 @@ function StartTab({ onOpenScenario }: { onOpenScenario: (s: Scenario, alarm: Ala
   const entwarnungGeben = (alarmId: string) =>
     frage('Entwarnung geben', ENTWARNUNG_TEXT, (text) => dispatch({ type: 'END_ALARM', alarmId, byUserId: state.currentUserId, note: text }), 'Entwarnung senden', 'z. B. Rückkehr ab 10:30 über den Haupteingang')
   const me = state.users.find((u) => u.id === (state.previewUserId ?? state.currentUserId)) ?? state.users[0]
+  const hierStandort = state.locations.find((l) => l.id === me.locationId)
+  // Was in diesem Haus tatsächlich vorkommt, steht vorn – siehe lib/scenarios
+  const kacheln = haeufigeSzenarien(state.scenarios, state.alarms, 4)
   const mySos = state.alarms.filter((a) => a.status === 'active' && a.triggeredByUserId === me.id)
   const myAlarms = state.alarms.filter(
     (a) => a.status === 'active' && a.triggeredByUserId !== me.id && a.deliveries.some((d) => d.userId === me.id),
@@ -431,6 +444,16 @@ function StartTab({ onOpenScenario }: { onOpenScenario: (s: Scenario, alarm: Ala
 
       {mySos.length === 0 && (
         <>
+          {/* Der Standort entscheidet, wer alarmiert wird – in der Vorschau
+              nur zur Ansicht, geändert wird er auf dem Gerät. */}
+          <div className="flex items-center gap-2.5 rounded-2xl bg-brand-50 border border-slate-200 px-3.5 py-2.5">
+            <MapPin size={15} className="text-brand-600 shrink-0" />
+            <div className="min-w-0">
+              <div className="text-sm font-bold text-slate-800 truncate">{hierStandort?.name ?? 'Kein Standort'}</div>
+              <div className="text-xs text-muted">Bestimmt, wer bei einem Alarm aufgeboten wird</div>
+            </div>
+          </div>
+
           <HoldButton onTrigger={sos} hint="Zum Auslösen gedrückt halten" className="w-full">
             <Siren size={24} /> SOS
           </HoldButton>
@@ -439,6 +462,29 @@ function StartTab({ onOpenScenario }: { onOpenScenario: (s: Scenario, alarm: Ala
             Ruft Schulsanität und Hausdienst an Ihren Standort, mit automatischer Eskalation.
             Was los ist, können Sie danach nachmelden.
           </div>
+
+          {/* Der wertvollste Platz der App: Was in diesem Haus tatsächlich
+              vorkommt, steht hier – siehe haeufigeSzenarien in lib/scenarios. */}
+          {kacheln.length > 0 && (
+            <div className="pt-1">
+              <div className="text-xs font-bold text-muted uppercase tracking-wide mb-2">Wissen Sie, was los ist?</div>
+              <div className="grid grid-cols-2 gap-2.5">
+                {kacheln.map((s) => (
+                  <button
+                    key={s.id}
+                    onClick={() => onWaehleSzenario(s)}
+                    className="flex flex-col items-center gap-1.5 rounded-2xl bg-white border border-slate-200 px-2.5 py-3.5 active:scale-[0.99] transition"
+                  >
+                    <ScenarioIcon name={s.icon} size={24} className="text-alarm-600" />
+                    <span className="text-[13px] font-semibold text-slate-800 text-center leading-tight">{s.title}</span>
+                  </button>
+                ))}
+              </div>
+              <div className="text-xs text-center text-muted mt-2">
+                Führt durch den Ablauf – Notruf zuerst, dann die interne Alarmierung.
+              </div>
+            </div>
+          )}
         </>
       )}
 

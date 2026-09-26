@@ -144,3 +144,31 @@ export function zeigePrioritaet(priority: ScenarioPriority, scenarios: Scenario[
   const ueblich = haeufigstePrioritaet(scenarios)
   return ueblich === null || priority !== ueblich
 }
+
+/**
+ * Die Szenarien, die am Startbildschirm als Kacheln stehen.
+ *
+ * Nicht geraten, sondern aus dem eigenen Haus gelesen: Was hier tatsächlich
+ * ausgelöst wurde, steht vorn. So passt sich die App an, ohne dass jemand
+ * etwas pflegen muss – an einer Schule kommen andere Lagen vor als in einem
+ * Heim, und in Baar andere als in Kloten.
+ *
+ * Solange keine Alarme vorliegen (neues System, frisches Jahr), entscheidet
+ * die Priorität, dann der Titel. Damit ist die Reihenfolge nie zufällig.
+ *
+ * Das SOS-Szenario bleibt aussen vor – dafür gibt es den grossen Knopf.
+ */
+export function haeufigeSzenarien(scenarios: Scenario[], alarms: { scenarioId?: string }[], anzahl: number): Scenario[] {
+  const rang: Record<ScenarioPriority, number> = { hoch: 0, mittel: 1, tief: 2 }
+  const genutzt = new Map<string, number>()
+  for (const a of alarms) {
+    if (a.scenarioId) genutzt.set(a.scenarioId, (genutzt.get(a.scenarioId) ?? 0) + 1)
+  }
+  return activeScenarios(scenarios)
+    .filter((s) => s.id !== 'sc-sos')
+    .sort((a, b) =>
+      (genutzt.get(b.id) ?? 0) - (genutzt.get(a.id) ?? 0) ||
+      rang[a.priority] - rang[b.priority] ||
+      a.title.localeCompare(b.title, 'de'))
+    .slice(0, anzahl)
+}

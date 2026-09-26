@@ -189,10 +189,10 @@ function Root() {
           style={styles.headerAlarmButton}
           onPress={() => { setOpenScenario(null); setAlarmWahl(true) }}
           accessibilityRole="button"
-          accessibilityLabel="Alarm auslösen"
+          accessibilityLabel="Ereignis wählen und Alarm auslösen"
         >
-          <Siren size={15} color="#fff" />
-          <Text style={styles.headerAlarmText}>Alarm auslösen</Text>
+          <Siren size={15} color="#fca5a5" />
+          <Text style={styles.headerAlarmText}>Ereignis wählen</Text>
         </Pressable>
       </View>
 
@@ -224,7 +224,10 @@ function Root() {
         ) : alarmWahl ? (
           <AlarmAuswahlScreen onPick={(s) => oeffneSzenario(s, 'entdecker', null, 0)} onBack={() => setAlarmWahl(false)} />
         ) : tab === 'start' ? (
-          <StartScreen onOpenScenario={(s, a, modus) => oeffneSzenario(s, modus ?? 'empfaenger', a)} />
+          <StartScreen
+            onOpenScenario={(s, a, modus) => oeffneSzenario(s, modus ?? 'empfaenger', a)}
+            onWaehleSzenario={(s) => oeffneSzenario(s, 'entdecker', null, 0)}
+          />
         ) : tab === 'szenarien' ? (
           <ScenariosScreen onOpen={(s) => oeffneSzenario(s)} />
         ) : tab === 'alleinarbeit' ? (
@@ -308,16 +311,26 @@ const styles = StyleSheet.create({
   // Heller Grauton: Der Kopf ist dunkel, dort muss die Schrift heller
   // werden statt dunkler (7.9:1 auf dem Kopfhintergrund).
   headerSub: { color: '#a0aec0', fontSize: 11 },
+  /**
+   * Der Knopf oben ist ein Weg zur Szenarienwahl, keine Auslösung.
+   *
+   * Vorher war er gefüllt rot – genau wie der grosse SOS-Knopf darunter.
+   * Zwei gleich dringlich aussehende rote Flächen nebeneinander, mit
+   * unterschiedlicher Wirkung und ohne erkennbaren Unterschied: Unter Druck
+   * kostet das Sekunden. Jetzt ist er umrissen statt gefüllt; das Rot bleibt
+   * als Hinweis, die Fläche gehört dem SOS.
+   */
   headerAlarmButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: colors.alarmLight,
+    borderWidth: 1.5,
+    borderColor: colors.alarmLight,
     borderRadius: 999,
     paddingHorizontal: 12,
-    paddingVertical: 7,
+    paddingVertical: 6,
   },
-  headerAlarmText: { color: '#fff', fontWeight: '800', fontSize: 12 },
+  headerAlarmText: { color: '#fca5a5', fontWeight: '700', fontSize: 12 },
   alarmBanner: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -11,14 +11,14 @@ import Constants from 'expo-constants'
 import { ensurePermissions } from './notifications'
 import { androidCountdownVerfuegbar } from './androidTimer'
 import { serverUrl } from './api'
-import { useAufenthalt } from './geofencing'
+import { setzeAufenthaltVonHand, useAufenthalt } from './geofencing'
 import { notrufbild } from './notrufsymbole'
 import { lagetext, notrufAnbieten } from './alarmversand'
 import { useIndoor, type IndoorStatus } from './indoor'
 import { LONE_WORK_DEFAULT_GROUPS, type Alarm, type IndoorPosition, type IntegrationSettings, type LoneWorkSession, type Scenario, type User } from './types'
 import { Badge, Card, HoldButton, colors, formatDuration, formatRelative } from './ui'
 import { MIN_PASSWORD_LENGTH, passwordProblem } from './auth'
-import { activeScenarios, allClearStepsOf, brauchtRollentrennung, eigeneSchritteNachRolle, responseStepsFor, responseStepsOf } from './scenarios'
+import { activeScenarios, allClearStepsOf, brauchtRollentrennung, eigeneSchritteNachRolle, haeufigeSzenarien, responseStepsFor, responseStepsOf } from './scenarios'
 
 // ---------- Start: Alarme + SOS ----------
 
@@ -132,7 +132,52 @@ function Lagemeldungen({ alarm }: { alarm: Alarm }) {
 /** Wie lange eine Entwarnung auf dem Start-Tab stehen bleibt */
 const ENTWARNUNG_SICHTBAR_MS = 12 * 60 * 60_000
 
-export function StartScreen({ onOpenScenario }: { onOpenScenario: (s: Scenario, alarm: Alarm, modus?: 'empfaenger' | 'entwarnung') => void }) {
+/**
+ * Standort von Hand wählen.
+ *
+ * Die Ortung liegt manchmal daneben – zwischen zwei Gebäuden, im Keller, bei
+ * abgeschaltetem Standortzugriff. Der Standort bestimmt, wer alarmiert wird;
+ * er muss sich deshalb in einem Schritt richtigstellen lassen, ohne den Weg
+ * über das Profil.
+ */
+function StandortWahl({
+  aktuell, onWaehlen, onSchliessen,
+}: { aktuell: string; onWaehlen: (id: string) => void; onSchliessen: () => void }) {
+  const { state } = useStore()
+  return (
+    <View style={styles.wahlHuelle}>
+      <View style={styles.wahlKasten}>
+        <Text style={styles.wahlTitel}>Wo sind Sie gerade?</Text>
+        <Text style={styles.wahlText}>
+          Der Standort entscheidet, wer bei einem Alarm aufgeboten wird.
+        </Text>
+        {state.locations.map((l) => (
+          <Pressable
+            key={l.id}
+            style={[styles.wahlZeile, l.id === aktuell && styles.wahlZeileAktiv]}
+            onPress={() => onWaehlen(l.id)}
+            accessibilityRole="button"
+          >
+            <MapPin size={16} color={l.id === aktuell ? colors.brand : colors.faint} />
+            <Text style={[styles.wahlZeileText, l.id === aktuell && { fontWeight: '700', color: colors.brand }]}>
+              {l.name}
+            </Text>
+            {l.id === aktuell && <Check size={16} color={colors.brand} />}
+          </Pressable>
+        ))}
+        <Pressable style={styles.wahlAbbruch} onPress={onSchliessen}>
+          <Text style={styles.wahlAbbruchText}>Abbrechen</Text>
+        </Pressable>
+      </View>
+    </View>
+  )
+}
+
+export function StartScreen({ onOpenScenario, onWaehleSzenario }: {
+  onOpenScenario: (s: Scenario, alarm: Alarm, modus?: 'empfaenger' | 'entwarnung') => void
+  /** Kachel angetippt: direkt in die Phase «Alarmieren» dieses Szenarios */
+  onWaehleSzenario: (s: Scenario) => void
+}) {
   const { state, dispatch } = useStore()
   const me = state.users.find((u) => u.id === state.currentUserId) ?? state.users[0]
   // Ein SOS gilt dort, wo die Person gerade ist – nicht dort, wo ihr Profil sie
@@ -145,6 +190,10 @@ export function StartScreen({ onOpenScenario }: { onOpenScenario: (s: Scenario, 
     ? state.integrations?.meridian?.karten.find((k) => k.mapId === indoor.position!.mapId)?.locationId
     : undefined
   const standortId = indoorStandort ?? aufenthalt ?? me.locationId
+  const hierStandort = state.locations.find((l) => l.id === standortId)
+  const [standortWahl, setStandortWahl] = useState(false)
+  // Was in diesem Haus tatsächlich vorkommt, steht vorn – siehe scenarios.ts
+  const kacheln = haeufigeSzenarien(state.scenarios, state.alarms, 4)
   const mySos = state.alarms.filter((a) => a.status === 'active' && a.triggeredByUserId === me.id)
   const myAlarms = state.alarms.filter(
     (a) => a.status === 'active' && a.triggeredByUserId !== me.id && a.deliveries.some((d) => d.userId === me.id),
@@ -328,13 +377,62 @@ export function StartScreen({ onOpenScenario }: { onOpenScenario: (s: Scenario, 
 
       {mySos.length === 0 && (
         <>
+          {/* Der Standort entscheidet, wer alarmiert wird. Vorher stand er nur
+              klein und grau im Kopf – jetzt sichtbar und mit einem Tipp
+              korrigierbar. */}
+          <Pressable style={styles.standortLeiste} onPress={() => setStandortWahl(true)}>
+            <MapPin size={15} color={colors.brand} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.standortName} numberOfLines={1}>{hierStandort?.name ?? 'Kein Standort'}</Text>
+              <Text style={styles.standortHinweis}>
+                {indoorStandort ? 'aus der Ortung im Gebäude'
+                  : aufenthalt ? 'aus der Standorterkennung'
+                  : 'aus Ihrem Profil'} · antippen zum Ändern
+              </Text>
+            </View>
+          </Pressable>
+
           <HoldButton label="SOS" onTrigger={sos} />
           <Text style={[styles.faint, { textAlign: 'center' }]}>
             Für jede Lage, in der es schnell Hilfe braucht – der Grund muss nicht feststehen.
             Ruft Schulsanität und Hausdienst an Ihren Standort, mit automatischer Eskalation.
             Was los ist, können Sie danach nachmelden.
           </Text>
+
+          {/* Der Platz unter dem SOS-Knopf ist der wertvollste der App: Er
+              wird im Ernstfall als Erstes angeschaut. Hier stehen die Lagen,
+              die in diesem Haus tatsächlich vorkommen. */}
+          {kacheln.length > 0 && (
+            <View style={{ marginTop: 6 }}>
+              <Text style={styles.abschnitt}>Wissen Sie, was los ist?</Text>
+              <View style={styles.kachelGitter}>
+                {kacheln.map((s) => (
+                  <Pressable
+                    key={s.id}
+                    style={styles.szenarioKachel}
+                    onPress={() => onWaehleSzenario(s)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${s.title} – Alarm auslösen`}
+                  >
+                    <ScenarioIcon name={s.icon} size={24} color={colors.alarm} />
+                    <Text style={styles.szenarioKachelText} numberOfLines={2}>{s.title}</Text>
+                  </Pressable>
+                ))}
+              </View>
+              <Text style={[styles.faint, { textAlign: 'center', marginTop: 8 }]}>
+                Führt durch den Ablauf – Notruf zuerst, dann die interne Alarmierung.
+              </Text>
+            </View>
+          )}
         </>
+      )}
+
+      {standortWahl && (
+        <StandortWahl
+          aktuell={standortId}
+          onWaehlen={(id) => { void setzeAufenthaltVonHand(id); setStandortWahl(false) }}
+          onSchliessen={() => setStandortWahl(false)}
+        />
       )}
 
     </ScrollView>
@@ -1857,6 +1955,27 @@ const styles = StyleSheet.create({
   stepNumberText: { color: '#fff', fontWeight: '800', fontSize: 12 },
   checkRow: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: 12, padding: 11, marginBottom: 7 },
   checkbox: { width: 20, height: 20, borderRadius: 5, borderWidth: 1.5, borderColor: '#cbd5e1', alignItems: 'center', justifyContent: 'center' },
+  // --- Standortleiste über dem SOS-Knopf ---
+  standortLeiste: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.brandBg, borderWidth: 1, borderColor: colors.border, borderRadius: 14, paddingVertical: 11, paddingHorizontal: 13 },
+  standortName: { fontSize: 15, fontWeight: '700', color: colors.text },
+  standortHinweis: { fontSize: 12, color: colors.muted },
+
+  // --- Szenariokacheln unter dem SOS-Knopf ---
+  abschnitt: { fontSize: 13, fontWeight: '700', color: colors.muted, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 9 },
+  szenarioKachel: { width: '48%', flexGrow: 1, alignItems: 'center', gap: 7, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: 14, paddingVertical: 15, paddingHorizontal: 9 },
+  szenarioKachelText: { fontSize: 13.5, fontWeight: '600', color: colors.text, textAlign: 'center' },
+
+  // --- Standort von Hand wählen ---
+  wahlHuelle: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(15,23,42,0.55)', alignItems: 'center', justifyContent: 'center', padding: 22, zIndex: 40 },
+  wahlKasten: { width: '100%', maxWidth: 380, backgroundColor: colors.card, borderRadius: 18, padding: 18, gap: 8 },
+  wahlTitel: { fontSize: 18, fontWeight: '800', color: colors.text },
+  wahlText: { fontSize: 13.5, color: colors.muted, marginBottom: 4 },
+  wahlZeile: { flexDirection: 'row', alignItems: 'center', gap: 11, paddingVertical: 13, paddingHorizontal: 12, borderRadius: 11, borderWidth: 1, borderColor: colors.border },
+  wahlZeileAktiv: { borderColor: colors.brand, backgroundColor: colors.brandBg },
+  wahlZeileText: { flex: 1, fontSize: 15, color: colors.text },
+  wahlAbbruch: { paddingVertical: 12, alignItems: 'center', marginTop: 2 },
+  wahlAbbruchText: { fontSize: 15, color: colors.muted, fontWeight: '600' },
+
   // --- «Nicht gesendet»: deckt den Bildschirm, bis der Alarm draussen ist ---
   fehlerHuelle: { ...StyleSheet.absoluteFillObject, backgroundColor: colors.alarm, zIndex: 50 },
   fehlerInhalt: { flexGrow: 1, justifyContent: 'center', alignItems: 'center', padding: 24, gap: 12 },

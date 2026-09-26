@@ -41,11 +41,49 @@ const AUFENTHALT_KEY = 'sonnenberg-geofence-aufenthalt-v1'
 let aufenthalt: string | null = null
 const zuhoerende = new Set<(id: string | null) => void>()
 
-function setzeAufenthalt(id: string | null): void {
+function setzeAufenthalt(id: string | null, vonHand = false): void {
+  // Eine Handkorrektur hat Vorrang: Sie wurde bewusst gesetzt, weil die
+  // Ortung danebenlag. Sonst käme das nächste Geofence-Ereignis und
+  // überschriebe sie sofort wieder.
+  if (!vonHand && handkorrekturAktiv()) return
   if (aufenthalt === id) return
   aufenthalt = id
   AsyncStorage.setItem(AUFENTHALT_KEY, id ?? '').catch(() => {})
   for (const melde of zuhoerende) melde(id)
+}
+
+/**
+ * Aufenthalt von Hand richtigstellen.
+ *
+ * Die Ortung liegt manchmal daneben: zwischen zwei Gebäuden, im Keller, bei
+ * abgeschaltetem Standortzugriff, oder weil ein Standort gar keinen Umriss
+ * hat. Da der Standort entscheidet, wer bei einem Alarm aufgeboten wird,
+ * muss eine Person ihn in einem Schritt korrigieren können.
+ *
+ * Die Korrektur hält HANDKORREKTUR_MS lang: Sonst würde das nächste
+ * Geofence-Ereignis sie sofort wieder überschreiben, und die Person hätte
+ * ins Leere getippt. Danach übernimmt die Ortung wieder – wer das Gebäude
+ * inzwischen verlassen hat, soll nicht ewig dort geführt werden.
+ */
+export const HANDKORREKTUR_MS = 30 * 60_000
+let vonHandBis = 0
+
+export async function setzeAufenthaltVonHand(id: string | null): Promise<void> {
+  vonHandBis = Date.now() + HANDKORREKTUR_MS
+  setzeAufenthalt(id, true)
+  // Der Server alarmiert nach seinem eigenen Stand – er muss es also erfahren
+  if (!authToken()) await loadApiSettings()
+  if (!authToken()) return
+  try {
+    await api.geoReport(id)
+  } catch {
+    // Server nicht erreichbar – die nächste Meldung oder der App-Start holt es nach
+  }
+}
+
+/** Gilt gerade eine Handkorrektur? */
+export function handkorrekturAktiv(jetzt = Date.now()): boolean {
+  return jetzt < vonHandBis
 }
 
 /** Aufenthalt des letzten App-Laufs übernehmen (beim Start aufrufen) */

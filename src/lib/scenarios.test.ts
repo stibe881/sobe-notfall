@@ -1,4 +1,4 @@
-import { brauchtRollentrennung, eigeneSchritteNachRolle, rollenkonflikte, haeufigstePrioritaet, zeigePrioritaet } from './scenarios'
+import { brauchtRollentrennung, eigeneSchritteNachRolle, rollenkonflikte, haeufigstePrioritaet, zeigePrioritaet, haeufigeSzenarien } from './scenarios'
 import type { Scenario } from '../types'
 
 const brand = {
@@ -82,6 +82,36 @@ pruefe('Inaktive Szenarien zählen nicht',
 
   pruefe('bei einem einzigen Szenario gibt es kein «üblich»',
     haeufigstePrioritaet([sz('a','hoch')]) === null && zeigePrioritaet('hoch', [sz('a','hoch')]))
+}
+
+// ---------- Kacheln auf dem Startbildschirm ----------
+{
+  const sz = (id: string, priority: 'hoch' | 'mittel' | 'tief', title = id, active = true) =>
+    ({ id, priority, title, active, icon: '', category: '', instructions: [], followUp: [],
+       checklist: [], silentDefault: false, defaultChannels: [], responsibleGroupIds: [], contactIds: [] }) as unknown as Scenario
+
+  const vorrat = [
+    sz('sc-sos', 'hoch', 'SOS'),
+    sz('sc-brand', 'hoch', 'Brand'),
+    sz('sc-medizin', 'hoch', 'Medizinischer Notfall'),
+    sz('sc-strom', 'tief', 'Stromausfall'),
+    sz('sc-unwetter', 'mittel', 'Unwetter'),
+    sz('sc-alt', 'hoch', 'Abgeschaltet', false),
+  ]
+
+  pruefe('SOS gehört nicht auf die Kacheln – dafür gibt es den grossen Knopf',
+    !haeufigeSzenarien(vorrat, [], 4).some((s) => s.id === 'sc-sos'))
+  pruefe('abgeschaltete Szenarien erscheinen nicht',
+    !haeufigeSzenarien(vorrat, [], 4).some((s) => s.id === 'sc-alt'))
+  pruefe('ohne Verlauf entscheidet die Priorität, dann der Titel',
+    haeufigeSzenarien(vorrat, [], 4).map((s) => s.id).join(',') === 'sc-brand,sc-medizin,sc-unwetter,sc-strom')
+  pruefe('was hier oft ausgelöst wurde, steht vorn',
+    haeufigeSzenarien(vorrat, [{ scenarioId: 'sc-strom' }, { scenarioId: 'sc-strom' }], 2)[0].id === 'sc-strom')
+  pruefe('bei gleicher Häufigkeit bleibt die Priorität massgebend',
+    haeufigeSzenarien(vorrat, [{ scenarioId: 'sc-strom' }, { scenarioId: 'sc-brand' }], 2).map((s) => s.id).join(',') === 'sc-brand,sc-strom')
+  pruefe('die gewünschte Anzahl wird eingehalten', haeufigeSzenarien(vorrat, [], 2).length === 2)
+  pruefe('Alarme ohne Szenario stören nicht',
+    haeufigeSzenarien(vorrat, [{}, { scenarioId: undefined }], 4).length === 4)
 }
 
 console.log(`\n${gezaehlt - fehler} bestanden, ${fehler} fehlgeschlagen`)
