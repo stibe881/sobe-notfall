@@ -135,6 +135,27 @@ export interface EscalationLevel {
   channels: Channel[]
   groupIds: string[]
   notifyEmergencyServices: boolean
+  /**
+   * Nur aufbieten, wenn bis dahin niemand zugesagt hat.
+   *
+   * Zwei Arten von Stufen gibt es, und sie schliessen sich aus:
+   *
+   *   false (Standard) – geplanter Ablauf. Die Stufe zündet nach ihrer Frist,
+   *     ob jemand zugesagt hat oder nicht. So sind die schweren Lagen gedacht:
+   *     Bei einem Brand kommt das Evakuationsteam nach drei Minuten dazu und
+   *     der Krisenstab nach zehn – unabhängig davon, ob eine einzelne Lehrperson
+   *     «ich komme» getippt hat. Diese Gruppen sollen gerade dann aufgeboten
+   *     werden, wenn vor Ort schon jemand handelt.
+   *
+   *   true – Rückfallebene. Die Stufe entfällt, sobald jemand aus der bereits
+   *     alarmierten zuständigen Gruppe zugesagt hat. Gedacht für Lagen, in
+   *     denen eine Zusage die Sache erledigt – etwa «Krisenstab einberufen»:
+   *     meldet sich ein Mitglied, braucht es die zweite Runde nicht.
+   *
+   * Fehlt das Feld, gilt der geplante Ablauf. Das ist die sichere Annahme:
+   * lieber eine Gruppe zu viel aufbieten als den Krisenstab nie erreichen.
+   */
+  nurWennUnbeantwortet?: boolean
 }
 
 export interface AlarmPlan {

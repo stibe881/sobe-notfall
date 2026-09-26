@@ -962,7 +962,7 @@ export const SEED_PLANS: AlarmPlan[] = [
     locationIds: ['loc-baar', 'loc-menzingen', 'loc-kloten'], groupIds: ['gr-krisenstab'],
     channels: ['push', 'sms', 'voice', 'conference'], requireAck: true, respectOperatingHours: false,
     escalation: [
-      { afterMinutes: 5, channels: ['voice'], groupIds: ['gr-krisenstab'], notifyEmergencyServices: false },
+      { afterMinutes: 5, channels: ['voice'], groupIds: ['gr-krisenstab'], notifyEmergencyServices: false, nurWennUnbeantwortet: true },
     ],
   },
   {
@@ -979,7 +979,7 @@ export const SEED_PLANS: AlarmPlan[] = [
     locationIds: [], groupIds: ['gr-ersthelfer'],
     channels: ['push', 'voice'], requireAck: true, respectOperatingHours: true,
     escalation: [
-      { afterMinutes: 2, channels: ['voice', 'sms'], groupIds: ['gr-sicherheit'], notifyEmergencyServices: true },
+      { afterMinutes: 2, channels: ['voice', 'sms'], groupIds: ['gr-sicherheit'], notifyEmergencyServices: true, nurWennUnbeantwortet: true },
     ],
   },
   {
@@ -987,7 +987,7 @@ export const SEED_PLANS: AlarmPlan[] = [
     locationIds: [], groupIds: ['gr-paed'],
     channels: ['push'], requireAck: true, respectOperatingHours: true,
     escalation: [
-      { afterMinutes: 3, channels: ['push', 'voice'], groupIds: ['gr-sicherheit', 'gr-krisenstab'], notifyEmergencyServices: false },
+      { afterMinutes: 3, channels: ['push', 'voice'], groupIds: ['gr-sicherheit', 'gr-krisenstab'], notifyEmergencyServices: false, nurWennUnbeantwortet: true },
     ],
   },
   {
@@ -995,7 +995,7 @@ export const SEED_PLANS: AlarmPlan[] = [
     locationIds: [], groupIds: ['gr-it'],
     channels: ['push', 'email', 'teams'], requireAck: true, respectOperatingHours: false,
     escalation: [
-      { afterMinutes: 15, channels: ['voice'], groupIds: ['gr-krisenstab'], notifyEmergencyServices: false },
+      { afterMinutes: 15, channels: ['voice'], groupIds: ['gr-krisenstab'], notifyEmergencyServices: false, nurWennUnbeantwortet: true },
     ],
   },
   {
@@ -1003,7 +1003,7 @@ export const SEED_PLANS: AlarmPlan[] = [
     locationIds: [], groupIds: ['gr-ersthelfer', 'gr-sicherheit'],
     channels: ['push', 'sms', 'voice'], requireAck: true, respectOperatingHours: false,
     escalation: [
-      { afterMinutes: 3, channels: ['voice'], groupIds: ['gr-krisenstab'], notifyEmergencyServices: true },
+      { afterMinutes: 3, channels: ['voice'], groupIds: ['gr-krisenstab'], notifyEmergencyServices: true, nurWennUnbeantwortet: true },
     ],
   },
 ]

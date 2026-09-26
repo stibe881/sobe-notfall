@@ -7,6 +7,7 @@ import {
 import { getSetting, setSetting } from './db.js'
 import { ueberwacheSicherung } from './sicherungswache.js'
 import { standbyPassiv } from './replikation.js'
+import { eskalationsentscheid } from './eskalation.js'
 import {
   addAudit, allAlarms, allButtons, allGroups, allLoneWork, allScenarios, allStoredUsers, buildDeliveries, createAlarm,
   integrations, purgePresence, resolveRecipients, saveAlarm, upsertDoc,
@@ -134,11 +135,33 @@ export async function tick(): Promise<void> {
   for (const alarm of allAlarms().filter((a) => a.status === 'active')) {
     const stufe = alarm.escalation[alarm.escalationStage]
     if (!stufe) continue
-    const quittiert = alarm.deliveries.some((d) => d.ack === 'acknowledged')
-    if (quittiert || jetzt - alarm.triggeredAt <= stufe.afterMinutes * 60_000) continue
 
-    const empfaenger = resolveRecipients(allStoredUsers(), stufe.groupIds, alarm.locationIds)
+    const entscheid = eskalationsentscheid(
+      alarm, stufe, resolveRecipients(allStoredUsers(), stufe.groupIds, alarm.locationIds), jetzt,
+    )
+    if (entscheid.art === 'warten') continue
+
     const gruppen = allGroups().filter((g) => stufe.groupIds.includes(g.id)).map((g) => g.name)
+    const gruppentext = gruppen.length ? ` (${gruppen.join(', ')})` : ''
+
+    if (entscheid.art === 'entfaellt') {
+      // Der Zähler rückt trotzdem weiter – sonst würde eine entfallene Stufe
+      // alle späteren für immer blockieren.
+      const uebersprungen: Alarm = {
+        ...alarm,
+        escalationStage: alarm.escalationStage + 1,
+        log: [...alarm.log, {
+          ts: jetzt,
+          message: `Eskalationsstufe ${alarm.escalationStage + 1}${gruppentext} entfällt – ${entscheid.grund}`,
+        }],
+      }
+      saveAlarm(uebersprungen)
+      addAudit('alarm', `Eskalation Stufe ${uebersprungen.escalationStage} für Alarm ${alarm.id} entfällt – ${entscheid.grund}`)
+      veraendert = true
+      continue
+    }
+
+    const empfaenger = entscheid.empfaenger
     const kanaele = stufe.channels.map((c) => CHANNEL_LABELS[c]).join(', ')
     // Der Eintrag nennt die aufgebotene Gruppe. Das Kennzeichen
     // notifyEmergencyServices steuert keine Alarmierung – es gibt keine
@@ -148,9 +171,9 @@ export async function tick(): Promise<void> {
       ...alarm.log,
       {
         ts: jetzt,
-        message: `Eskalationsstufe ${alarm.escalationStage + 1}: ${empfaenger.length} weitere Empfänger:innen${
-          gruppen.length ? ` (${gruppen.join(', ')})` : ''
-        }${kanaele ? ` über ${kanaele}` : ''}${
+        message: `Eskalationsstufe ${alarm.escalationStage + 1}: ${empfaenger.length} weitere Empfänger:innen${gruppentext}${
+          kanaele ? ` über ${kanaele}` : ''
+        }${
           stufe.notifyEmergencyServices ? ' – Blaulichtorganisationen werden nicht automatisch alarmiert, bei Bedarf selbst anrufen' : ''
         }`,
       },
@@ -162,7 +185,7 @@ export async function tick(): Promise<void> {
       log,
     }
     saveAlarm(aktualisiert)
-    addAudit('alarm', `Eskalation Stufe ${aktualisiert.escalationStage} für Alarm ${alarm.id}: ${empfaenger.length} weitere Empfänger:innen${gruppen.length ? ` (${gruppen.join(', ')})` : ''}`)
+    addAudit('alarm', `Eskalation Stufe ${aktualisiert.escalationStage} für Alarm ${alarm.id}: ${empfaenger.length} weitere Empfänger:innen${gruppentext}`)
     await alarmPush(aktualisiert, empfaenger.map((e) => e.id))
     await sendeAlarmKanaele(aktualisiert, empfaenger.map((e) => e.id))
     veraendert = true

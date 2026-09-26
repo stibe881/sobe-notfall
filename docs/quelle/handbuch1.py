@@ -385,15 +385,61 @@ KOERPER = r"""
   </div>
   <figure class="bild-breit">
     <img src="bilder/web-08-alarmplaene.webp" alt="Übersicht der Alarmpläne mit Zielgruppen, Kanälen und Eskalationsstufen">
-    <figcaption><b>Abb.</b> &nbsp; Sechs vorbereitete Alarmpläne. Die Stufen darunter greifen automatisch, wenn niemand quittiert.</figcaption>
+    <figcaption><b>Abb.</b> &nbsp; Sechs vorbereitete Alarmpläne mit ihren Eskalationsstufen.</figcaption>
   </figure>
+
+  <h3>Zwei Arten von Eskalationsstufen</h3>
+  <p>
+    Jede Stufe hat eine Frist und eine Art. Die Art entscheidet, ob eine Zusage
+    die Stufe abwendet &ndash; und das ist folgenreich genug, um es bewusst zu
+    setzen:
+  </p>
+  <div class="tabelle-huelle">
+    <table>
+      <caption>Art der Stufe</caption>
+      <thead><tr><th>Art</th><th>Zündet</th><th>Wofür gedacht</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><b>Planmässig</b></td>
+          <td>nach der Frist, unabhängig von Zusagen</td>
+          <td>Lagen, in denen diese Gruppe ohnehin gebraucht wird: Evakuationsteam
+              bei Brand, Krisenstab bei einer Vermisstensuche. Gerade wenn vor Ort
+              schon jemand handelt, sollen sie kommen.</td>
+        </tr>
+        <tr>
+          <td><b>Nur ohne Zusage</b></td>
+          <td>nur, wenn bis dahin niemand zugesagt hat</td>
+          <td>Lagen, die mit einer Zusage erledigt sind: Meldet sich die Schulsanität,
+              muss der Sicherheitsdienst nicht auch ausrücken.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="hinweis hinweis--warnung">
+    <p class="marke-klein">Geändert im September 2026</p>
+    <p>
+      Bis dahin genügte <b>eine einzige</b> Zusage, um jede weitere Stufe
+      abzuschalten &ndash; unabhängig von der Art. Bei einem Brandalarm an alle
+      Mitarbeitenden tippt innerhalb von drei Minuten praktisch sicher irgendwer
+      <i>«ich komme»</i>; Evakuationsteam und Krisenstab wurden daraufhin nie
+      aufgeboten. Wer eigene Alarmpläne angelegt hat, prüft bitte deren Stufen:
+      bestehende Stufen gelten seither als <b>planmässig</b>, zünden also
+      häufiger als zuvor.
+    </p>
+  </div>
+  <p>
+    Wer bereits zugesagt hat, wird von einer zündenden Stufe nicht erneut
+    angeklingelt &ndash; diese Person ist ja unterwegs. Haben alle einer
+    Stufengruppe schon zugesagt, entfällt die Stufe und das Journal hält fest,
+    warum.
+  </p>
   <h3>Einen neuen Alarmplan erstellen &ndash; der Assistent</h3>
   <p>
     <span class="ui">Neuer Alarmplan</span> öffnet einen Assistenten mit fünf
     Schritten: <b>Grundlagen</b> (Name und Szenario &ndash; als Kartenauswahl mit
     Symbol), <b>Empfänger:innen</b> (Zielgruppen und Standorte, leer bedeutet alle),
     <b>Kanäle &amp; Optionen</b> (Erstaussand, Quittierfunktion, Betriebszeiten),
-    <b>Eskalation</b> (Stufen mit Minuten, zusätzlichen Gruppen und Kanälen) und die
+    <b>Eskalation</b> (Stufen mit Frist, Art, zusätzlichen Gruppen und Kanälen) und die
     <b>Zusammenfassung</b>. Wählen Sie ein Szenario, übernimmt der Assistent dessen
     Standard-Kanäle und zuständige Gruppen als Vorbelegung &ndash; in den folgenden
     Schritten bleibt beides anpassbar. Für Änderungen an bestehenden Plänen öffnet

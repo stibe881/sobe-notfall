@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { AlertTriangle, BellRing, ClipboardList, Pencil, Plus, Search, Trash2, Users } from 'lucide-react'
+import { AlertTriangle, BellRing, Check, ClipboardList, Pencil, Plus, Search, Trash2, Users } from 'lucide-react'
 import { resolveRecipients, uid, useStore } from '../store'
 import type { AlarmPlan, Channel, EscalationLevel, IntegrationSettings } from '../types'
 import { CHANNEL_LABELS } from '../types'
@@ -234,6 +234,32 @@ export function KanalWahl({ gewaehlt, onToggle }: { gewaehlt: Channel[]; onToggl
   )
 }
 
+/**
+ * Die zwei Arten einer Eskalationsstufe zur Wahl.
+ *
+ * Als Kärtchen mit Erklärung statt als Häkchen: Die Entscheidung ist
+ * folgenreich – sie bestimmt, ob der Krisenstab im Ernstfall überhaupt
+ * aufgeboten wird – und lässt sich nicht aus einer Beschriftung erraten.
+ */
+function ArtWahl({ aktiv, onClick, titel, text }: { aktiv: boolean; onClick: () => void; titel: string; text: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={aktiv}
+      className={`text-left rounded-lg border p-3 transition ${
+        aktiv ? 'bg-brand-50 border-brand-600 ring-1 ring-brand-600' : 'bg-white border-slate-300 hover:border-brand-400'
+      }`}
+    >
+      <div className={`text-sm font-semibold flex items-center gap-1.5 ${aktiv ? 'text-brand-700' : 'text-slate-700'}`}>
+        {aktiv && <Check size={14} />}
+        {titel}
+      </div>
+      <div className="text-xs text-slate-500 mt-1 leading-snug">{text}</div>
+    </button>
+  )
+}
+
 /** Eine Eskalationsstufe im Editor */
 export function StufenEditor({
   stufe, nummer, onAendern, onLoeschen,
@@ -253,7 +279,7 @@ export function StufenEditor({
             value={stufe.afterMinutes}
             onChange={(e) => onAendern({ afterMinutes: Math.max(1, Number(e.target.value)) })}
           />
-          Minuten ohne Quittierung
+          Minuten
         </label>
         <Button variant="ghost" className="ml-auto" onClick={onLoeschen} title="Stufe entfernen"><Trash2 size={14} /></Button>
       </div>
@@ -272,6 +298,24 @@ export function StufenEditor({
       <div className="mt-3">
         <div className="text-xs font-medium text-slate-500 mb-1.5">Über diese Kanäle</div>
         <KanalWahl gewaehlt={stufe.channels} onToggle={(c) => onAendern({ channels: toggle(stufe.channels, c) })} />
+      </div>
+
+      <div className="mt-3">
+        <div className="text-xs font-medium text-slate-500 mb-1.5">Wann diese Stufe zündet</div>
+        <div className="grid sm:grid-cols-2 gap-2">
+          <ArtWahl
+            aktiv={!stufe.nurWennUnbeantwortet}
+            onClick={() => onAendern({ nurWennUnbeantwortet: false })}
+            titel="Planmässig"
+            text="Zündet nach der Frist, auch wenn schon jemand zugesagt hat. Für Lagen, in denen diese Gruppe ohnehin gebraucht wird – Evakuationsteam bei Brand, Krisenstab bei einer Vermisstensuche."
+          />
+          <ArtWahl
+            aktiv={!!stufe.nurWennUnbeantwortet}
+            onClick={() => onAendern({ nurWennUnbeantwortet: true })}
+            titel="Nur ohne Zusage"
+            text="Entfällt, sobald jemand zugesagt hat. Für Lagen, die mit einer Zusage erledigt sind – meldet sich die Schulsanität, muss der Sicherheitsdienst nicht auch ausrücken."
+          />
+        </div>
       </div>
 
       <label className="flex flex-wrap items-center gap-2 mt-3 text-sm text-slate-600">
@@ -382,7 +426,7 @@ export function PlanEditor({
           </p>
           {draft.escalation.length === 0 ? (
             <p className="text-sm text-slate-400 rounded-xl border border-dashed border-slate-200 p-4 text-center">
-              Keine Eskalation – bleibt eine Quittierung aus, passiert nichts weiter.
+              Keine Eskalation – es bleibt bei dieser einen Alarmierung.
             </p>
           ) : (
             <div className="space-y-3">
@@ -557,7 +601,7 @@ function PlanWizard({ onClose }: { onClose: () => void }) {
                 <div>
                   <Toggle checked={draft.requireAck} onChange={(v) => setDraft({ ...draft, requireAck: v })} label="Aufgebot mit Quittierfunktion" />
                   <p className="text-xs text-slate-500 mt-1 ml-11">
-                    Empfänger:innen bestätigen den Erhalt – die Eskalationsstufen zünden nur, solange nicht alle quittiert haben.
+                    Empfänger:innen bestätigen den Erhalt. Ob eine Zusage die nächste Stufe abwendet, entscheiden Sie je Stufe unten.
                   </p>
                 </div>
                 <Toggle checked={draft.respectOperatingHours} onChange={(v) => setDraft({ ...draft, respectOperatingHours: v })} label={`Nur während Betriebszeiten alarmieren – ${VORBEREITET}`} />
