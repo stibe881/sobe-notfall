@@ -13,7 +13,7 @@ import { logoUri } from './src/api'
 import { anwendungsname } from './src/branding'
 import type { Alarm, Scenario } from './src/types'
 import { colors } from './src/ui'
-import { AlarmAuswahlScreen, ContactsScreen, LoneWorkScreen, ProfileScreen, ScenarioDetailScreen, ScenariosScreen, StartScreen } from './src/screens'
+import { AlarmAuswahlScreen, ContactsScreen, LoneWorkScreen, NichtGesendet, ProfileScreen, ScenarioDetailScreen, ScenariosScreen, StartScreen } from './src/screens'
 import LoginScreen, { ForcePasswordChange } from './src/LoginScreen'
 
 type Tab = 'start' | 'szenarien' | 'alleinarbeit' | 'notruf' | 'profil'
@@ -270,6 +270,10 @@ function Root() {
           })}
         </View>
       </SafeAreaView>
+
+      {/* Zuletzt und damit zuoberst: deckt auch die Reiterleiste, solange ein
+          Alarm nicht abgesetzt ist. */}
+      <NichtGesendet />
     </SafeAreaView>
   )
 }

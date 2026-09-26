@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useReducer, useRef, useState } from 'react'
-import { CheckCircle2, Siren } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, Siren } from 'lucide-react'
 import type { AppState, Alarm, AlarmButton, AlarmPlan, Channel, Delivery, EscalationLevel, Group, Location, LoneWorkSession, Scenario, Session, User, Webhook, AuditEntry } from './types'
 
 /** Datenbestand, wie ihn der Alarmserver liefert – ohne lokale Anteile */
@@ -8,6 +8,8 @@ import { CHANNEL_LABELS, LONE_WORK_DEFAULT_GROUPS } from './types'
 import { LIVE_INITIAL_PASSWORD, createLiveInitialState, integrationenMitVorgaben } from './data/seed'
 import { authenticate, hashPassword, passwordProblem, randomSalt, verifyPassword } from './lib/auth'
 import { ApiError, api, authToken, setAuthToken, subscribeToServer } from './lib/api'
+import { lagetext, naechsteWartezeit, notrufAnbieten, type Versandlage } from './lib/alarmversand'
+import { Button } from './components/ui'
 
 /** Erhöhen, wenn gespeicherte Passwortdaten einmalig korrigiert werden müssen */
 
@@ -543,6 +545,60 @@ function toastForAction(action: Action): Toast['message'] | { message: string; k
   }
 }
 
+/**
+ * Ein Alarm, der den Server nicht erreicht hat.
+ *
+ * Bewusst als Kasten, der stehen bleibt, und nicht als Toast: Solange die
+ * Alarmierung nicht draussen ist, darf nichts danach aussehen, als wäre
+ * sie es. Die automatische Wiederholung läuft im Hintergrund weiter.
+ */
+function VersandFehlerHost({
+  fehler, onErneut, onVerwerfen,
+}: {
+  fehler: { titel: string; lage: Versandlage } | null
+  onErneut: () => void
+  onVerwerfen: () => void
+}) {
+  const [, neuZeichnen] = useState(0)
+  useEffect(() => {
+    if (!fehler) return
+    const uhr = setInterval(() => neuZeichnen((n) => n + 1), 1000)
+    return () => clearInterval(uhr)
+  }, [fehler])
+  if (!fehler) return null
+  return (
+    <div className="fixed inset-0 z-[60] bg-slate-900/60 flex items-center justify-center p-4" role="alertdialog" aria-modal="true">
+      <div className="w-full max-w-md rounded-2xl bg-white shadow-xl overflow-hidden">
+        <div className="bg-alarm-600 text-white px-5 py-4 flex items-center gap-3">
+          <AlertTriangle size={26} />
+          <div>
+            <div className="text-lg font-extrabold tracking-wide">NICHT GESENDET</div>
+            <div className="text-sm opacity-95">Es ist niemand benachrichtigt worden.</div>
+          </div>
+        </div>
+        <div className="p-5 space-y-3">
+          <div className="text-sm text-slate-700">«{fehler.titel}» wurde nicht abgesetzt.</div>
+          <div className="rounded-lg bg-slate-100 px-3 py-2.5">
+            <div className="text-sm font-semibold text-slate-800">{lagetext(fehler.lage)}</div>
+            {!!fehler.lage.fehler && <div className="text-xs text-slate-600 mt-0.5">{fehler.lage.fehler}</div>}
+          </div>
+          {notrufAnbieten(fehler.lage.versuche) && (
+            <div className="rounded-lg border-l-4 border-alarm-600 bg-alarm-50 px-3 py-2.5 text-sm text-slate-700">
+              Warten Sie nicht länger auf die Technik – alarmieren Sie über Telefon oder Funk.
+            </div>
+          )}
+          <div className="flex flex-wrap gap-2 pt-1">
+            <Button onClick={onErneut} disabled={fehler.lage.laeuft}>
+              {fehler.lage.laeuft ? 'Wird gesendet …' : 'Jetzt nochmals versuchen'}
+            </Button>
+            <Button variant="ghost" onClick={onVerwerfen}>Verwerfen – anders alarmiert</Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function ToastHost({ toasts }: { toasts: Toast[] }) {
   return (
     <div className="fixed z-[60] bottom-24 lg:bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-sm space-y-2 pointer-events-none">
@@ -737,6 +793,12 @@ interface StoreCtx {
   knownPassword: string | null
   /** Datenbestand neu vom Server laden */
   refresh: () => void
+  /**
+   * Ein Alarm, der den Server nicht erreicht hat. Bleibt gesetzt, bis er
+   * durchkommt oder bewusst verworfen wird – ein verschwindender Toast wäre
+   * für eine nicht abgesetzte Alarmierung die falsche Rückmeldung.
+   */
+  versandFehler: { action: Action; titel: string; lage: Versandlage } | null
 }
 
 const StoreContext = createContext<StoreCtx | null>(null)
@@ -849,6 +911,45 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }
   }, [pushToast, refresh])
 
+  // Ein Alarm, der nicht durchkam. Nur Alarme – eine fehlgeschlagene
+  // Lagemeldung ist ärgerlich, eine nicht abgesetzte Alarmierung gefährlich.
+  const [versandFehler, setVersandFehler] = useState<{ action: Action; titel: string; lage: Versandlage } | null>(null)
+  const wiederholUhr = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const sendeAus = useCallback((action: Action, titel: string, bisher: number) => {
+    if (wiederholUhr.current) { clearTimeout(wiederholUhr.current); wiederholUhr.current = null }
+    setVersandFehler({ action, titel, lage: { versuche: bisher, laeuft: true, fehler: '' } })
+    serverEffekt(action, stateRef.current)
+      .then((behandelt) => {
+        setVersandFehler(null)
+        if (behandelt === 'merged') {
+          pushToast('Für dieses Ereignis lief bereits ein Alarm – die Meldung wurde ihm hinzugefügt', 'alarm')
+        } else {
+          const t = toastForAction(action)
+          if (t) { if (typeof t === 'string') pushToast(t); else pushToast(t.message, t.kind) }
+        }
+        void refresh()
+      })
+      .catch((fehler) => {
+        const versuche = bisher + 1
+        const text = fehler instanceof ApiError ? fehler.message : 'Der Alarmserver ist nicht erreichbar.'
+        setVersandFehler({ action, titel, lage: { versuche, laeuft: false, fehler: text } })
+        const warten = naechsteWartezeit(versuche)
+        if (warten !== null) wiederholUhr.current = setTimeout(() => sendeAus(action, titel, versuche), warten)
+      })
+  }, [pushToast, refresh])
+
+  const erneutSenden = useCallback(() => {
+    if (versandFehler) sendeAus(versandFehler.action, versandFehler.titel, versandFehler.lage.versuche)
+  }, [versandFehler, sendeAus])
+
+  const versandVerwerfen = useCallback(() => {
+    if (wiederholUhr.current) { clearTimeout(wiederholUhr.current); wiederholUhr.current = null }
+    setVersandFehler(null)
+  }, [])
+
+  useEffect(() => () => { if (wiederholUhr.current) clearTimeout(wiederholUhr.current) }, [])
+
   const dispatch = useCallback(
     (action: Action) => {
       // Die Anmeldung läuft über einen eigenen Weg, nicht über den Server
@@ -861,6 +962,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       // Sie liefen sonst unter dem angemeldeten Konto, nicht unter der angezeigten Person.
       if (vorher.previewUserId && VORSCHAU_GESPERRT.has(action.type)) {
         pushToast('Vorschau: Aktionen sind gesperrt – dafür die Vorschau beenden.', 'alarm')
+        return
+      }
+      // Ein Alarm, der nicht rausgeht, bekommt den bleibenden Hinweis und
+      // wird automatisch wiederholt. Alles andere bleibt beim Toast.
+      if (action.type === 'TRIGGER_ALARM') {
+        const scenario = vorher.scenarios.find((s) => s.id === action.alarm.scenarioId)
+        sendeAus(action, scenario?.title ?? 'Alarm', 0)
         return
       }
       serverEffekt(action, vorher)
@@ -884,7 +992,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           pushToast(fehler instanceof ApiError ? fehler.message : 'Der Alarmserver hat die Aktion abgelehnt.', 'alarm')
         })
     },
-    [pushToast, refresh],
+    [pushToast, refresh, sendeAus],
   )
 
   // Serverstand laden und Änderungen anderer Geräte abonnieren
@@ -896,9 +1004,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, [state.session?.userId, refresh])
 
   return (
-    <StoreContext.Provider value={{ state, dispatch, login, logout, changePassword, serverStatus, knownPassword, refresh: () => void refresh() }}>
+    <StoreContext.Provider value={{ state, dispatch, login, logout, changePassword, serverStatus, knownPassword, refresh: () => void refresh(), versandFehler }}>
       {children}
       <ToastHost toasts={toasts} />
+      <VersandFehlerHost fehler={versandFehler} onErneut={erneutSenden} onVerwerfen={versandVerwerfen} />
     </StoreContext.Provider>
   )
 }

@@ -8,6 +8,7 @@ import { criticalAlertsGranted, getPushToken, notifyNow } from './notifications'
 import { ladeAufenthalt, stopGeofencing, syncGeofencing, type GeofenceRegion } from './geofencing'
 import { aktuellePosition, stopIndoor, syncIndoor, verfolgeEigeneAlarme, type IndoorKonfig } from './indoor'
 import { ApiError, api, authToken, loadApiSettings, merkeServerInfo, setAuthToken, setFallbackUrl, setServerUrl, type ServerData } from './api'
+import { naechsteWartezeit, type Versandlage } from './alarmversand'
 
 /** Erhöhen, wenn gespeicherte Passwortdaten einmalig korrigiert werden müssen */
 const AUTH_MIGRATION_VERSION = 1
@@ -446,6 +447,16 @@ interface StoreCtx {
   uebernehmeServerLink: (server: string, fallback: string | null, name: string | null) => void
   toasts: Toast[]
   hydrated: boolean
+  /**
+   * Ein Alarm, der den Server nicht erreicht hat. Bleibt stehen, bis er
+   * durchkommt oder bewusst verworfen wird – ein verschwindender Toast wäre
+   * für eine nicht abgesetzte Alarmierung die falsche Rückmeldung.
+   */
+  versandFehler: { action: Action; lage: Versandlage } | null
+  /** Von Hand erneut senden */
+  erneutSenden: () => void
+  /** Aufgeben – der Alarm gilt als nicht abgesetzt */
+  versandVerwerfen: () => void
 }
 
 const StoreContext = createContext<StoreCtx | null>(null)
@@ -609,10 +620,59 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }
   }, [pushToast, refresh])
 
+  /**
+   * Ein Alarm, der nicht durchkam. Nur Alarme landen hier – eine
+   * fehlgeschlagene Lagemeldung ist ärgerlich, eine nicht abgesetzte
+   * Alarmierung ist gefährlich.
+   */
+  const [versandFehler, setVersandFehler] = useState<{ action: Action; lage: Versandlage } | null>(null)
+  const wiederholUhr = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const sendeAus = useCallback((action: Action, bisher: number) => {
+    if (wiederholUhr.current) { clearTimeout(wiederholUhr.current); wiederholUhr.current = null }
+    setVersandFehler({ action, lage: { versuche: bisher, laeuft: true, fehler: '' } })
+    serverEffekt(action)
+      .then((behandelt) => {
+        setVersandFehler(null)
+        if (behandelt === 'merged') {
+          pushToast('Für dieses Ereignis lief bereits ein Alarm – Ihre Meldung wurde ihm hinzugefügt', 'alarm')
+        } else if (action.type === 'TRIGGER_ALARM' && !action.alarm.silent) {
+          const scenario = stateRef.current.scenarios.find((s) => s.id === action.alarm.scenarioId)
+          notifyNow(scenario ? `Alarm: ${scenario.title}` : 'Alarm ausgelöst', action.alarm.message, true)
+        }
+        void refresh()
+      })
+      .catch((fehler) => {
+        const versuche = bisher + 1
+        const text = fehler instanceof ApiError ? fehler.message : 'Der Alarmserver ist nicht erreichbar.'
+        setVersandFehler({ action, lage: { versuche, laeuft: false, fehler: text } })
+        const warten = naechsteWartezeit(versuche)
+        if (warten !== null) wiederholUhr.current = setTimeout(() => sendeAus(action, versuche), warten)
+      })
+  }, [pushToast, refresh])
+
+  const erneutSenden = useCallback(() => {
+    if (versandFehler) sendeAus(versandFehler.action, versandFehler.lage.versuche)
+  }, [versandFehler, sendeAus])
+
+  const versandVerwerfen = useCallback(() => {
+    if (wiederholUhr.current) { clearTimeout(wiederholUhr.current); wiederholUhr.current = null }
+    setVersandFehler(null)
+  }, [])
+
+  // Offene Uhren beim Verlassen abräumen
+  useEffect(() => () => { if (wiederholUhr.current) clearTimeout(wiederholUhr.current) }, [])
+
   const dispatch = useCallback(
     (action: Action) => {
       if (action.type === 'LOGIN' || action.type === 'LOGOUT') {
         rawDispatch(action)
+        return
+      }
+      // Ein Alarm, der nicht rausgeht, bekommt den Vollbildhinweis und wird
+      // automatisch wiederholt. Alles andere bleibt beim Toast.
+      if (action.type === 'TRIGGER_ALARM') {
+        sendeAus(action, 0)
         return
       }
       serverEffekt(action)
@@ -625,10 +685,6 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             pushToast('Für dieses Ereignis lief bereits ein Alarm – Ihre Meldung wurde ihm hinzugefügt', 'alarm')
             return refresh()
           }
-          if (action.type === 'TRIGGER_ALARM' && !action.alarm.silent) {
-            const scenario = stateRef.current.scenarios.find((s) => s.id === action.alarm.scenarioId)
-            notifyNow(scenario ? `Alarm: ${scenario.title}` : 'Alarm ausgelöst', action.alarm.message, true)
-          }
           const t = toastForAction(action)
           if (t) {
             if (typeof t === 'string') pushToast(t)
@@ -640,7 +696,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           pushToast(fehler instanceof ApiError ? fehler.message : 'Der Alarmserver hat die Aktion abgelehnt.', 'alarm')
         })
     },
-    [pushToast, refresh],
+    [pushToast, refresh, sendeAus],
   )
 
   useEffect(() => {
@@ -740,7 +796,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <StoreContext.Provider
-      value={{ state, dispatch, login, loginWithToken, logout, changePassword, serverStatus, knownPassword, refresh: () => void refresh(), uebernehmeServerLink, toasts, hydrated }}
+      value={{ state, dispatch, login, loginWithToken, logout, changePassword, serverStatus, knownPassword, refresh: () => void refresh(), uebernehmeServerLink, toasts, hydrated, versandFehler, erneutSenden, versandVerwerfen }}
     >
       {children}
     </StoreContext.Provider>

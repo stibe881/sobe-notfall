@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ChevronDown, ChevronLeft, ChevronUp, Pencil, Search, Siren, Users } from 'lucide-react'
 import { createAlarm, resolveRecipients, useStore } from '../store'
@@ -13,8 +13,17 @@ const ALL_CHANNELS: Channel[] = ['push', 'sms', 'email', 'voice', 'conference', 
 const PRIORITY_COLOR = { hoch: 'red', mittel: 'amber', tief: 'slate' } as const
 
 export default function TriggerAlarm() {
-  const { state, dispatch } = useStore()
+  const { state, dispatch, versandFehler } = useStore()
   const navigate = useNavigate()
+  /**
+   * Erst zur Alarmzentrale wechseln, wenn der Alarm wirklich draussen ist.
+   * Vorher sprang die Seite sofort um – auch wenn der Server ihn nie
+   * bekommen hat. Der Bildschirm sah dann nach «erledigt» aus.
+   */
+  const [ausgeloest, setAusgeloest] = useState(false)
+  useEffect(() => {
+    if (ausgeloest && !versandFehler) navigate('/monitor')
+  }, [ausgeloest, versandFehler, navigate])
 
   const [scenarioId, setScenarioId] = useState('')
   const [planId, setPlanId] = useState('')
@@ -80,7 +89,7 @@ export default function TriggerAlarm() {
       drill,
     })
     dispatch({ type: 'TRIGGER_ALARM', alarm, audit: `${drill ? 'Übung' : 'Alarm'} ausgelöst: ${scenario.title} (${recipients.length} Empfänger:innen)` })
-    navigate('/monitor')
+    setAusgeloest(true)
   }
 
   // ---------- Schritt 1: Szenario wählen ----------

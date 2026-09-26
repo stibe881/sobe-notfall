@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Alert, Linking, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native'
 import {
-  Ambulance, Baby, BellRing, BookOpen, Check, CheckCircle2, ChevronLeft, Clock, ExternalLink, Flame, FlaskConical,
+  AlertTriangle, Ambulance, Baby, BellRing, BookOpen, Check, CheckCircle2, ChevronLeft, Clock, ExternalLink, Flame, FlaskConical,
   Globe, HeartHandshake, KeyRound, LogOut, MapPin, Phone, PhoneCall, PlaneTakeoff, Play,
   Search as SearchIcon, Scale, Shield, ShieldAlert, ShieldCheck, Siren, Timer, Users, X,
 } from 'lucide-react-native'
@@ -13,6 +13,7 @@ import { androidCountdownVerfuegbar } from './androidTimer'
 import { serverUrl } from './api'
 import { useAufenthalt } from './geofencing'
 import { notrufbild } from './notrufsymbole'
+import { lagetext, notrufAnbieten } from './alarmversand'
 import { useIndoor, type IndoorStatus } from './indoor'
 import { LONE_WORK_DEFAULT_GROUPS, type Alarm, type IndoorPosition, type IntegrationSettings, type LoneWorkSession, type Scenario, type User } from './types'
 import { Badge, Card, HoldButton, colors, formatDuration, formatRelative } from './ui'
@@ -1510,6 +1511,83 @@ export function ContactsScreen() {
   )
 }
 
+
+/**
+ * Ein Alarm, der den Server nicht erreicht hat.
+ *
+ * Bewusst als Vollbild und ohne Wegtippen: Solange die Alarmierung nicht
+ * draussen ist, darf nichts danach aussehen, als wäre sie es. Die Person
+ * soll in diesen Sekunden genau zwei Dinge tun können – warten, während
+ * die App weiterversucht, oder zum Telefon greifen.
+ */
+export function NichtGesendet() {
+  const { state, versandFehler, erneutSenden, versandVerwerfen } = useStore()
+  const [, neuZeichnen] = useState(0)
+
+  // Der Text nennt die Sekunden bis zum nächsten Versuch – der muss laufen
+  useEffect(() => {
+    if (!versandFehler) return
+    const uhr = setInterval(() => neuZeichnen((n) => n + 1), 1000)
+    return () => clearInterval(uhr)
+  }, [versandFehler])
+
+  if (!versandFehler) return null
+  const { action, lage } = versandFehler
+  if (action.type !== 'TRIGGER_ALARM') return null
+
+  const scenario = state.scenarios.find((s) => s.id === action.alarm.scenarioId)
+  // Erst die Nummern, die zu dieser Lage gehören; sonst alle. Ohne
+  // Verbindung stammen sie aus dem Zwischenspeicher auf dem Gerät.
+  const passende = state.contacts.filter((c) => scenario?.contactIds.includes(c.id))
+  const nummern = (passende.length > 0 ? passende : state.contacts).slice(0, 3)
+
+  return (
+    <View style={styles.fehlerHuelle}>
+      <ScrollView contentContainerStyle={styles.fehlerInhalt}>
+        <View style={styles.fehlerZeichen}>
+          <AlertTriangle size={34} color="#fff" />
+        </View>
+        <Text style={styles.fehlerTitel}>NICHT GESENDET</Text>
+        <Text style={styles.fehlerText}>
+          {scenario ? `«${scenario.title}» wurde ` : 'Ihr Alarm wurde '}
+          nicht abgesetzt. Es ist niemand benachrichtigt worden.
+        </Text>
+
+        <View style={styles.fehlerKasten}>
+          <Text style={styles.fehlerLage}>{lagetext(lage)}</Text>
+          {!!lage.fehler && <Text style={styles.fehlerGrund}>{lage.fehler}</Text>}
+        </View>
+
+        {notrufAnbieten(lage.versuche) && nummern.length > 0 && (
+          <View style={{ width: '100%', marginTop: 6 }}>
+            <Text style={styles.fehlerRuf}>Warten Sie nicht länger – rufen Sie an:</Text>
+            {nummern.map((c) => (
+              <Pressable
+                key={c.id}
+                style={styles.fehlerNummer}
+                onPress={() => Linking.openURL(`tel:${c.number}`)}
+                accessibilityRole="button"
+                accessibilityLabel={`${c.name} anrufen, ${c.number}`}
+              >
+                <PhoneCall size={19} color={colors.alarm} />
+                <Text style={styles.fehlerNummerZahl}>{c.number}</Text>
+                <Text style={styles.fehlerNummerName} numberOfLines={1}>{c.name}</Text>
+              </Pressable>
+            ))}
+          </View>
+        )}
+
+        <Pressable style={styles.fehlerKnopf} onPress={erneutSenden} disabled={lage.laeuft}>
+          <Text style={styles.fehlerKnopfText}>{lage.laeuft ? 'Wird gesendet …' : 'Jetzt nochmals versuchen'}</Text>
+        </Pressable>
+        <Pressable style={styles.fehlerVerwerfen} onPress={versandVerwerfen}>
+          <Text style={styles.fehlerVerwerfenText}>Verwerfen – ich habe anders Hilfe geholt</Text>
+        </Pressable>
+      </ScrollView>
+    </View>
+  )
+}
+
 // ---------- Profil ----------
 
 /**
@@ -1779,6 +1857,23 @@ const styles = StyleSheet.create({
   stepNumberText: { color: '#fff', fontWeight: '800', fontSize: 12 },
   checkRow: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: 12, padding: 11, marginBottom: 7 },
   checkbox: { width: 20, height: 20, borderRadius: 5, borderWidth: 1.5, borderColor: '#cbd5e1', alignItems: 'center', justifyContent: 'center' },
+  // --- «Nicht gesendet»: deckt den Bildschirm, bis der Alarm draussen ist ---
+  fehlerHuelle: { ...StyleSheet.absoluteFillObject, backgroundColor: colors.alarm, zIndex: 50 },
+  fehlerInhalt: { flexGrow: 1, justifyContent: 'center', alignItems: 'center', padding: 24, gap: 12 },
+  fehlerZeichen: { width: 68, height: 68, borderRadius: 34, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' },
+  fehlerTitel: { fontSize: 27, fontWeight: '900', color: '#fff', letterSpacing: 1.2, textAlign: 'center' },
+  fehlerText: { fontSize: 16, color: '#fff', textAlign: 'center', lineHeight: 23, opacity: 0.95 },
+  fehlerKasten: { width: '100%', backgroundColor: 'rgba(0,0,0,0.22)', borderRadius: 12, padding: 13, gap: 3 },
+  fehlerLage: { fontSize: 14, fontWeight: '700', color: '#fff', textAlign: 'center' },
+  fehlerGrund: { fontSize: 12.5, color: '#fff', opacity: 0.85, textAlign: 'center' },
+  fehlerRuf: { fontSize: 14, fontWeight: '700', color: '#fff', marginBottom: 8, textAlign: 'center' },
+  fehlerNummer: { flexDirection: 'row', alignItems: 'center', gap: 11, backgroundColor: '#fff', borderRadius: 12, paddingVertical: 13, paddingHorizontal: 15, marginBottom: 8 },
+  fehlerNummerZahl: { fontSize: 20, fontWeight: '800', color: colors.alarm },
+  fehlerNummerName: { flex: 1, fontSize: 14, color: colors.text },
+  fehlerKnopf: { width: '100%', backgroundColor: 'rgba(0,0,0,0.28)', borderRadius: 12, paddingVertical: 15, alignItems: 'center', marginTop: 4 },
+  fehlerKnopfText: { fontSize: 16, fontWeight: '700', color: '#fff' },
+  fehlerVerwerfen: { paddingVertical: 11 },
+  fehlerVerwerfenText: { fontSize: 13.5, color: '#fff', opacity: 0.8, textDecorationLine: 'underline' },
   kachelGitter: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   // Zwei Spalten: knapp unter der Hälfte, damit die Lücke dazwischen Platz hat
   notrufkachel: { width: '48%', flexGrow: 1, alignItems: 'center', gap: 4, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: 16, paddingVertical: 16, paddingHorizontal: 10 },
