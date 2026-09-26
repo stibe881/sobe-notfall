@@ -129,6 +129,6 @@ export function IndoorKarte({ position, titel, hoehe = '340px' }: { position: In
     karte.current?.update({ annotations: [markierung(position, titel)] })
   }, [position, titel])
 
-  if (fehler) return <div className="text-xs text-slate-500 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">{fehler}</div>
+  if (fehler) return <div className="text-xs text-muted bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">{fehler}</div>
   return <div ref={behaelter} className="rounded-lg overflow-hidden border border-slate-200" style={{ minHeight: hoehe }} />
 }

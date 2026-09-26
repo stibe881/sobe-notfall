@@ -7,8 +7,13 @@ export const colors = {
   border: '#e2e8f0',
   dark: '#0f172a',
   text: '#1e293b',
-  muted: '#64748b',
-  faint: '#94a3b8',
+  // Die drei Textstufen halten auf allen Untergründen (weiss, Seitengrund,
+  // stille Fläche) mindestens 4.5:1 – die Schwelle der WCAG AA für normalen
+  // Text. Vorher lag «faint» bei 2.56:1: An einem Kompetenzzentrum mit dem
+  // Schwerpunkt Sehen war das die falsche Stelle zum Sparen, und in einer
+  // App, die unter Stress und oft im Gehen gelesen wird, erst recht.
+  muted: '#475569',
+  faint: '#5b6b7f',
   // Hausfarbe aus dem Corporate Design (Petrol) – Kopf, Reiter, Akzente
   brand: '#1c504b',
   brandLight: '#2a6a63',
@@ -17,11 +22,14 @@ export const colors = {
   alarm: '#c81e1e',
   alarmLight: '#e02424',
   alarmBg: '#fff1f1',
-  green: '#059669',
+  // Grün und Bernstein dienen auch als Textfarbe («3 kommen», «Fehlalarm
+  // gemeldet») und müssen deshalb 4.5:1 halten – die helleren Vorgänger
+  // #059669 und #b45309 lagen bei 3.3 bzw. 4.4:1 auf dem Seitengrund.
+  green: '#047857',
   greenBg: '#d1fae5',
   violet: '#7c3aed',
   violetBg: '#ede9fe',
-  amber: '#b45309',
+  amber: '#a9500a',
   amberBg: '#fef3c7',
 }
 

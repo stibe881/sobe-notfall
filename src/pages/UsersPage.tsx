@@ -95,7 +95,7 @@ export default function UsersPage() {
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold text-slate-800">Benutzerverwaltung</h1>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-muted">
             Manuelle Erfassung, CSV-Upload oder automatische Synchronisation mit dem Personalsystem (siehe Einstellungen & Konfiguration) ·
             Anmeldung mit E-Mail und Passwort oder mit Microsoft (SSO, siehe Einstellungen & Konfiguration) ·
             <b>Erreichbarkeit</b> sagt, ob ein Alarm tatsächlich ankommt – dafür braucht es ein angemeldetes Gerät
@@ -125,7 +125,7 @@ export default function UsersPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-xs uppercase tracking-wide text-slate-400 border-b border-slate-100">
+              <tr className="text-left text-xs uppercase tracking-wide text-faint border-b border-slate-100">
                 <th className="py-2 pr-4">Name</th>
                 <th className="py-2 pr-4">Kontakt</th>
                 <th className="py-2 pr-4">Rolle</th>
@@ -145,9 +145,9 @@ export default function UsersPage() {
                   <tr key={u.id} className="border-b border-slate-50 last:border-0">
                     <td className="py-2.5 pr-4 font-medium text-slate-800">
                       {u.firstName} {u.lastName}
-                      <span className="ml-1.5 text-xs text-slate-400 uppercase">{u.language}</span>
+                      <span className="ml-1.5 text-xs text-faint uppercase">{u.language}</span>
                     </td>
-                    <td className="py-2.5 pr-4 text-slate-500">
+                    <td className="py-2.5 pr-4 text-muted">
                       <div>{u.email}</div>
                       <div className="text-xs">{u.phone}</div>
                     </td>
@@ -228,7 +228,7 @@ export default function UsersPage() {
             </tbody>
           </table>
         </div>
-        <div className="text-xs text-slate-400 mt-3">
+        <div className="text-xs text-faint mt-3">
           CSV-Format: <code>Vorname;Nachname;E-Mail;Telefon;Rolle</code> (mit oder ohne Kopfzeile)
         </div>
       </Card>
@@ -294,7 +294,7 @@ function UserEditor({ user, onClose }: { user: User; onClose: () => void }) {
             {(Object.keys(ROLE_LABELS) as Role[]).map((r) => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
           </select>
           {letzterAdmin && (
-            <span className="block text-xs text-slate-400 mt-1">
+            <span className="block text-xs text-faint mt-1">
               Einziger Administrator – die Rolle bleibt gesperrt, bis ein weiterer Administrator existiert.
             </span>
           )}
@@ -348,7 +348,7 @@ function UserEditor({ user, onClose }: { user: User; onClose: () => void }) {
         <div className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-1">
           <KeyRound size={15} /> Anmeldung
         </div>
-        <p className="text-xs text-slate-500 mb-3">
+        <p className="text-xs text-muted mb-3">
           {hasPassword(user)
             ? 'Für dieses Konto ist ein Passwort gesetzt. Ein neues Passwort überschreibt das bisherige.'
             : 'Ohne Passwort kann sich diese Person weder im Webportal noch in der App anmelden.'}

@@ -255,12 +255,12 @@ export default function Integrations() {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-800">Einstellungen &amp; Konfiguration</h1>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-muted">
             Alles, was das System mit der Aussenwelt verbindet – {aktiv} von {karten.length} Bereichen sind aktiv.
           </p>
         </div>
         <div className="relative w-full sm:w-72">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-faint" />
           <input
             className={inputClass + ' pl-9'}
             placeholder="Einstellung suchen – z. B. SMS, Knopf, Teams…"
@@ -286,7 +286,7 @@ export default function Integrations() {
                 }`}
               >
                 <span className="flex-1">{b.titel}</span>
-                <span className={`text-xs tabular-nums ${gewaehlt ? 'text-slate-300' : 'text-slate-400'}`}>
+                <span className={`text-xs tabular-nums ${gewaehlt ? 'text-slate-300' : 'text-faint'}`}>
                   {eigeneAktiv}/{eigene.length}
                 </span>
               </button>
@@ -296,13 +296,13 @@ export default function Integrations() {
 
         <div className="space-y-3 min-w-0">
           {suche ? (
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-muted">
               {sichtbar.length === 0
                 ? 'Keine Einstellung gefunden.'
                 : `${sichtbar.length} Einstellung${sichtbar.length === 1 ? '' : 'en'} gefunden`}
             </p>
           ) : (
-            bereichInfo && <p className="text-sm text-slate-500">{bereichInfo.hinweis}</p>
+            bereichInfo && <p className="text-sm text-muted">{bereichInfo.hinweis}</p>
           )}
 
           {sichtbar.map((k) => (
@@ -337,19 +337,19 @@ function EinstellungsKarte({ karte, offen, onUmschalten }: { karte: KartenDefini
           aria-expanded={offen}
           className="flex flex-1 items-center gap-3 px-4 py-3 text-left min-w-0 hover:bg-slate-50 transition"
         >
-          <Icon size={17} className="text-slate-400 shrink-0" />
+          <Icon size={17} className="text-faint shrink-0" />
           <span className="min-w-0 flex-1">
             <span className="flex items-center gap-2">
               <span className="font-semibold text-slate-800">{karte.titel}</span>
               {karte.status.art === 'vorbereitet' && <Vorbereitet />}
             </span>
-            <span className="block text-xs text-slate-500 truncate mt-0.5">{karte.status.text}</span>
+            <span className="block text-xs text-muted truncate mt-0.5">{karte.status.text}</span>
           </span>
           <span className={`w-2 h-2 rounded-full shrink-0 ${STATUS_PUNKT[karte.status.art]}`} aria-hidden />
-          <span className="text-xs text-slate-400 w-14 text-right shrink-0 hidden sm:inline">
+          <span className="text-xs text-faint w-14 text-right shrink-0 hidden sm:inline">
             {karte.status.art === 'aktiv' ? 'aktiv' : karte.status.art === 'inaktiv' ? 'inaktiv' : ''}
           </span>
-          <ChevronDown size={16} className={`text-slate-400 shrink-0 transition ${offen ? 'rotate-180' : ''}`} />
+          <ChevronDown size={16} className={`text-faint shrink-0 transition ${offen ? 'rotate-180' : ''}`} />
         </button>
         {offen && karte.aktionen}
       </div>
@@ -363,7 +363,7 @@ function ZugangscodeEinstellungen() {
   const { state, dispatch } = useStore()
   return (
     <>
-      <p className="text-sm text-slate-500 mb-3">
+      <p className="text-sm text-muted mb-3">
         Gedacht für die Selbstinstallation ohne Geräteverwaltung. Die App kennt die Codes noch nicht – Mitarbeitende
         verbinden sich heute über den QR-Code und melden sich mit E-Mail-Adresse und Passwort an.
       </p>
@@ -371,7 +371,7 @@ function ZugangscodeEinstellungen() {
         {state.integrations.accessCodes.map((c) => (
           <div key={c.code} className="flex items-center gap-3 rounded-lg border border-slate-100 p-3 text-sm">
             <code className="font-mono font-semibold text-slate-800">{c.code}</code>
-            <span className="text-xs text-slate-400 flex-1">
+            <span className="text-xs text-faint flex-1">
               {state.locations.find((l) => l.id === c.locationId)?.name} · erstellt {formatDateTime(c.createdAt)}
             </span>
             <Badge>{c.used}× verwendet</Badge>
@@ -396,12 +396,12 @@ function WebhookEinstellungen({ onBearbeiten }: { onBearbeiten: (w: Webhook) => 
   return (
     <>
       <div className="space-y-2">
-        {webhooks.length === 0 && <p className="text-sm text-slate-400">Noch keine Schnittstelle eingerichtet.</p>}
+        {webhooks.length === 0 && <p className="text-sm text-faint">Noch keine Schnittstelle eingerichtet.</p>}
         {webhooks.map((w) => (
           <div key={w.id} className="flex items-center gap-3 rounded-lg border border-slate-100 p-3 text-sm">
             <div className="flex-1 min-w-0">
               <div className="font-medium text-slate-800">{w.name}</div>
-              <div className="text-xs text-slate-400 truncate">{w.url}</div>
+              <div className="text-xs text-faint truncate">{w.url}</div>
               <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
                 <Badge color={w.direction === 'inbound' ? 'blue' : 'violet'}>{w.direction === 'inbound' ? 'eingehend' : 'ausgehend'}</Badge>
                 <Badge color={w.active ? 'green' : 'slate'}>{w.active ? 'aktiv' : 'inaktiv'}</Badge>
@@ -413,7 +413,7 @@ function WebhookEinstellungen({ onBearbeiten }: { onBearbeiten: (w: Webhook) => 
           </div>
         ))}
       </div>
-      <div className="text-xs text-slate-400 mt-3">
+      <div className="text-xs text-faint mt-3">
         Ausgehende Webhooks melden jede Auslösung an Drittsysteme und sind aktiv. Eingehende Webhooks von
         Brandmeldeanlagen sind {VORBEREITET}; Alarmknöpfe kommen bereits über den LoRaWAN-Endpunkt herein.
       </div>
@@ -469,7 +469,7 @@ function OrganisationEinstellungen() {
           className={inputClass} placeholder="SOBE Notfall"
           value={entwurf.appName ?? ''} onChange={(e) => patch({ appName: e.target.value })}
         />
-        <p className="text-xs text-slate-500 mt-1">
+        <p className="text-xs text-muted mt-1">
           Leer lassen, wenn neben dem Logo kein Text stehen soll. Ohne Logo bleibt dann
           nur das Symbol – prüfen Sie in dem Fall die Anmeldemaske.
         </p>
@@ -497,7 +497,7 @@ function OrganisationEinstellungen() {
       <div className="flex items-center gap-2">
         <Button onClick={speichern} disabled={!geaendert}>Speichern</Button>
       </div>
-      <p className="text-xs text-slate-400">
+      <p className="text-xs text-faint">
         Name, Farbe und Logo erscheinen auf der Anmeldemaske des Portals und in der App (iOS und Android),
         sobald sie mit diesem Alarmserver verbunden ist – die App selbst bleibt für alle Kunden dieselbe.
         Das Alarmrot bleibt aus Sicherheitsgründen bei allen Kunden gleich.
@@ -515,7 +515,7 @@ function OrganisationEinstellungen() {
           <div className="mt-2 pl-11">
             <Field label="Nummer – reine Konfiguration, wird nirgends in Portal oder App angezeigt">
               <div className="flex items-center gap-2">
-                <Phone size={14} className="text-slate-500 shrink-0" />
+                <Phone size={14} className="text-muted shrink-0" />
                 <input
                   className={inputClass}
                   type="tel"
@@ -576,7 +576,7 @@ function LogoEinstellungen() {
 
   return (
     <div className="pt-3 border-t border-slate-100 space-y-2">
-      <div className="text-xs text-slate-500 font-medium">Kundenlogo</div>
+      <div className="text-xs text-muted font-medium">Kundenlogo</div>
       <div className="flex items-center gap-3 flex-wrap">
         {logoVersion ? (
           // Zwei Vorschauen: Das Logo erscheint auf hellem Grund (Kacheln im
@@ -593,7 +593,7 @@ function LogoEinstellungen() {
             </span>
           </div>
         ) : (
-          <span className="text-xs text-slate-400">Noch kein Logo hinterlegt.</span>
+          <span className="text-xs text-faint">Noch kein Logo hinterlegt.</span>
         )}
         <label className="inline-flex">
           <input
@@ -623,14 +623,14 @@ function LogoEinstellungen() {
             })}
             label="Auf heller Fläche zeigen"
           />
-          <p className="text-xs text-slate-500 mt-1 pl-11">
+          <p className="text-xs text-muted mt-1 pl-11">
             {platte
               ? 'Das Logo liegt auf einem weissen Feld. Nötig für dunkle Logos – sie wären auf der dunklen Anmeldemaske sonst unsichtbar.'
               : 'Das Logo erscheint so, wie Sie es hochgeladen haben – ein transparenter Hintergrund bleibt transparent. Prüfen Sie an der rechten Vorschau, ob es auf dunklem Grund noch zu erkennen ist.'}
           </p>
         </div>
       )}
-      <p className="text-xs text-slate-400">
+      <p className="text-xs text-faint">
         PNG, JPEG, SVG oder WebP, max. ~300 KB – am besten ein Logo mit transparentem Hintergrund.
         Es erscheint auf der Anmeldemaske, in der Portal-Sidebar und in der App; diese drei
         Flächen sind dunkel.
@@ -651,7 +651,7 @@ function GeofencingEinstellungen() {
         onChange={(v) => dispatch({ type: 'UPDATE_INTEGRATIONS', integrations: { ...integ, geofencing: v } })}
         label="Alarmierung nach Aufenthaltsort"
       />
-      <p className={`text-xs pl-11 ${integ.geofencing ? 'text-slate-500' : 'text-slate-400'}`}>
+      <p className={`text-xs pl-11 ${integ.geofencing ? 'text-muted' : 'text-faint'}`}>
         Die App meldet beim Betreten und Verlassen eines Standort-Geofences nur den Standort-Namen –
         nie GPS-Koordinaten. Wer sich gerade an einem alarmierten Standort aufhält, wird zusätzlich
         alarmiert; ohne aktuelle Ortsmeldung gilt der Profilstandort. Radius je Standort unter
@@ -717,7 +717,7 @@ function IndoorEinstellungen() {
         onChange={(v) => dispatch({ type: 'UPDATE_INTEGRATIONS', integrations: { ...integ, meridian: { ...meridian, enabled: v } } })}
         label="Position im Gebäude mit Alarmen übermitteln"
       />
-      <p className={`text-xs pl-11 ${meridian.enabled ? 'text-slate-500' : 'text-slate-400'}`}>
+      <p className={`text-xs pl-11 ${meridian.enabled ? 'text-muted' : 'text-faint'}`}>
         Die Aruba-Access-Points senden Bluetooth-Beacons; die App bestimmt daraus Stockwerk und Position auf dem
         Grundriss. Übermittelt wird die Position nur mit einem Alarm – beim Auslösen und, solange der eigene Alarm
         läuft, bei Bewegung. Alarmtexte nennen das Stockwerk, die Alarmzentrale zeigt den Grundriss mit Markierung.
@@ -744,7 +744,7 @@ function IndoorEinstellungen() {
 
           <div>
             <div className="text-sm font-medium text-slate-600 mb-1">Stockwerke</div>
-            <p className="text-xs text-slate-500 mb-2">
+            <p className="text-xs text-muted mb-2">
               Jede Karte im Meridian Editor ist ein Stockwerk. Der Name erscheint in Alarmtexten («Hauptgebäude, 2. OG»);
               der Standort sorgt dafür, dass ein SOS aus diesem Stockwerk die Personen dieses Standorts alarmiert.
             </p>
@@ -759,7 +759,7 @@ function IndoorEinstellungen() {
                   </select>
                   <button
                     type="button"
-                    className="p-2 text-slate-400 hover:text-alarm-600"
+                    className="p-2 text-faint hover:text-alarm-600"
                     title="Stockwerk entfernen"
                     onClick={() => patch({ karten: entwurf.karten.filter((_, j) => j !== i) })}
                   >
@@ -825,7 +825,7 @@ function PersonalsystemEinstellungen() {
           <Field label="System">
             <input className={inputClass} value={integ.hrSync.system} onChange={(e) => update({ hrSync: { ...integ.hrSync, system: e.target.value } })} />
           </Field>
-          <div className="flex items-center gap-3 text-xs text-slate-500 flex-wrap">
+          <div className="flex items-center gap-3 text-xs text-muted flex-wrap">
             {integ.hrSync.lastSync && <span>Letzte Synchronisation: {formatDateTime(integ.hrSync.lastSync)}</span>}
             <Button variant="secondary" onClick={() => update({ hrSync: { ...integ.hrSync, lastSync: Date.now() } })}>
               <RefreshCw size={13} /> Jetzt synchronisieren
@@ -833,7 +833,7 @@ function PersonalsystemEinstellungen() {
           </div>
         </div>
       )}
-      <p className="text-xs text-slate-400">
+      <p className="text-xs text-faint">
         Bis dahin werden Konten von Hand oder per CSV-Import unter «Benutzende» gepflegt.
       </p>
     </div>
@@ -863,7 +863,7 @@ function RedundanzEinstellungen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
   if (fehler && !daten) return <p className="text-sm text-alarm-600">{fehler}</p>
-  if (!daten || !entwurf) return <p className="text-sm text-slate-500">Lade Konfiguration …</p>
+  if (!daten || !entwurf) return <p className="text-sm text-muted">Lade Konfiguration …</p>
 
   async function speichern() {
     setFehler(null)
@@ -957,7 +957,7 @@ function RedundanzEinstellungen() {
               </>
             )}
           </div>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-faint">
             Der Standby holt sich alle {entwurf.intervalS} Sekunden den vollständigen Datenbestand des Hauptservers –
             inklusive Konten, Sitzungen und Push-Registrierungen, damit angemeldete Geräte beim Ausweichen angemeldet
             bleiben. <b>Achtung:</b> Beim Einrichten als Standby wird der dortige Datenbestand vollständig durch den
@@ -995,7 +995,7 @@ function AppVerbindung() {
 
   return (
     <div className="space-y-3">
-      <p className="text-sm text-slate-500">
+      <p className="text-sm text-muted">
         Mitarbeitende scannen diesen Code mit der Kamera ihres iPhones oder Android-Telefons: Die
         SOBE-Notfall-App übernimmt die Serveradresse{fallback ? ' samt Ausweichserver' : ''} automatisch –
         niemand muss eine Adresse eintippen.
@@ -1007,7 +1007,7 @@ function AppVerbindung() {
           aria-label="QR-Code für die App-Verbindung"
           dangerouslySetInnerHTML={{ __html: svg }}
         />
-        <div className="flex-1 min-w-[200px] space-y-2 text-xs text-slate-500">
+        <div className="flex-1 min-w-[200px] space-y-2 text-xs text-muted">
           <div className="flex items-center gap-2">
             <QrCode size={13} className="shrink-0" />
             <code className="bg-slate-50 border border-slate-200 rounded px-2 py-1 flex-1 min-w-0 truncate">{link}</code>
@@ -1035,7 +1035,7 @@ type TestStatus = { laeuft?: boolean; ok?: boolean; text?: string } | null
 
 function TestErgebnis({ status }: { status: TestStatus }) {
   if (!status) return null
-  if (status.laeuft) return <span className="inline-flex items-center gap-1.5 text-xs text-slate-500"><Loader2 size={13} className="animate-spin" /> Test läuft …</span>
+  if (status.laeuft) return <span className="inline-flex items-center gap-1.5 text-xs text-muted"><Loader2 size={13} className="animate-spin" /> Test läuft …</span>
   return (
     <span className={`inline-flex items-center gap-1.5 text-xs ${status.ok ? 'text-emerald-700' : 'text-alarm-600'}`}>
       {status.ok ? <CheckCircle2 size={13} /> : <XCircle size={13} />} {status.text}
@@ -1120,7 +1120,7 @@ function SmsEinstellungen() {
             {<Button variant="secondary" onClick={testen} disabled={geaendert}>Test-SMS an mich</Button>}
             <TestErgebnis status={test} />
           </div>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-faint">
             Bisher versendet: {sms.sentCount ?? 0} SMS (rund CHF {(((sms.sentCount ?? 0) * 0.1)).toFixed(2)} bei CHF 0.10/SMS).
             Zustellstatus je Person erscheint in der Alarmzentrale.
             {geaendert && ' Zum Testen zuerst speichern.'}
@@ -1183,7 +1183,7 @@ function TelefonieEinstellungen() {
             {<Button variant="secondary" onClick={testen} disabled={geaendert}>Verbindung testen</Button>}
             <TestErgebnis status={test} />
           </div>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-faint">
             Beim Kanal «Sprachanruf» klingeln die Empfänger:innen in Teams (Handy, Desktop, Web); beim Kanal «Telefonkonferenz»
             wird eine Teams-Besprechung eröffnet und der Beitrittslink per Push und in den Teams-Kanal verteilt.
             Voraussetzung: App-Registrierung in Entra ID mit den Anwendungsberechtigungen
@@ -1337,7 +1337,7 @@ function SsoEinstellungen() {
             {<Button variant="secondary" onClick={testen} disabled={geaendert}>Verbindung testen</Button>}
             <TestErgebnis status={test} />
           </div>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-faint">
             In der App-Registrierung als Umleitungs-URI (Typ «Web») hinterlegen:{' '}
             <code className="bg-slate-50 border border-slate-200 rounded px-1">{callbackUrl}</code>.
             Benötigte delegierte Berechtigungen: openid, profile, email (mit Administratorzustimmung); für die
@@ -1395,7 +1395,7 @@ function UplinkSpur({ uplinks, kopieren, kopiert }: {
     <div className="rounded-xl border border-slate-200 bg-white p-3">
       <div className="text-xs font-semibold text-slate-600 mb-1">Letzte Uplinks</div>
       {uplinks.length === 0 ? (
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-muted">
           Noch nichts eingetroffen. Sobald der Netzserver den ersten Uplink schickt, erscheint er hier –
           auch dann, wenn er abgewiesen wird. Die Liste wird alle zehn Sekunden aufgefrischt und hält
           nur die jüngsten Meldungen; sie ist eine Hilfe beim Einrichten, kein Protokoll.
@@ -1407,7 +1407,7 @@ function UplinkSpur({ uplinks, kopieren, kopiert }: {
             return (
               <li key={`${u.ts}-${i}`} className="py-1.5 text-xs">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-slate-400 tabular-nums">{formatDateTime(u.ts)}</span>
+                  <span className="text-faint tabular-nums">{formatDateTime(u.ts)}</span>
                   <Badge color={art.farbe}>{art.text}</Badge>
                   {u.knopf && <span className="text-slate-600">{u.knopf}</span>}
                   {u.geraet && (
@@ -1415,7 +1415,7 @@ function UplinkSpur({ uplinks, kopieren, kopiert }: {
                       <code className="bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5">{u.geraet}</code>
                       <button
                         type="button"
-                        className="text-slate-400 hover:text-slate-600"
+                        className="text-faint hover:text-slate-600"
                         onClick={() => kopieren(u.geraet!, `uplink-${u.ts}`)}
                         aria-label="Seriennummer kopieren"
                       >
@@ -1424,16 +1424,16 @@ function UplinkSpur({ uplinks, kopieren, kopiert }: {
                       {kopiert === `uplink-${u.ts}` && <span className="text-emerald-700">kopiert</span>}
                     </>
                   )}
-                  {typeof u.batteryPct === 'number' && <span className="text-slate-400">{u.batteryPct} %</span>}
+                  {typeof u.batteryPct === 'number' && <span className="text-faint">{u.batteryPct} %</span>}
                 </div>
                 {art.rat && <div className="text-alarm-600 mt-0.5">{art.rat}</div>}
                 {u.felder && u.felder.length > 0 && (
-                  <div className="text-slate-400 mt-0.5">Übersetzte Felder: {u.felder.join(', ')}</div>
+                  <div className="text-faint mt-0.5">Übersetzte Felder: {u.felder.join(', ')}</div>
                 )}
                 {(u.fPort !== undefined || u.roh || u.batterieMv !== undefined) && (
                   // Für die Fehlersuche: Ohne Port und Rohbytes lässt sich ein
                   // falscher Messwert von aussen nicht nachrechnen.
-                  <div className="text-slate-400 mt-0.5 break-all">
+                  <div className="text-faint mt-0.5 break-all">
                     {u.fPort !== undefined && <>Port {u.fPort}</>}
                     {u.batterieMv !== undefined && <> · {u.batterieMv} mV</>}
                     {u.roh && <> · <code>{u.roh}</code></>}
@@ -1511,7 +1511,7 @@ function LorawanEinstellungen() {
           </Field>
           <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
             <div className="text-xs font-semibold text-slate-600 mb-1">Überwachung der Knöpfe</div>
-            <p className="text-xs text-slate-500 mb-2.5">
+            <p className="text-xs text-muted mb-2.5">
               Ein Knopf, der stumm an der Wand hängt, wiegt in falscher Sicherheit. Der Server meldet
               der Administration, wenn ein Gerät kein Lebenszeichen mehr sendet oder die Batterie zur Neige geht.
             </p>
@@ -1537,7 +1537,7 @@ function LorawanEinstellungen() {
                 />
               </Field>
             </div>
-            <p className="text-xs text-slate-400 mt-1">
+            <p className="text-xs text-faint mt-1">
               Richten Sie die Stundenzahl nach dem Melde-Intervall der Geräte – die meisten senden alle
               12 bis 24 Stunden ein Lebenszeichen.
             </p>
@@ -1547,13 +1547,13 @@ function LorawanEinstellungen() {
               {info && (
                 <>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-slate-500 w-24 shrink-0">Endpunkt</span>
+                    <span className="text-xs text-muted w-24 shrink-0">Endpunkt</span>
                     <code className="text-xs bg-slate-50 border border-slate-200 rounded px-2 py-1 flex-1 min-w-0 truncate">{info.url}</code>
                     <Button variant="ghost" onClick={() => kopieren(info.url, 'url')} aria-label="Endpunkt kopieren"><Copy size={13} /></Button>
                     {kopiert === 'url' && <span className="text-xs text-emerald-700">kopiert</span>}
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-slate-500 w-24 shrink-0">Token</span>
+                    <span className="text-xs text-muted w-24 shrink-0">Token</span>
                     <code className="text-xs bg-slate-50 border border-slate-200 rounded px-2 py-1 flex-1 min-w-0 truncate">{info.token ?? '– noch keines erzeugt –'}</code>
                     {info.token && <Button variant="ghost" onClick={() => kopieren(info.token!, 'token')} aria-label="Token kopieren"><Copy size={13} /></Button>}
                     {kopiert === 'token' && <span className="text-xs text-emerald-700">kopiert</span>}
@@ -1565,7 +1565,7 @@ function LorawanEinstellungen() {
             </div>
           )}
           <UplinkSpur uplinks={uplinks} kopieren={kopieren} kopiert={kopiert} />
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-faint">
             Im Netzserver einen Webhook auf den Endpunkt einrichten (Kopfzeile «Authorization: Bearer &lt;Token&gt;»;
             lässt das Gateway im Wert kein Leerzeichen zu, genügt das nackte Token, notfalls «?token=» in der Adresse).
             Der Server versteht TTN v3, ChirpStack v4 und v3 sowie generisches JSON. Statusmeldungen aktualisieren Batterie und

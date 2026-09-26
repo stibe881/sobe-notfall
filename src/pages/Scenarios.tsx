@@ -61,7 +61,7 @@ export default function Scenarios() {
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold text-slate-800">Szenarien &amp; Checklisten</h1>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-muted">
             {state.scenarios.filter(isActive).length} von {state.scenarios.length} Szenarien sind für Mitarbeitende sichtbar ·
             Ausgegraute Szenarien bleiben erhalten, erscheinen aber weder in der App noch bei der Alarmauslösung ·
             Änderungen werden sofort an alle Apps verteilt
@@ -112,7 +112,7 @@ export default function Scenarios() {
           return (
           <Card key={s.id} className={aktiv ? 'hover:shadow transition' : 'transition bg-slate-50 border-dashed'}>
             <div className={`flex items-start gap-3 ${aktiv ? '' : 'opacity-55'}`}>
-              <ScenarioIcon name={s.icon} size={28} className="text-slate-500 shrink-0 mt-0.5" />
+              <ScenarioIcon name={s.icon} size={28} className="text-muted shrink-0 mt-0.5" />
               <div className="flex-1 min-w-0">
                 <div className="font-semibold text-slate-800">{s.title}</div>
                 <div className="flex gap-1.5 mt-1 flex-wrap">
@@ -124,17 +124,17 @@ export default function Scenarios() {
                   {(s.legalBasis?.length ?? 0) > 0 && <Badge color="green">Rechtsgrundlagen</Badge>}
                   {!plan && <Badge color="amber">kein Alarmplan hinterlegt</Badge>}
                 </div>
-                <div className="text-xs text-slate-400 mt-2">
+                <div className="text-xs text-faint mt-2">
                   {s.instructions.length} Sofortmassnahmen · {responseStepsOf(s).length} für Empfänger:innen · {s.checklist.length} Checklistenpunkte
                 </div>
                 {plan && (
-                  <div className="text-xs text-slate-400 mt-1 flex items-center gap-1">
+                  <div className="text-xs text-faint mt-1 flex items-center gap-1">
                     <ClipboardList size={11} />
                     Alarmplan: {plan.name}
                   </div>
                 )}
                 {s.responsibleGroupIds.length > 0 && (
-                  <div className="text-xs text-slate-400 mt-1 flex items-center gap-1">
+                  <div className="text-xs text-faint mt-1 flex items-center gap-1">
                     <Users size={11} />
                     {s.responsibleGroupIds.map((g) => state.groups.find((x) => x.id === g)?.name).filter(Boolean).join(', ')}
                   </div>
@@ -159,7 +159,7 @@ export default function Scenarios() {
           )
         })}
         {filtered.length === 0 && (
-          <div className="col-span-full text-center text-sm text-slate-400 py-8">Keine Szenarien gefunden.</div>
+          <div className="col-span-full text-center text-sm text-faint py-8">Keine Szenarien gefunden.</div>
         )}
       </div>
 
@@ -193,7 +193,7 @@ function ScenarioDetail({ scenario, onClose }: { scenario: Scenario; onClose: ()
               <ul className="space-y-1.5 mb-5">
                 {scenario.callGuidance!.map((hinweis, i) => (
                   <li key={i} className="flex gap-2 text-sm text-slate-700">
-                    <span className="text-slate-400 shrink-0">–</span> {hinweis}
+                    <span className="text-faint shrink-0">–</span> {hinweis}
                   </li>
                 ))}
               </ul>
@@ -247,7 +247,7 @@ function ScenarioDetail({ scenario, onClose }: { scenario: Scenario; onClose: ()
               <ul className="space-y-1.5">
                 {scenario.followUp.map((step, i) => (
                   <li key={i} className="flex gap-2 text-sm text-slate-700">
-                    <span className="text-slate-400 shrink-0">–</span> {step}
+                    <span className="text-faint shrink-0">–</span> {step}
                   </li>
                 ))}
               </ul>
@@ -277,11 +277,11 @@ function ScenarioDetail({ scenario, onClose }: { scenario: Scenario; onClose: ()
               <ul className="space-y-1.5">
                 {scenario.legalBasis!.map((eintrag, i) => (
                   <li key={i} className="text-xs text-slate-600 leading-relaxed flex gap-2">
-                    <span className="text-slate-400 shrink-0">§</span> {eintrag}
+                    <span className="text-faint shrink-0">§</span> {eintrag}
                   </li>
                 ))}
               </ul>
-              <p className="text-[11px] text-slate-400 mt-2 leading-relaxed">
+              <p className="text-[11px] text-faint mt-2 leading-relaxed">
                 Orientierungshilfe, keine Rechtsberatung. Verbindlich sind die kantonalen Vorgaben und das
                 Notfallkonzept der Trägerschaft.
               </p>
@@ -295,7 +295,7 @@ function ScenarioDetail({ scenario, onClose }: { scenario: Scenario; onClose: ()
                   <div key={c.id} className="flex items-center gap-2 text-sm">
                     <span className="font-bold text-brand-600 w-12">{c.number}</span>
                     <span className="text-slate-700">{c.name}</span>
-                    <span className="text-xs text-slate-400">{c.description}</span>
+                    <span className="text-xs text-faint">{c.description}</span>
                   </div>
                 ))}
               </div>
@@ -395,7 +395,7 @@ function ScenarioEditor({ scenario, onClose }: { scenario: Scenario; onClose: ()
               title={label}
               onClick={() => setDraft({ ...draft, icon: key })}
               className={`flex items-center justify-center rounded-lg border p-2.5 transition ${
-                draft.icon === key ? 'border-brand-500 bg-brand-50 text-brand-600' : 'border-slate-200 text-slate-500 hover:border-slate-400'
+                draft.icon === key ? 'border-brand-500 bg-brand-50 text-brand-600' : 'border-slate-200 text-muted hover:border-slate-400'
               }`}
             >
               <Icon size={20} />
@@ -458,7 +458,7 @@ function ScenarioEditor({ scenario, onClose }: { scenario: Scenario; onClose: ()
           onChange={(v) => setDraft({ ...draft, active: v })}
           label="Für Mitarbeitende sichtbar"
         />
-        <p className="text-xs text-slate-500 mt-1.5">
+        <p className="text-xs text-muted mt-1.5">
           Ausgeschaltet erscheint das Szenario weder in der App noch bei der Alarmauslösung. Es bleibt in der
           Verwaltung ausgegraut erhalten und lässt sich jederzeit wieder einblenden.
         </p>
@@ -542,7 +542,7 @@ function EmpfaengerSchritteEditor({ schritte, onChange }: { schritte: ResponseSt
       <span className="block text-sm font-medium text-slate-600 mb-1">
         Empfänger: Was tun, wenn Sie diesen Alarm erhalten – kein Notruf, keine erneute Auslösung
       </span>
-      <p className="text-xs text-slate-400 mb-2">
+      <p className="text-xs text-faint mb-2">
         Ohne Gruppe gilt ein Schritt für alle. Mit Gruppen sehen ihn nur deren Mitglieder – die App
         blendet einer Person die Schritte anderer Gruppen aus.
       </p>
@@ -568,7 +568,7 @@ function EmpfaengerSchritteEditor({ schritte, onChange }: { schritte: ResponseSt
                 type="button"
                 onClick={() => setze(i, { groupIds: [] })}
                 className={`px-2 py-0.5 rounded-full text-[11px] font-semibold border ${
-                  !s.groupIds?.length ? 'bg-slate-800 border-slate-800 text-white' : 'bg-white border-slate-300 text-slate-500'
+                  !s.groupIds?.length ? 'bg-slate-800 border-slate-800 text-white' : 'bg-white border-slate-300 text-muted'
                 }`}
               >
                 alle Empfänger:innen
@@ -581,7 +581,7 @@ function EmpfaengerSchritteEditor({ schritte, onChange }: { schritte: ResponseSt
                     type="button"
                     onClick={() => gruppeUmschalten(i, g.id)}
                     className={`px-2 py-0.5 rounded-full text-[11px] font-semibold border ${
-                      an ? 'bg-violet-600 border-violet-600 text-white' : 'bg-white border-slate-300 text-slate-500'
+                      an ? 'bg-violet-600 border-violet-600 text-white' : 'bg-white border-slate-300 text-muted'
                     }`}
                   >
                     {g.name}
@@ -713,7 +713,7 @@ function SzenarioWizard({ onClose }: { onClose: () => void }) {
                       key={key} type="button" title={label}
                       onClick={() => setDraft({ ...draft, icon: key })}
                       className={`flex items-center justify-center rounded-lg border p-2.5 transition ${
-                        draft.icon === key ? 'border-brand-500 bg-brand-50 text-brand-600' : 'border-slate-200 text-slate-500 hover:border-slate-400'
+                        draft.icon === key ? 'border-brand-500 bg-brand-50 text-brand-600' : 'border-slate-200 text-muted hover:border-slate-400'
                       }`}
                     >
                       <Icon size={20} />
@@ -759,7 +759,7 @@ function SzenarioWizard({ onClose }: { onClose: () => void }) {
               </Field>
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
                 <Toggle checked={draft.silentDefault} onChange={(v) => setDraft({ ...draft, silentDefault: v })} label="Standardmässig als stiller Alarm auslösen" />
-                <p className="text-xs text-slate-500 mt-1.5">
+                <p className="text-xs text-muted mt-1.5">
                   Stille Alarme erscheinen ohne Ton und Banner – etwa bei einer Bedrohungslage, in der kein Alarmton ertönen darf.
                 </p>
               </div>
@@ -786,7 +786,7 @@ function SzenarioWizard({ onClose }: { onClose: () => void }) {
                     value={planName}
                     onChange={(e) => setPlanName(e.target.value)}
                   />
-                  <p className="text-xs text-slate-500 mt-1.5">
+                  <p className="text-xs text-muted mt-1.5">
                     Übernimmt vorerst die Standard-Alarmkanäle und zuständigen Gruppen aus dem Schritt «Alarmierung» –
                     Eskalationsstufen lassen sich danach unter «Alarmpläne» ergänzen.
                   </p>
@@ -900,7 +900,7 @@ function SzenarioWizard({ onClose }: { onClose: () => void }) {
                   ].map((z) => (
                     <div key={z.name} className="rounded-lg bg-white border border-brand-100 py-2">
                       <dt className="text-lg font-bold text-brand-700">{z.wert}</dt>
-                      <dd className="text-[11px] text-slate-500">{z.name}</dd>
+                      <dd className="text-[11px] text-muted">{z.name}</dd>
                     </div>
                   ))}
                 </dl>
@@ -921,7 +921,7 @@ function SzenarioWizard({ onClose }: { onClose: () => void }) {
                   onChange={(v) => setDraft({ ...draft, active: v })}
                   label="Für Mitarbeitende sichtbar"
                 />
-                <p className="text-xs text-slate-500 mt-1.5">
+                <p className="text-xs text-muted mt-1.5">
                   Ausgeschaltet bleibt das Szenario vorerst nur in der Verwaltung sichtbar – zum Einblenden genügt später ein Klick.
                 </p>
               </div>

@@ -83,13 +83,13 @@ export function Wizard({
                           ? 'bg-brand-600 text-white ring-4 ring-brand-100'
                           : erledigt
                             ? 'bg-brand-500 text-white'
-                            : 'bg-white border-2 border-slate-200 text-slate-400'
+                            : 'bg-white border-2 border-slate-200 text-faint'
                       }`}
                     >
                       {erledigt ? <Check size={16} /> : i + 1}
                     </span>
                     {/* Auf schmalen Bildschirmen trägt nur der aktive Schritt seinen Namen – so passen alle fünf ins Bild */}
-                    <span className={`text-[11px] font-medium leading-tight text-center max-w-[5.5rem] ${aktiv ? 'text-brand-700' : erledigt ? 'hidden sm:block text-slate-600' : 'hidden sm:block text-slate-400'}`}>
+                    <span className={`text-[11px] font-medium leading-tight text-center max-w-[5.5rem] ${aktiv ? 'text-brand-700' : erledigt ? 'hidden sm:block text-slate-600' : 'hidden sm:block text-faint'}`}>
                       {s.titel}
                     </span>
                   </button>
@@ -103,7 +103,7 @@ export function Wizard({
           <h4 className="font-semibold text-slate-800">
             Schritt {aktuell + 1} von {schritte.length}: {schritt.titel}
           </h4>
-          {schritt.hinweis && <p className="text-sm text-slate-500 mt-0.5 mb-3">{schritt.hinweis}</p>}
+          {schritt.hinweis && <p className="text-sm text-muted mt-0.5 mb-3">{schritt.hinweis}</p>}
           <div className={schritt.hinweis ? '' : 'mt-3'}>{schritt.inhalt}</div>
         </div>
 

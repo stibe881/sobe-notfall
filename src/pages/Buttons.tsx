@@ -31,7 +31,7 @@ function Haltezeitrechner({ geraetetyp }: { geraetetyp?: string }) {
   return (
     <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
       <div className="text-xs font-semibold text-slate-600 mb-1">Haltezeit der Alarmtaste</div>
-      <p className="text-xs text-slate-500 mb-2.5">
+      <p className="text-xs text-muted mb-2.5">
         Wie lange gedrückt werden muss, entscheidet das Gerät. Der Alarmserver kann es nicht
         einstellen – er erreicht das Gateway nicht. Hier entsteht der Funkbefehl dafür.
       </p>
@@ -59,7 +59,7 @@ function Haltezeitrechner({ geraetetyp }: { geraetetyp?: string }) {
           {kopiert && <span className="text-xs text-emerald-700">kopiert</span>}
         </div>
       </div>
-      <p className="text-xs text-slate-500 mt-2">
+      <p className="text-xs text-muted mt-2">
         Im Gateway beim Gerät auf <span className="font-medium">Downlink</span>, FPort <code>1</code>,
         den Befehl bei <span className="font-medium">HEX Bytes</span> einfügen und senden.
         <b> Er erreicht das Gerät erst nach dessen nächstem Uplink</b> – danach einmal die Taste drücken.
@@ -129,7 +129,7 @@ export default function Buttons() {
               </span>
             )}
           </h1>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-muted">
             LoRaWAN- und GSM-Notfallknöpfe – app-unabhängig, diskret, mit Standortübertragung und automatischer Eskalation.
             {lorawanAktiv && ' Ein Knopfdruck löst den hier hinterlegten stillen Alarm aus; Statusmeldungen aktualisieren Batterie und «letztes Signal».'}
           </p>
@@ -176,10 +176,10 @@ export default function Buttons() {
           return (
             <Card key={b.id} className={stummSeit || batterieSchwach ? 'border-amber-300' : ''}>
               <div className="flex items-start gap-3">
-                <Radio size={28} className="text-slate-400 mt-1" />
+                <Radio size={28} className="text-faint mt-1" />
                 <div className="flex-1 min-w-0">
                   <div className="font-semibold text-slate-800">{b.name}</div>
-                  <div className="text-xs text-slate-400">{b.serial}</div>
+                  <div className="text-xs text-faint">{b.serial}</div>
                   <div className="flex gap-1.5 mt-1.5 flex-wrap">
                     <Badge color={b.type === 'lorawan' ? 'blue' : 'violet'}>{b.type === 'lorawan' ? 'LoRaWAN' : 'Mobilfunk'}</Badge>
                     <Badge color={nieGemeldet ? 'slate' : batterieSchwach ? 'red' : 'green'}>
@@ -191,7 +191,7 @@ export default function Buttons() {
                   </div>
                 </div>
               </div>
-              <div className="text-xs text-slate-500 mt-3 space-y-1">
+              <div className="text-xs text-muted mt-3 space-y-1">
                 <div>Standort: {location?.name ?? 'mobil'}</div>
                 {assignee && <div>Zugewiesen: {assignee.firstName} {assignee.lastName}</div>}
                 {b.gps && <div className="flex items-center gap-1"><MapPin size={12} /> GPS: {b.gps.lat.toFixed(4)}, {b.gps.lng.toFixed(4)}</div>}
@@ -241,7 +241,7 @@ function ButtonEditor({ button, onClose }: { button: AlarmButton; onClose: () =>
             <option value="lorawan">LoRaWAN – über das eigene Gateway</option>
             <option value="gsm">Mobilfunk – mit eigener SIM-Karte</option>
           </select>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-xs text-muted mt-1">
             Nur zur Unterscheidung in der Liste. Batterielaufzeit und GPS hängen am Gerät,
             nicht am Funkweg – ein LoRaWAN-Ortungsgerät hält Tage, ein einfacher Knopf Jahre.
           </p>
@@ -253,7 +253,7 @@ function ButtonEditor({ button, onClose }: { button: AlarmButton; onClose: () =>
             value={draft.serial}
             onChange={(e) => setDraft({ ...draft, serial: e.target.value })}
           />
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-xs text-muted mt-1">
             Bei LoRaWAN die <b>DevEUI</b> aus dem Netzserver – nicht die aufs Gehäuse gedruckte
             Seriennummer. Nur über die DevEUI findet der Alarmserver den Knopf.
           </p>
@@ -267,7 +267,7 @@ function ButtonEditor({ button, onClose }: { button: AlarmButton; onClose: () =>
         >
           {typen.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
         </select>
-        <p className="text-xs text-slate-500 mt-1">
+        <p className="text-xs text-muted mt-1">
           {typen.find((t) => t.id === (draft.geraetetyp ?? 'auto'))?.hinweis}
         </p>
       </Field>
@@ -321,7 +321,7 @@ function ButtonEditor({ button, onClose }: { button: AlarmButton; onClose: () =>
           onChange={(v) => setDraft({ ...draft, silent: v })}
           label="Still alarmieren"
         />
-        <p className="text-xs text-slate-500 mt-1 pl-11">
+        <p className="text-xs text-muted mt-1 pl-11">
           {draft.silent
             ? 'Die Mitteilung kommt ohne Ton und ohne Vibration an. Richtig, wenn Aufsehen selbst gefährlich wäre – wer gerade unterrichtet oder das Telefon in der Tasche hat, bemerkt den Alarm aber nicht.'
             : 'Die Mitteilung gibt Ton, auch wenn das Telefon stummgeschaltet ist. Das ist für einen Notfallknopf die Regel: Die Alarmierten sind meist woanders, und ein unbemerkter Alarm hilft niemandem.'}
@@ -333,7 +333,7 @@ function ButtonEditor({ button, onClose }: { button: AlarmButton; onClose: () =>
           value={draft.escalateToEmergencyServicesAfterMin}
           onChange={(e) => setDraft({ ...draft, escalateToEmergencyServicesAfterMin: Number(e.target.value) })}
         />
-        <p className="text-xs text-slate-500 mt-1">
+        <p className="text-xs text-muted mt-1">
           Quittiert niemand innerhalb dieser Zeit, wird der Krisenstab per Sprachanruf und SMS
           aufgeboten. Blaulichtorganisationen alarmiert das System nicht selbst – dafür sind die
           Notrufnummern unter «Notfallkontakte» hinterlegt.

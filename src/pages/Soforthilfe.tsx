@@ -65,7 +65,7 @@ export default function Soforthilfe() {
         <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
           <LifeBuoy size={22} className="text-alarm-500" /> Soforthilfe-Knopf
         </h1>
-        <p className="text-sm text-slate-500 mt-1">
+        <p className="text-sm text-muted mt-1">
           Wer benachrichtigt wird, wenn jemand in der App oder der App-Vorschau den Soforthilfe-Knopf (SOS)
           hält – unabhängig davon, wie eine Alarmauslösung über ein Szenario konfiguriert ist.
         </p>
@@ -80,7 +80,7 @@ export default function Soforthilfe() {
 
       <Card>
         <h4 className="font-semibold text-slate-700 text-sm mb-1">Wer wird sofort alarmiert</h4>
-        <p className="text-xs text-slate-500 mb-3">
+        <p className="text-xs text-muted mb-3">
           Ohne Auswahl gilt: alle Gruppen. Aktuell erreicht der Knopf{' '}
           <b className={erreicht === 0 ? 'text-alarm-600' : 'text-slate-700'}>{erreicht} {erreicht === 1 ? 'Person' : 'Personen'}</b>{' '}
           am Standort der auslösenden Person – der Standort wird automatisch übernommen und lässt sich hier nicht zusätzlich einschränken.
@@ -117,12 +117,12 @@ export default function Soforthilfe() {
             <Plus size={14} /> Stufe
           </Button>
         </div>
-        <p className="text-xs text-slate-500 mb-3">
+        <p className="text-xs text-muted mb-3">
           Eine Stufe zündet nur, solange <b>niemand</b> quittiert hat. Eine einzige Quittierung hält den
           ganzen Ablauf an.
         </p>
         {draft.escalation.length === 0 ? (
-          <p className="text-sm text-slate-400 rounded-xl border border-dashed border-slate-200 p-4 text-center">
+          <p className="text-sm text-faint rounded-xl border border-dashed border-slate-200 p-4 text-center">
             Keine Eskalation – bleibt eine Quittierung aus, passiert nichts weiter.
           </p>
         ) : (
@@ -142,13 +142,13 @@ export default function Soforthilfe() {
 
       <Card className="bg-slate-50">
         <div className="flex items-center gap-2 mb-2">
-          <BellRing size={15} className="text-slate-400" />
+          <BellRing size={15} className="text-faint" />
           <h4 className="font-semibold text-slate-700 text-sm">So läuft der Alarm ab</h4>
         </div>
         <Ablauf plan={draft} />
       </Card>
 
-      <p className="text-xs text-slate-400">
+      <p className="text-xs text-faint">
         Änderungen wirken sofort für die App-Vorschau im Webportal. In der installierten mobilen App
         braucht es dafür einen neuen App-Build über «Aktualisierung» – bis dahin gelten dort weiterhin die
         zuletzt installierten Werte.

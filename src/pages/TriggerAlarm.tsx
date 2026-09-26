@@ -106,11 +106,11 @@ export default function TriggerAlarm() {
       <div className="space-y-4 max-w-4xl mx-auto">
         <div>
           <h1 className="text-2xl font-bold text-slate-800">Alarm auslösen</h1>
-          <p className="text-sm text-slate-500">Szenario antippen – Empfänger:innen und Kanäle werden automatisch vorbereitet.</p>
+          <p className="text-sm text-muted">Szenario antippen – Empfänger:innen und Kanäle werden automatisch vorbereitet.</p>
         </div>
 
         <div className="relative">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-faint" />
           <input
             className={inputClass + ' pl-9'}
             placeholder="Szenario suchen…"
@@ -152,15 +152,15 @@ export default function TriggerAlarm() {
               className="rounded-xl border border-slate-200 bg-white p-4 text-left shadow-sm transition active:scale-[0.98] hover:border-brand-500"
             >
               <div className="flex items-start justify-between">
-                <ScenarioIcon name={s.icon} size={26} className={s.priority === 'hoch' ? 'text-alarm-600' : 'text-slate-500'} />
+                <ScenarioIcon name={s.icon} size={26} className={s.priority === 'hoch' ? 'text-alarm-600' : 'text-muted'} />
                 {s.silentDefault && <Badge color="violet">still</Badge>}
               </div>
               <div className="font-semibold text-slate-800 leading-tight mt-2">{s.title}</div>
-              <div className="text-xs text-slate-400 mt-1">{s.category}</div>
+              <div className="text-xs text-faint mt-1">{s.category}</div>
             </button>
           ))}
           {visibleScenarios.length === 0 && (
-            <div className="col-span-full text-center text-sm text-slate-400 py-8">Kein Szenario gefunden.</div>
+            <div className="col-span-full text-center text-sm text-faint py-8">Kein Szenario gefunden.</div>
           )}
         </div>
       </div>
@@ -171,7 +171,7 @@ export default function TriggerAlarm() {
   return (
     <div className="max-w-2xl mx-auto pb-40 lg:pb-6">
       <button
-        className="flex items-center gap-1 text-sm text-slate-500 hover:text-slate-800 mb-3"
+        className="flex items-center gap-1 text-sm text-muted hover:text-slate-800 mb-3"
         onClick={() => { setScenarioId(''); setPlanId('') }}
       >
         <ChevronLeft size={16} /> Anderes Szenario wählen
@@ -196,7 +196,7 @@ export default function TriggerAlarm() {
             <Users size={15} />
             {recipients.length} Empfänger:innen werden alarmiert
           </div>
-          <div className="text-slate-500">
+          <div className="text-muted">
             {groupIds.map((g) => state.groups.find((x) => x.id === g)?.name).filter(Boolean).join(', ') || 'Alle Gruppen'}
             {' · '}
             {locationIds.length > 0
@@ -247,7 +247,7 @@ export default function TriggerAlarm() {
                   </label>
                 ))}
               </div>
-              <div className="text-xs text-slate-400 mt-1">Abwesende Personen (Ferien) werden automatisch übersprungen.</div>
+              <div className="text-xs text-faint mt-1">Abwesende Personen (Ferien) werden automatisch übersprungen.</div>
             </div>
             <div>
               <div className="text-sm font-semibold text-slate-700 mb-2">Alarmierungskanäle</div>
@@ -290,7 +290,7 @@ export default function TriggerAlarm() {
               ))}
             </ol>
             {scenario.instructions.length > 3 && (
-              <div className="text-xs text-slate-400 mt-1.5">+ {scenario.instructions.length - 3} weitere Schritte in der App</div>
+              <div className="text-xs text-faint mt-1.5">+ {scenario.instructions.length - 3} weitere Schritte in der App</div>
             )}
           </div>
         )}

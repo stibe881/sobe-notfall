@@ -74,7 +74,7 @@ export default function LoneWorker() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-slate-800">Alleinarbeitsschutz</h1>
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-muted">
           Timer-Funktion mit automatischer Alarmauslösung: Meldet sich die Person nicht rechtzeitig zurück, alarmiert der Server
           automatisch Ersthelfende und Sicherheitsdienst – auf Wunsch still und unauffällig.
         </p>
@@ -97,7 +97,7 @@ export default function LoneWorker() {
           </Field>
           <Field label={`Timer-Intervall: ${durationMin} Minuten`}>
             <input type="range" min={1} max={120} value={durationMin} onChange={(e) => setDurationMin(Number(e.target.value))} className="w-full" />
-            <div className="text-xs text-slate-400">Vor Ablauf muss ein Lebenszeichen gegeben werden, sonst wird automatisch alarmiert.</div>
+            <div className="text-xs text-faint">Vor Ablauf muss ein Lebenszeichen gegeben werden, sonst wird automatisch alarmiert.</div>
           </Field>
           <Field label="Bei Ablauf alarmieren – Gruppen am Standort">
             <div className="grid sm:grid-cols-2 gap-1">
@@ -111,7 +111,7 @@ export default function LoneWorker() {
           </Field>
           <Field label="Zusätzlich einzelne Personen (unabhängig von Gruppe und Standort)">
             <div className="relative mb-2">
-              <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-faint" />
               <input
                 className={inputClass + ' pl-9'}
                 placeholder="Person suchen – Name, E-Mail oder Standort…"
@@ -124,14 +124,14 @@ export default function LoneWorker() {
                 <label key={u.id} className="flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-slate-50 cursor-pointer">
                   <input type="checkbox" checked={alertUserIds.includes(u.id)} onChange={() => setAlertUserIds(toggleId(alertUserIds, u.id))} />
                   <span className="flex-1">{u.firstName} {u.lastName}</span>
-                  <span className="text-xs text-slate-400">{state.locations.find((l) => l.id === u.locationId)?.name}</span>
+                  <span className="text-xs text-faint">{state.locations.find((l) => l.id === u.locationId)?.name}</span>
                 </label>
               ))}
               {auswahlPersonen.length === 0 && (
-                <div className="px-3 py-4 text-sm text-slate-400 text-center">Keine Person gefunden.</div>
+                <div className="px-3 py-4 text-sm text-faint text-center">Keine Person gefunden.</div>
               )}
             </div>
-            <div className={`text-xs mt-1.5 ${anzahlEmpfaenger === 0 ? 'text-alarm-600' : 'text-slate-500'}`}>
+            <div className={`text-xs mt-1.5 ${anzahlEmpfaenger === 0 ? 'text-alarm-600' : 'text-muted'}`}>
               <b>{anzahlEmpfaenger} Person{anzahlEmpfaenger === 1 ? '' : 'en'}</b> würden bei Ablauf alarmiert{anzahlEmpfaenger === 0 ? ' – bitte mindestens eine Gruppe oder Person wählen' : ''}.
             </div>
           </Field>
@@ -156,7 +156,7 @@ export default function LoneWorker() {
               const user = state.users.find((u) => u.id === s.userId)
               return (
                 <div key={s.id} className="flex items-center gap-3 text-sm py-1.5 border-b border-slate-50 last:border-0">
-                  <span className="text-xs text-slate-400">{formatDateTime(s.startedAt)}</span>
+                  <span className="text-xs text-faint">{formatDateTime(s.startedAt)}</span>
                   <span className="text-slate-700 flex-1">{user?.firstName} {user?.lastName} · {s.activity}</span>
                   {s.status === 'completed'
                     ? <Badge color="green"><CheckCircle2 size={12} /> sicher beendet</Badge>
@@ -186,8 +186,8 @@ function RunningSession({ session, now }: { session: LoneWorkSession; now: numbe
             {user?.firstName} {user?.lastName}
             {session.silent && <Badge color="violet">still</Badge>}
           </div>
-          <div className="text-xs text-slate-500">{session.activity} · {location?.name}</div>
-          <div className="text-xs text-slate-400 mt-0.5">
+          <div className="text-xs text-muted">{session.activity} · {location?.name}</div>
+          <div className="text-xs text-faint mt-0.5">
             Alarmiert bei Ablauf: {[
               ...(session.alertGroupIds?.length ? session.alertGroupIds : LONE_WORK_DEFAULT_GROUPS).map((id) => state.groups.find((g) => g.id === id)?.name),
               ...(session.alertUserIds ?? []).map((id) => { const u = state.users.find((x) => x.id === id); return u ? `${u.firstName} ${u.lastName}` : '' }),

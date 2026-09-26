@@ -305,7 +305,9 @@ const styles = StyleSheet.create({
   headerTitle: { color: '#fff', fontWeight: '800', fontSize: 16 },
   headerLogo: { backgroundColor: '#fff', borderRadius: 6, paddingHorizontal: 5, paddingVertical: 3 },
   headerSubRow: { flexDirection: 'row', alignItems: 'center' },
-  headerSub: { color: '#94a3b8', fontSize: 11 },
+  // Heller Grauton: Der Kopf ist dunkel, dort muss die Schrift heller
+  // werden statt dunkler (7.9:1 auf dem Kopfhintergrund).
+  headerSub: { color: '#a0aec0', fontSize: 11 },
   headerAlarmButton: {
     flexDirection: 'row',
     alignItems: 'center',

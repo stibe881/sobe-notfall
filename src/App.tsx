@@ -174,7 +174,7 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           )}
           {anwendungsname(state.integrations.organization?.appName) || null}
         </div>
-        <div className="text-xs text-slate-500 mt-0.5">
+        <div className="text-xs text-faint-dunkel mt-0.5">
           {state.integrations.organization?.name || 'Notfall- & Krisenmanagement'}
         </div>
       </div>
@@ -206,7 +206,7 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       <nav className="flex-1 overflow-y-auto py-3">
         {sichtbar.map((item, i) =>
           'section' in item ? (
-            <div key={i} className="px-5 pt-4 pb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+            <div key={i} className="px-5 pt-4 pb-1 text-[11px] font-semibold uppercase tracking-wider text-faint-dunkel">
               {item.section}
             </div>
           ) : 'newTab' in item && item.newTab ? (
@@ -220,7 +220,7 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
             >
               <item.icon size={16} />
               {item.label}
-              <ExternalLink size={12} className="ml-auto text-slate-500" />
+              <ExternalLink size={12} className="ml-auto text-faint-dunkel" />
             </a>
           ) : (
             <NavLink
@@ -249,7 +249,7 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
                 serverStatus === 'verbunden' ? 'bg-emerald-500' : serverStatus === 'getrennt' ? 'bg-alarm-500' : 'bg-amber-500'
               }`}
             />
-            <span className="text-slate-500">
+            <span className="text-faint-dunkel">
               {serverStatus === 'verbunden'
                 ? 'Mit Alarmserver verbunden'
                 : serverStatus === 'getrennt'
@@ -284,13 +284,13 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       )}
 
       <div className="px-5 py-4 border-t border-slate-800 text-xs">
-        <div className="text-slate-500 mb-1">Angemeldet als</div>
+        <div className="text-faint-dunkel mb-1">Angemeldet als</div>
         <div className="flex items-center gap-2">
           <div className="min-w-0 flex-1">
             <div className="text-slate-200 text-sm font-medium truncate">
               {currentUser.firstName} {currentUser.lastName}
             </div>
-            <div className="text-slate-500 truncate">{currentUser.email}</div>
+            <div className="text-faint-dunkel truncate">{currentUser.email}</div>
           </div>
           <button
             onClick={logout}
@@ -351,7 +351,7 @@ function EinrichtungsAssistent() {
 
   return (
     <Modal title="Willkommen – Einrichtung des Alarmservers" onClose={() => setOffen(false)}>
-      <p className="text-sm text-slate-500 mb-4">
+      <p className="text-sm text-faint-dunkel mb-4">
         Dieser Alarmserver ist neu. Ein paar Angaben zur Organisation genügen für den Start –
         alles lässt sich später unter «Einstellungen & Konfiguration» und «Standorte» anpassen.
       </p>

@@ -75,7 +75,7 @@ export default function UserApp() {
           {anwendungsname(state.integrations.organization?.appName) && (
             <div className="font-bold leading-tight">{anwendungsname(state.integrations.organization?.appName)}</div>
           )}
-          <div className="text-xs text-slate-400 truncate flex items-center gap-1">
+          <div className="text-xs text-faint-dunkel truncate flex items-center gap-1">
             {me.firstName} {me.lastName} · <MapPin size={10} /> {myLocation?.name}
           </div>
         </div>
@@ -159,7 +159,7 @@ export default function UserApp() {
               key={key}
               onClick={() => { setTab(key); setOpenScenario(null); setAlarmWahl(false) }}
               className={`relative py-2.5 flex flex-col items-center gap-0.5 text-[11px] ${
-                tab === key && !openScenario && !alarmWahl ? 'text-brand-600 font-semibold' : 'text-slate-400'
+                tab === key && !openScenario && !alarmWahl ? 'text-brand-600 font-semibold' : 'text-faint'
               }`}
             >
               <span className="relative">
@@ -215,7 +215,7 @@ export function rueckmeldungen(alarm: Alarm): { benachrichtigt: number; kommen: 
 function Rueckmeldestand({ alarm }: { alarm: Alarm }) {
   const r = rueckmeldungen(alarm)
   return (
-    <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500" aria-live="polite">
+    <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted" aria-live="polite">
       <span><b className="text-slate-700">{r.benachrichtigt}</b> benachrichtigt</span>
       <span className="text-emerald-700"><b>{r.kommen}</b> kommen</span>
       <span className="text-slate-600"><b>{r.nichtVerfuegbar}</b> nicht verfügbar</span>
@@ -289,7 +289,7 @@ function StartTab({ onOpenScenario }: { onOpenScenario: (s: Scenario, alarm: Ala
             <div className="flex items-center gap-2 font-bold text-alarm-700">
               <Siren size={18} className="animate-pulse" /> {istTimer ? 'Alleinarbeits-Timer abgelaufen – Alarm aktiv' : istSos ? 'Ihr SOS-Alarm ist aktiv' : `Ihr Alarm ist aktiv${scenario ? ` · ${scenario.title}` : ''}`}
               {a.drill && <Badge color="amber">ÜBUNG</Badge>}
-              <span className="ml-auto text-xs font-normal text-slate-400">{formatRelative(a.triggeredAt)}</span>
+              <span className="ml-auto text-xs font-normal text-faint">{formatRelative(a.triggeredAt)}</span>
             </div>
             <Lagemeldungen alarm={a} />
             <div className="mt-2.5 text-sm text-slate-700">
@@ -308,7 +308,7 @@ function StartTab({ onOpenScenario }: { onOpenScenario: (s: Scenario, alarm: Ala
                   {helpers.map((u) => `${u!.firstName} ${u!.lastName}`).join(', ')} {helpers.length === 1 ? 'kommt' : 'kommen'}
                 </span>
               ) : (
-                <span className="text-slate-500">Warten auf Rückmeldung der Einsatzkräfte…</span>
+                <span className="text-muted">Warten auf Rückmeldung der Einsatzkräfte…</span>
               )}
             </div>
             {istSos ? (
@@ -329,7 +329,7 @@ function StartTab({ onOpenScenario }: { onOpenScenario: (s: Scenario, alarm: Ala
                 Entwarnung geben
               </button>
             ) : fehlalarmGemeldet ? (
-              <div className="mt-3 text-xs text-center text-slate-500">Fehlalarm gemeldet – der Krisenstab gibt die Entwarnung.</div>
+              <div className="mt-3 text-xs text-center text-muted">Fehlalarm gemeldet – der Krisenstab gibt die Entwarnung.</div>
             ) : (
               <button className="mt-3 w-full rounded-xl border border-slate-300 text-slate-700 py-2.5 text-sm font-semibold" onClick={() => fehlalarmMelden(a.id)}>
                 Fehlalarm melden
@@ -346,7 +346,7 @@ function StartTab({ onOpenScenario }: { onOpenScenario: (s: Scenario, alarm: Ala
           <div key={a.id} className={`rounded-2xl border-2 p-4 bg-white ${a.silent ? 'border-violet-400' : 'border-alarm-500 alarm-pulse'}`}>
             <div className="flex items-center gap-2 font-bold text-slate-800">
               <BellRing size={18} className={a.silent ? 'text-violet-600' : 'text-alarm-600 animate-pulse'} />
-              <ScenarioIcon name={scenario?.icon ?? ''} size={18} className="text-slate-500" />
+              <ScenarioIcon name={scenario?.icon ?? ''} size={18} className="text-muted" />
               <span className="flex-1">{scenario?.title}</span>
               {a.drill && <Badge color="amber">ÜBUNG</Badge>}
               {a.silent && <Badge color="violet">still</Badge>}
@@ -355,7 +355,7 @@ function StartTab({ onOpenScenario }: { onOpenScenario: (s: Scenario, alarm: Ala
             <Rueckmeldestand alarm={a} />
             <Lagemeldungen alarm={a} />
             {!a.silent && (
-              <div className="text-[11px] text-slate-500 mt-1.5 flex items-center gap-1">
+              <div className="text-[11px] text-muted mt-1.5 flex items-center gap-1">
                 <Volume2 size={12} /> Critical Alert – auch bei stummgeschaltetem Gerät hörbar
               </div>
             )}
@@ -403,7 +403,7 @@ function StartTab({ onOpenScenario }: { onOpenScenario: (s: Scenario, alarm: Ala
         <div className="rounded-2xl bg-white border border-slate-200 p-4 text-center">
           <CheckCircle2 size={26} className="text-emerald-500 mx-auto mb-1.5" />
           <div className="text-sm font-medium text-slate-700">Keine aktiven Alarme</div>
-          <div className="text-xs text-slate-400 mt-0.5">Sie werden bei einem Ereignis sofort benachrichtigt.</div>
+          <div className="text-xs text-faint mt-0.5">Sie werden bei einem Ereignis sofort benachrichtigt.</div>
         </div>
       )}
 
@@ -414,7 +414,7 @@ function StartTab({ onOpenScenario }: { onOpenScenario: (s: Scenario, alarm: Ala
             <div className="flex items-center gap-2 font-bold text-slate-800">
               <ShieldCheck size={18} className="text-emerald-600" />
               <span className="flex-1">Entwarnung · {scenario?.title ?? 'Alarm'}</span>
-              <span className="text-xs font-normal text-slate-400">{formatRelative(a.endedAt ?? a.triggeredAt)}</span>
+              <span className="text-xs font-normal text-faint">{formatRelative(a.endedAt ?? a.triggeredAt)}</span>
             </div>
             <p className="text-sm text-slate-700 mt-2">Der Alarm ist beendet. Für die Rückkehr zum Normalbetrieb gelten eigene Schritte.</p>
             {scenario && (
@@ -434,7 +434,7 @@ function StartTab({ onOpenScenario }: { onOpenScenario: (s: Scenario, alarm: Ala
           <HoldButton onTrigger={sos} hint="Zum Auslösen gedrückt halten" className="w-full">
             <Siren size={24} /> SOS
           </HoldButton>
-          <div className="text-xs text-center text-slate-500">
+          <div className="text-xs text-center text-muted">
             Für jede Lage, in der es schnell Hilfe braucht – der Grund muss nicht feststehen.
             Ruft Schulsanität und Hausdienst an Ihren Standort, mit automatischer Eskalation.
             Was los ist, können Sie danach nachmelden.
@@ -460,7 +460,7 @@ function AlarmAuswahl({ onPick, onBack }: { onPick: (s: Scenario) => void; onBac
 
   return (
     <div>
-      <button className="flex items-center gap-1 text-sm text-slate-500 mb-3" onClick={onBack}>
+      <button className="flex items-center gap-1 text-sm text-muted mb-3" onClick={onBack}>
         <ChevronLeft size={16} /> Zurück
       </button>
       <div className="flex items-center gap-3 mb-3">
@@ -469,7 +469,7 @@ function AlarmAuswahl({ onPick, onBack }: { onPick: (s: Scenario) => void; onBac
         </div>
         <div className="min-w-0">
           <h2 className="font-bold text-slate-800 text-xl leading-tight">Alarm auslösen</h2>
-          <div className="text-xs text-slate-400">Welches Ereignis liegt vor?</div>
+          <div className="text-xs text-faint">Welches Ereignis liegt vor?</div>
         </div>
       </div>
       <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 mb-3 text-xs text-amber-900">
@@ -483,15 +483,15 @@ function AlarmAuswahl({ onPick, onBack }: { onPick: (s: Scenario) => void; onBac
             className="rounded-2xl bg-white border border-slate-200 p-3.5 text-left active:scale-[0.98] transition"
           >
             <div className="flex items-center justify-between">
-              <ScenarioIcon name={s.icon} size={22} className={s.priority === 'hoch' ? 'text-alarm-600' : 'text-slate-500'} />
+              <ScenarioIcon name={s.icon} size={22} className={s.priority === 'hoch' ? 'text-alarm-600' : 'text-muted'} />
               {s.silentDefault && <Badge color="violet">still</Badge>}
             </div>
             <div className="font-semibold text-sm text-slate-800 mt-2 leading-snug">{s.title}</div>
-            <div className="text-[11px] text-slate-400 mt-0.5">{s.category}</div>
+            <div className="text-[11px] text-faint mt-0.5">{s.category}</div>
           </button>
         ))}
       </div>
-      <div className="text-xs text-center text-slate-500 mt-4">
+      <div className="text-xs text-center text-muted mt-4">
         Persönlicher Notfall ohne Szenario: SOS auf dem Start-Tab alarmiert Schulsanität und Hausdienst.
       </div>
     </div>
@@ -508,7 +508,7 @@ function ScenarioListTab({ onOpen }: { onOpen: (s: Scenario) => void }) {
   return (
     <div className="space-y-3">
       <div className="relative">
-        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-faint" />
         <input
           className={inputClass + ' pl-9'}
           placeholder="Szenario suchen…"
@@ -523,9 +523,9 @@ function ScenarioListTab({ onOpen }: { onOpen: (s: Scenario) => void }) {
             className="rounded-2xl border border-slate-200 bg-white p-3.5 text-left active:scale-[0.98] transition"
             onClick={() => onOpen(s)}
           >
-            <ScenarioIcon name={s.icon} size={22} className={s.priority === 'hoch' ? 'text-alarm-600' : 'text-slate-500'} />
+            <ScenarioIcon name={s.icon} size={22} className={s.priority === 'hoch' ? 'text-alarm-600' : 'text-muted'} />
             <div className="text-sm font-semibold text-slate-800 leading-tight mt-1.5">{s.title}</div>
-            <div className="text-[11px] text-slate-400 mt-0.5">{s.category}</div>
+            <div className="text-[11px] text-faint mt-0.5">{s.category}</div>
           </button>
         ))}
       </div>
@@ -672,7 +672,7 @@ function ScenarioView({
       </div>
       <div className="min-w-0">
         <h2 className="font-bold text-slate-800 text-xl leading-tight">{scenario.title}</h2>
-        {phase !== null && <div className="text-xs text-slate-400">Phase {phase + 1} von {PHASES.length} · {PHASES[phase].title}</div>}
+        {phase !== null && <div className="text-xs text-faint">Phase {phase + 1} von {PHASES.length} · {PHASES[phase].title}</div>}
       </div>
     </div>
   )
@@ -721,7 +721,7 @@ function ScenarioView({
   if (phase === null) {
     return (
       <div>
-        <button className="flex items-center gap-1 text-sm text-slate-500 mb-3" onClick={onBack}>
+        <button className="flex items-center gap-1 text-sm text-muted mb-3" onClick={onBack}>
           <ChevronLeft size={16} /> Zurück
         </button>
         {header}
@@ -735,9 +735,9 @@ function ScenarioView({
               <span className="w-9 h-9 rounded-full bg-brand-600 text-white flex items-center justify-center font-bold shrink-0">{i + 1}</span>
               <span className="flex-1 min-w-0">
                 <span className="block font-semibold text-slate-800">{p.title}</span>
-                <span className="block text-xs text-slate-400">{p.hint}</span>
+                <span className="block text-xs text-faint">{p.hint}</span>
               </span>
-              <p.icon size={18} className="text-slate-400 shrink-0" />
+              <p.icon size={18} className="text-faint shrink-0" />
             </button>
           ))}
         </div>
@@ -763,7 +763,7 @@ function ScenarioView({
   return (
     <div>
       {promptEl}
-      <button className="flex items-center gap-1 text-sm text-slate-500 mb-3" onClick={() => setPhase(null)}>
+      <button className="flex items-center gap-1 text-sm text-muted mb-3" onClick={() => setPhase(null)}>
         <ChevronLeft size={16} /> Übersicht
       </button>
       {header}
@@ -821,7 +821,7 @@ function ScenarioView({
               )
             })}
           </div>
-          <div className="text-xs text-slate-500">
+          <div className="text-xs text-muted">
             Alarmiert {responsibleGroups.length > 0 ? responsibleGroups.map((g) => g.name).join(', ') : 'alle Mitarbeitenden mit App'}
             {alarmLocationIds.length === 0 ? ' an allen Standorten' : ''} per{' '}
             {(scenario.defaultChannels.length > 0 ? scenario.defaultChannels : (['push', 'sms'] as Channel[])).map(kanalName).join(', ')} – mit Quittierung.{' '}
@@ -861,7 +861,7 @@ function ScenarioView({
 
       {phase === 1 && (
         <div className="space-y-2">
-          <div className="text-xs text-slate-400 mb-1">Schritte antippen, wenn erledigt:</div>
+          <div className="text-xs text-faint mb-1">Schritte antippen, wenn erledigt:</div>
           {scenario.instructions.map((step, i) => (
             <button
               key={i}
@@ -871,7 +871,7 @@ function ScenarioView({
               <span className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${checkedSteps[i] ? 'bg-emerald-500 text-white' : 'bg-brand-600 text-white'}`}>
                 {checkedSteps[i] ? <Check size={14} /> : i + 1}
               </span>
-              <span className={`pt-0.5 ${checkedSteps[i] ? 'text-slate-400 line-through' : 'text-slate-700'}`}>{step}</span>
+              <span className={`pt-0.5 ${checkedSteps[i] ? 'text-faint line-through' : 'text-slate-700'}`}>{step}</span>
             </button>
           ))}
         </div>
@@ -886,7 +886,7 @@ function ScenarioView({
               <Users size={20} /> Krisenteam aufbieten
             </HoldButton>
           )}
-          <div className="text-xs text-slate-500">
+          <div className="text-xs text-muted">
             Aufgebot per Push, SMS und Sprachanruf mit Quittierung – oder einzelne Mitglieder direkt kontaktieren:
           </div>
           <div className="space-y-2">
@@ -896,7 +896,7 @@ function ScenarioView({
               return (
                 <div key={u.id} className="rounded-xl bg-white border border-slate-200 p-3">
                   <div className="text-sm font-semibold text-slate-800">{u.firstName} {u.lastName}</div>
-                  <div className="text-xs text-slate-400">{groups.map((g) => g.name).join(', ')}</div>
+                  <div className="text-xs text-faint">{groups.map((g) => g.name).join(', ')}</div>
                   <div className="flex gap-2 mt-2">
                     <a
                       href={`tel:${u.phone.replace(/\s/g, '')}`}
@@ -927,7 +927,7 @@ function ScenarioView({
               <ul className="space-y-1.5">
                 {scenario.followUp.map((step, i) => (
                   <li key={i} className="flex gap-2 text-sm text-slate-700 bg-white rounded-xl border border-slate-200 p-3">
-                    <span className="text-slate-400 shrink-0">–</span> {step}
+                    <span className="text-faint shrink-0">–</span> {step}
                   </li>
                 ))}
               </ul>
@@ -938,7 +938,7 @@ function ScenarioView({
             {scenario.checklist.map((item, i) => (
               <label key={i} className="flex items-center gap-2.5 text-sm text-slate-700 bg-white rounded-xl border border-slate-200 p-3 mb-1.5">
                 <input type="checkbox" checked={checkedList[i] ?? false} onChange={() => setCheckedList({ ...checkedList, [i]: !checkedList[i] })} />
-                <span className={checkedList[i] ? 'line-through text-slate-400' : ''}>{item}</span>
+                <span className={checkedList[i] ? 'line-through text-faint' : ''}>{item}</span>
               </label>
             ))}
           </div>
@@ -1044,11 +1044,11 @@ function LoneWorkTab() {
     return (
       <div className="space-y-4">
         <div className={`rounded-2xl border-2 bg-white p-5 text-center ${critical ? 'border-alarm-500' : 'border-slate-200'}`}>
-          <div className="text-sm text-slate-500">{running.activity}</div>
+          <div className="text-sm text-muted">{running.activity}</div>
           <div className={`text-5xl font-mono font-bold my-3 ${critical ? 'text-alarm-600' : 'text-slate-800'}`}>
             {formatDuration(remaining)}
           </div>
-          <div className="text-xs text-slate-400 mb-4">
+          <div className="text-xs text-faint mb-4">
             {critical
               ? 'Bald läuft der Timer ab – Lebenszeichen geben!'
               : 'Läuft der Timer ab, wird automatisch alarmiert.'}
@@ -1067,7 +1067,7 @@ function LoneWorkTab() {
             <CheckCircle2 size={16} className="inline mr-1.5 -mt-0.5" /> Arbeit sicher beendet
           </button>
         </div>
-        {running.silent && <div className="text-xs text-center text-slate-400">Stille Alarmauslösung aktiviert.</div>}
+        {running.silent && <div className="text-xs text-center text-faint">Stille Alarmauslösung aktiviert.</div>}
       </div>
     )
   }
@@ -1078,7 +1078,7 @@ function LoneWorkTab() {
         <div className="rounded-2xl border-2 border-alarm-500 bg-white p-4 alarm-pulse">
           <div className="flex items-center gap-2 font-bold text-alarm-700">
             <Siren size={18} className="animate-pulse" /> Timer abgelaufen – Alarm ausgelöst
-            <span className="ml-auto text-xs font-normal text-slate-400">{formatRelative(abgelaufenerAlarm.triggeredAt)}</span>
+            <span className="ml-auto text-xs font-normal text-faint">{formatRelative(abgelaufenerAlarm.triggeredAt)}</span>
           </div>
           <p className="text-sm text-slate-700 mt-2">
             Schulsanität und Hausdienst sind alarmiert. Wenn Ihnen nichts fehlt und Sie nur vergessen haben, den Timer zu verlängern, geben Sie hier Entwarnung.
@@ -1103,7 +1103,7 @@ function LoneWorkTab() {
         <div className="text-sm font-medium text-slate-600 mb-1">Timer: {durationMin} Minuten</div>
         <input type="range" min={1} max={120} value={durationMin} onChange={(e) => setDurationMin(Number(e.target.value))} className="w-full mb-3" />
         <div className="text-sm font-medium text-slate-600 mb-1">Bei Ablauf alarmieren</div>
-        <div className="text-xs text-slate-400 mb-1.5">Gruppen an Ihrem Standort – antippen zum An- und Abwählen:</div>
+        <div className="text-xs text-faint mb-1.5">Gruppen an Ihrem Standort – antippen zum An- und Abwählen:</div>
         <div className="flex flex-wrap gap-1.5 mb-2">
           {waehlbareGruppen.map((g) => {
             const an = alertGroupIds.includes(g.id)
@@ -1118,13 +1118,13 @@ function LoneWorkTab() {
             )
           })}
         </div>
-        <button className="text-xs text-slate-500 underline underline-offset-2" onClick={() => setPersonenOffen(!personenOffen)}>
+        <button className="text-xs text-muted underline underline-offset-2" onClick={() => setPersonenOffen(!personenOffen)}>
           {personenOffen ? 'Einzelne Personen ausblenden' : `Zusätzlich einzelne Personen wählen${alertUserIds.length ? ` (${alertUserIds.length} gewählt)` : ''}`}
         </button>
         {personenOffen && (
           <>
             <div className="relative mt-2">
-              <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-faint" />
               <input
                 className={inputClass + ' pl-9'}
                 placeholder="Person suchen…"
@@ -1137,16 +1137,16 @@ function LoneWorkTab() {
                 <label key={u.id} className="flex items-center gap-2.5 px-3 py-2 text-sm">
                   <input type="checkbox" checked={alertUserIds.includes(u.id)} onChange={() => setAlertUserIds(toggleId(alertUserIds, u.id))} />
                   <span className="flex-1 text-slate-700">{u.firstName} {u.lastName}</span>
-                  <span className="text-xs text-slate-400">{state.locations.find((l) => l.id === u.locationId)?.name}</span>
+                  <span className="text-xs text-faint">{state.locations.find((l) => l.id === u.locationId)?.name}</span>
                 </label>
               ))}
               {waehlbarePersonen.length === 0 && (
-                <div className="px-3 py-4 text-sm text-slate-400 text-center">Keine Person gefunden.</div>
+                <div className="px-3 py-4 text-sm text-faint text-center">Keine Person gefunden.</div>
               )}
             </div>
           </>
         )}
-        <div className={`text-xs mt-2 mb-3 ${anzahlEmpfaenger === 0 ? 'text-alarm-600' : 'text-slate-500'}`}>
+        <div className={`text-xs mt-2 mb-3 ${anzahlEmpfaenger === 0 ? 'text-alarm-600' : 'text-muted'}`}>
           <b>{anzahlEmpfaenger} Person{anzahlEmpfaenger === 1 ? '' : 'en'}</b> würden bei Ablauf alarmiert{anzahlEmpfaenger === 0 ? ' – bitte mindestens eine Gruppe oder Person wählen' : ''}.
         </div>
         <div className="mb-4">
@@ -1159,7 +1159,7 @@ function LoneWorkTab() {
         >
           <Play size={16} /> Timer starten
         </button>
-        <div className="text-xs text-slate-400 mt-2">
+        <div className="text-xs text-faint mt-2">
           Melden Sie sich vor Ablauf zurück – sonst alarmiert das System automatisch die gewählten Personen.
         </div>
       </div>
@@ -1215,7 +1215,7 @@ function EntwarnungAnsicht({
 
   return (
     <div>
-      <button className="flex items-center gap-1 text-sm text-slate-500 mb-3" onClick={onBack}>
+      <button className="flex items-center gap-1 text-sm text-muted mb-3" onClick={onBack}>
         <ChevronLeft size={16} /> Zurück
       </button>
       <div className="flex items-center gap-3 mb-4">
@@ -1224,14 +1224,14 @@ function EntwarnungAnsicht({
         </div>
         <div className="min-w-0">
           <h2 className="font-bold text-slate-800 text-xl leading-tight">Entwarnung</h2>
-          <div className="text-xs text-slate-400">{scenario.title}</div>
+          <div className="text-xs text-faint">{scenario.title}</div>
         </div>
       </div>
 
       {alarm ? (
         <div className="rounded-2xl border-2 border-emerald-500 bg-white p-4 mb-3">
           <p className="text-sm text-slate-700">{alarm.message}</p>
-          <div className="text-xs text-slate-500 mt-2 flex flex-wrap gap-x-3 gap-y-1">
+          <div className="text-xs text-muted mt-2 flex flex-wrap gap-x-3 gap-y-1">
             <span>Beendet {formatRelative(alarm.endedAt ?? alarm.triggeredAt)}{beendetDurch ? ` durch ${beendetDurch}` : ''}</span>
             {orte && <span className="flex items-center gap-1"><MapPin size={11} /> {orte}</span>}
           </div>
@@ -1243,7 +1243,7 @@ function EntwarnungAnsicht({
           )}
         </div>
       ) : (
-        <div className="rounded-2xl bg-white border border-slate-200 p-3 mb-3 text-xs text-slate-500">
+        <div className="rounded-2xl bg-white border border-slate-200 p-3 mb-3 text-xs text-muted">
           Zu diesem Szenario ist kein beendeter Alarm bekannt. Das sind die Schritte für den Fall einer Entwarnung.
         </div>
       )}
@@ -1252,7 +1252,7 @@ function EntwarnungAnsicht({
         Der Alarm ist beendet. Der Normalbetrieb beginnt aber nicht von selbst – das gilt jetzt:
       </div>
 
-      <div className="text-xs text-slate-400 mb-1">Schritte antippen, wenn erledigt:</div>
+      <div className="text-xs text-faint mb-1">Schritte antippen, wenn erledigt:</div>
       <div className="space-y-2">
         {schritte.map((schritt, i) => (
           <button
@@ -1263,12 +1263,12 @@ function EntwarnungAnsicht({
             <span className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white ${erledigt[i] ? 'bg-slate-300' : 'bg-emerald-600'}`}>
               {erledigt[i] ? <Check size={14} /> : i + 1}
             </span>
-            <span className={`pt-0.5 ${erledigt[i] ? 'text-slate-400 line-through' : 'text-slate-700'}`}>{schritt}</span>
+            <span className={`pt-0.5 ${erledigt[i] ? 'text-faint line-through' : 'text-slate-700'}`}>{schritt}</span>
           </button>
         ))}
       </div>
 
-      <button className="mt-5 w-full text-sm text-slate-500 underline underline-offset-2" onClick={onSzenario}>
+      <button className="mt-5 w-full text-sm text-muted underline underline-offset-2" onClick={onSzenario}>
         Vollständiges Szenario ansehen
       </button>
     </div>
@@ -1309,7 +1309,7 @@ function EmpfaengerAnsicht({
 
   return (
     <div>
-      <button className="flex items-center gap-1 text-sm text-slate-500 mb-3" onClick={onBack}>
+      <button className="flex items-center gap-1 text-sm text-muted mb-3" onClick={onBack}>
         <ChevronLeft size={16} /> Zurück
       </button>
       <div className="flex items-center gap-3 mb-4">
@@ -1318,7 +1318,7 @@ function EmpfaengerAnsicht({
         </div>
         <div className="min-w-0">
           <h2 className="font-bold text-slate-800 text-xl leading-tight">{scenario.title}</h2>
-          <div className="text-xs text-slate-400">Sie wurden alarmiert</div>
+          <div className="text-xs text-faint">Sie wurden alarmiert</div>
         </div>
       </div>
 
@@ -1326,7 +1326,7 @@ function EmpfaengerAnsicht({
         <div className={`rounded-2xl border-2 p-4 bg-white mb-3 ${alarm.silent ? 'border-violet-400' : 'border-alarm-500'}`}>
           {alarm.drill && <div className="mb-1"><Badge color="amber">ÜBUNG – kein Ernstfall</Badge></div>}
           <p className="text-sm text-slate-700">{alarm.message}</p>
-          <div className="text-xs text-slate-500 mt-2 flex flex-wrap gap-x-3 gap-y-1">
+          <div className="text-xs text-muted mt-2 flex flex-wrap gap-x-3 gap-y-1">
             {ausloeser && <span>Ausgelöst von {ausloeser.firstName} {ausloeser.lastName}</span>}
             <span>{formatRelative(alarm.triggeredAt)}</span>
             {orte && <span className="flex items-center gap-1"><MapPin size={11} /> {orte}</span>}
@@ -1359,7 +1359,7 @@ function EmpfaengerAnsicht({
           )}
         </div>
       ) : (
-        <div className="rounded-2xl bg-white border border-slate-200 p-3 mb-3 text-xs text-slate-500">
+        <div className="rounded-2xl bg-white border border-slate-200 p-3 mb-3 text-xs text-muted">
           Zurzeit läuft kein Alarm zu diesem Szenario. Das ist der Ablauf für den Fall, dass Sie einen erhalten.
         </div>
       )}
@@ -1368,7 +1368,7 @@ function EmpfaengerAnsicht({
         Kein Notruf, keine erneute Auslösung – das ist bereits geschehen. Hier steht, was <b>Sie</b> jetzt tun.
       </div>
 
-      <div className="text-xs text-slate-400 mb-1 flex flex-wrap items-center gap-1">
+      <div className="text-xs text-faint mb-1 flex flex-wrap items-center gap-1">
         <span>Ihre Schritte{!nachRollen && meineGruppen.length > 0 ? ' als' : ''}</span>
         {!nachRollen && meineGruppen.map((g) => <Badge key={g.id}>{g.name}</Badge>)}
         <span>– antippen, wenn erledigt:</span>
@@ -1383,7 +1383,7 @@ function EmpfaengerAnsicht({
       {bloeckeMitNummer.map((block, bi) => (
         <div key={bi} className={nachRollen ? 'mb-3' : ''}>
           {nachRollen && (
-            <div className="text-xs font-semibold text-slate-500 mb-1.5">
+            <div className="text-xs font-semibold text-muted mb-1.5">
               {block.groupId ? `Als ${gruppenName([block.groupId])}` : 'Für alle Alarmierten'}
             </div>
           )}
@@ -1398,7 +1398,7 @@ function EmpfaengerAnsicht({
                   {erledigt[nr] ? <Check size={14} /> : nr + 1}
                 </span>
                 <span className="min-w-0 pt-0.5">
-                  <span className={erledigt[nr] ? 'text-slate-400 line-through' : 'text-slate-700'}>{step.text}</span>
+                  <span className={erledigt[nr] ? 'text-faint line-through' : 'text-slate-700'}>{step.text}</span>
                   {!nachRollen && step.groupIds && step.groupIds.length > 0 && (
                     <span className="block text-[11px] text-amber-700 mt-0.5">{gruppenName(step.groupIds)}</span>
                   )}
@@ -1412,7 +1412,7 @@ function EmpfaengerAnsicht({
       {andere.length > 0 && (
         <div className="mt-3">
           <button
-            className="text-xs text-slate-500 underline underline-offset-2"
+            className="text-xs text-muted underline underline-offset-2"
             onClick={() => setZeigeAndere(!zeigeAndere)}
           >
             {zeigeAndere ? 'Schritte anderer Gruppen ausblenden' : `${andere.length} Schritt${andere.length > 1 ? 'e' : ''} anderer Gruppen anzeigen`}
@@ -1420,11 +1420,11 @@ function EmpfaengerAnsicht({
           {zeigeAndere && (
             <div className="space-y-2 mt-2">
               {andere.map((step, i) => (
-                <div key={i} className="flex gap-2.5 text-sm bg-slate-50 rounded-xl border border-dashed border-slate-300 p-3 text-slate-500">
+                <div key={i} className="flex gap-2.5 text-sm bg-slate-50 rounded-xl border border-dashed border-slate-300 p-3 text-muted">
                   <span className="shrink-0 w-6 h-6 rounded-full bg-slate-300 text-white flex items-center justify-center text-xs font-bold">·</span>
                   <span className="min-w-0 pt-0.5">
                     <span>{step.text}</span>
-                    <span className="block text-[11px] text-slate-400 mt-0.5">{gruppenName(step.groupIds)}</span>
+                    <span className="block text-[11px] text-faint mt-0.5">{gruppenName(step.groupIds)}</span>
                   </span>
                 </div>
               ))}
@@ -1433,7 +1433,7 @@ function EmpfaengerAnsicht({
         </div>
       )}
 
-      <button className="mt-5 w-full text-sm text-slate-500 underline underline-offset-2" onClick={onEntdecker}>
+      <button className="mt-5 w-full text-sm text-muted underline underline-offset-2" onClick={onEntdecker}>
         Vollständiges Szenario ansehen – für den Fall, dass Sie die Lage selbst entdecken
       </button>
     </div>
@@ -1480,12 +1480,12 @@ function ContactsTab() {
               </div>
               <div className={`text-xl font-bold ${NOTRUFSCHRIFT[bild.farbe]}`}>{c.number}</div>
               <div className="text-sm font-semibold text-slate-800 leading-tight">{c.name}</div>
-              {!!c.description && <div className="text-xs text-slate-400 leading-tight">{c.description}</div>}
+              {!!c.description && <div className="text-xs text-faint leading-tight">{c.description}</div>}
             </a>
           )
         })}
       </div>
-      <div className="text-xs text-center text-slate-400 pt-1">Antippen ruft direkt an.</div>
+      <div className="text-xs text-center text-faint pt-1">Antippen ruft direkt an.</div>
     </div>
   )
 }
@@ -1501,20 +1501,20 @@ function LegalSection({ eintraege }: { eintraege: string[] }) {
         className="w-full flex items-center gap-2 px-3.5 py-3 text-sm font-semibold text-slate-700"
         onClick={() => setOffen((v) => !v)}
       >
-        <Scale size={15} className="text-slate-400" />
+        <Scale size={15} className="text-faint" />
         Rechtsgrundlagen
-        <span className="ml-auto text-xs font-normal text-slate-400">{offen ? 'einklappen' : `${eintraege.length} Punkte`}</span>
+        <span className="ml-auto text-xs font-normal text-faint">{offen ? 'einklappen' : `${eintraege.length} Punkte`}</span>
       </button>
       {offen && (
         <div className="px-3.5 pb-3.5">
           <ul className="space-y-2">
             {eintraege.map((eintrag, i) => (
               <li key={i} className="text-xs text-slate-600 leading-relaxed flex gap-2">
-                <span className="text-slate-400 shrink-0">§</span> {eintrag}
+                <span className="text-faint shrink-0">§</span> {eintrag}
               </li>
             ))}
           </ul>
-          <p className="text-[11px] text-slate-400 mt-2.5 leading-relaxed">
+          <p className="text-[11px] text-faint mt-2.5 leading-relaxed">
             Orientierungshilfe, keine Rechtsberatung. Verbindlich sind die kantonalen Vorgaben und das
             Notfallkonzept der Trägerschaft.
           </p>
@@ -1541,11 +1541,11 @@ function ProfileTab() {
           </div>
           <div className="min-w-0">
             <div className="font-semibold text-slate-800">{me.firstName} {me.lastName}</div>
-            <div className="text-xs text-slate-400">{me.email}</div>
+            <div className="text-xs text-faint">{me.email}</div>
           </div>
         </div>
         <div className="mt-3 space-y-1.5 text-sm text-slate-600">
-          <div className="flex items-center gap-2"><MapPin size={13} className="text-slate-400" /> {myLocation?.name}</div>
+          <div className="flex items-center gap-2"><MapPin size={13} className="text-faint" /> {myLocation?.name}</div>
           <div className="flex flex-wrap gap-1.5 pt-1">
             <Badge color={me.role === 'admin' ? 'red' : me.role === 'krisenstab' ? 'violet' : 'slate'}>{ROLE_LABELS[me.role]}</Badge>
             {myGroups.map((g) => <Badge key={g.id}>{g.name}</Badge>)}
@@ -1564,12 +1564,12 @@ function ProfileTab() {
 
       <div className="rounded-2xl bg-white border border-slate-200 p-4">
         <div className="text-sm font-semibold text-slate-700 mb-1.5">Als App auf dem iPhone installieren</div>
-        <ol className="text-xs text-slate-500 space-y-1 list-decimal pl-4">
+        <ol className="text-xs text-muted space-y-1 list-decimal pl-4">
           <li>Diese Seite in Safari öffnen</li>
           <li>Teilen-Symbol antippen</li>
           <li>«Zum Home-Bildschirm» wählen</li>
         </ol>
-        <div className="text-xs text-slate-400 mt-2">
+        <div className="text-xs text-faint mt-2">
           Die App startet dann vollbildig mit eigenem Symbol und funktioniert auch offline.
         </div>
       </div>
@@ -1600,7 +1600,7 @@ function HandbuchKarte({ rolle }: { rolle: AppUser['role'] }) {
   return (
     <div className="rounded-2xl bg-white border border-slate-200 p-4">
       <div className="flex items-center gap-2 mb-2">
-        <BookOpen size={15} className="text-slate-400" />
+        <BookOpen size={15} className="text-faint" />
         <span className="text-sm font-semibold text-slate-700">Handbücher</span>
       </div>
       {passend.map((h) => (
@@ -1612,10 +1612,10 @@ function HandbuchKarte({ rolle }: { rolle: AppUser['role'] }) {
           className="flex items-center gap-2 py-2 text-sm text-slate-700 hover:text-brand-600 transition"
         >
           <span className="flex-1">{h.titel}</span>
-          <ExternalLink size={13} className="text-slate-400" />
+          <ExternalLink size={13} className="text-faint" />
         </a>
       ))}
-      <div className="text-xs text-slate-400 mt-1">
+      <div className="text-xs text-faint mt-1">
         Öffnet im Browser – von dort auch druck- und speicherbar.
       </div>
     </div>

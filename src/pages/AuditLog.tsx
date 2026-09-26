@@ -117,14 +117,14 @@ export default function AuditLog() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-slate-800">Ereignisprotokoll</h1>
-        <p className="text-sm text-slate-500">Revisionssicheres Journal aller Aktionen – Alarme, Verwaltung, Konfiguration</p>
+        <p className="text-sm text-muted">Revisionssicheres Journal aller Aktionen – Alarme, Verwaltung, Konfiguration</p>
       </div>
 
       <Card>
         <div className="space-y-3 mb-4">
           <div className="flex flex-wrap gap-2 items-center">
             <div className="relative flex-1 min-w-[16rem]">
-              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-faint" />
               <input
                 className={inputClass + ' pl-9'}
                 placeholder="Suchen nach Text, Kategorie oder Person…"
@@ -150,7 +150,7 @@ export default function AuditLog() {
           </div>
 
           <div className="flex flex-wrap gap-2 items-center">
-            <span className="text-xs font-medium text-slate-500">Zeitraum</span>
+            <span className="text-xs font-medium text-muted">Zeitraum</span>
             <div className="flex gap-1">
               {ZEITRAEUME.map((z) => (
                 <button
@@ -171,7 +171,7 @@ export default function AuditLog() {
                 max={bis || undefined}
                 onChange={(e) => setVon(e.target.value)}
               />
-              <span className="text-xs text-slate-400">bis</span>
+              <span className="text-xs text-faint">bis</span>
               <input
                 type="date"
                 aria-label="Zeitraum bis"
@@ -183,16 +183,16 @@ export default function AuditLog() {
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
+          <div className="flex flex-wrap items-center gap-3 text-xs text-muted">
             <span>
               {gefiltert ? `${entries.length} von ${state.audit.length} Einträgen` : `${state.audit.length} Einträge`}
             </span>
             {gefiltert && (
-              <button onClick={zuruecksetzen} className="inline-flex items-center gap-1 text-slate-500 hover:text-slate-800 underline">
+              <button onClick={zuruecksetzen} className="inline-flex items-center gap-1 text-muted hover:text-slate-800 underline">
                 <X size={12} /> Filter zurücksetzen
               </button>
             )}
-            <span className="text-slate-400">Der Alarmserver führt die letzten 300 Einträge.</span>
+            <span className="text-faint">Der Alarmserver führt die letzten 300 Einträge.</span>
           </div>
         </div>
 
@@ -201,16 +201,16 @@ export default function AuditLog() {
             const user = e.userId ? state.users.find((u) => u.id === e.userId) : undefined
             return (
               <div key={e.id} className="flex items-start gap-3 py-2 border-b border-slate-50 last:border-0 text-sm">
-                <span className="text-xs text-slate-400 whitespace-nowrap w-32 shrink-0 mt-0.5">{formatDateTime(e.ts)}</span>
+                <span className="text-xs text-faint whitespace-nowrap w-32 shrink-0 mt-0.5">{formatDateTime(e.ts)}</span>
                 <Badge color={TYPE_COLORS[e.type] ?? 'slate'}>{typeLabel(e.type)}</Badge>
                 {istUebung(e.message) && <Badge color="amber">Übung</Badge>}
                 <span className="text-slate-700 flex-1">{e.message}</span>
-                {user && <span className="text-xs text-slate-400 whitespace-nowrap">{user.firstName} {user.lastName}</span>}
+                {user && <span className="text-xs text-faint whitespace-nowrap">{user.firstName} {user.lastName}</span>}
               </div>
             )
           })}
           {entries.length === 0 && (
-            <div className="text-sm text-slate-400 py-6 text-center">
+            <div className="text-sm text-faint py-6 text-center">
               {gefiltert ? 'Keine Einträge für diese Suche.' : 'Keine Einträge.'}
             </div>
           )}

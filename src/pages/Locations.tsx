@@ -26,7 +26,7 @@ export default function Locations() {
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-800">Standorte</h1>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-muted">
             Standortverwaltung mit Betriebszeiten und Geofencing zur automatischen Standortzuweisung der Nutzer
           </p>
         </div>
@@ -39,11 +39,11 @@ export default function Locations() {
           return (
             <Card key={l.id}>
               <div className="flex items-start gap-3">
-                <Building2 size={24} className="text-slate-400" />
+                <Building2 size={24} className="text-faint" />
                 <div className="flex-1">
                   <div className="font-semibold text-slate-800">{l.name}</div>
-                  <div className="text-sm text-slate-500">{l.address}</div>
-                  <div className="text-xs text-slate-400 mt-2 space-y-1">
+                  <div className="text-sm text-muted">{l.address}</div>
+                  <div className="text-xs text-faint mt-2 space-y-1">
                     <div>Betriebszeiten: {l.operatingHours.days}, {l.operatingHours.open}–{l.operatingHours.close}</div>
                     <div>{userCount} zugewiesene Nutzer</div>
                   </div>
@@ -199,7 +199,7 @@ function LocationEditor({ location, onClose }: { location: Location; onClose: ()
       {suchFehler && <p className="text-sm text-amber-700 bg-amber-50 rounded-lg px-3 py-2 mb-3">{suchFehler}</p>}
       {treffer && (
         <div className="rounded-xl border border-slate-200 mb-3 divide-y divide-slate-100">
-          <div className="px-3 py-2 text-xs text-slate-500">Mehrere Treffer – bitte wählen:</div>
+          <div className="px-3 py-2 text-xs text-muted">Mehrere Treffer – bitte wählen:</div>
           {treffer.map((t) => (
             <button
               key={`${t.lat},${t.lng}`}
@@ -243,19 +243,19 @@ function LocationEditor({ location, onClose }: { location: Location; onClose: ()
                 : ` · mindestens ${MIN_PUNKTE} nötig`}
             </span>
             {punkte.length > 0 && (
-              <button onClick={() => setPunkte([])} className="text-slate-500 hover:text-slate-800 underline underline-offset-2">
+              <button onClick={() => setPunkte([])} className="text-muted hover:text-slate-800 underline underline-offset-2">
                 Umriss verwerfen
               </button>
             )}
             {punkte.length > 0 && punkte.length < MAX_PUNKTE && (
-              <span className="text-slate-400">In die Karte tippen setzt weitere Punkte.</span>
+              <span className="text-faint">In die Karte tippen setzt weitere Punkte.</span>
             )}
             {punkte.length >= MAX_PUNKTE && (
-              <span className="text-slate-400">Mehr als {MAX_PUNKTE} Punkte sind nicht vorgesehen.</span>
+              <span className="text-faint">Mehr als {MAX_PUNKTE} Punkte sind nicht vorgesehen.</span>
             )}
           </div>
 
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-muted">
             In die Karte tippen setzt einen Eckpunkt, Ziehen verschiebt ihn, Doppeltippen entfernt ihn.
             Der gestrichelte Kreis zeigt, was das Telefon überwacht: iOS und Android kennen nur
             kreisförmige Bereiche. Er weckt die App an der Grenze &ndash; ob jemand am Standort ist,
@@ -267,7 +267,7 @@ function LocationEditor({ location, onClose }: { location: Location; onClose: ()
           <div>
             <button
               onClick={() => setZahlenOffen(!zahlenOffen)}
-              className="text-xs text-slate-500 hover:text-slate-800 underline underline-offset-2"
+              className="text-xs text-muted hover:text-slate-800 underline underline-offset-2"
             >
               {zahlenOffen ? 'Eckpunkte ausblenden' : 'Eckpunkte als Zahlen bearbeiten'}
             </button>

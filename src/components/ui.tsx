@@ -66,7 +66,7 @@ export function Modal({ title, onClose, children, wide = false }: { title: strin
       <div className={`bg-white rounded-xl shadow-xl w-full ${wide ? 'max-w-3xl' : 'max-w-lg'} mt-4 sm:mt-10 mb-6`} onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100">
           <h3 className="font-semibold text-slate-800">{title}</h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+          <button onClick={onClose} className="text-faint hover:text-slate-600">
             <X size={18} />
           </button>
         </div>
@@ -141,7 +141,7 @@ export const VORBEREITET = 'vorbereitet, noch nicht aktiv'
 
 export function Vorbereitet({ className = '' }: { className?: string }) {
   return (
-    <span className={`inline-flex items-center rounded-full border border-dashed border-slate-300 bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-500 ${className}`}>
+    <span className={`inline-flex items-center rounded-full border border-dashed border-slate-300 bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-muted ${className}`}>
       {VORBEREITET}
     </span>
   )
@@ -284,7 +284,7 @@ export function HoldButton({
 }
 
 export function EmptyState({ children }: { children: React.ReactNode }) {
-  return <div className="text-center text-sm text-slate-400 py-8">{children}</div>
+  return <div className="text-center text-sm text-faint py-8">{children}</div>
 }
 
 export function formatTime(ts: number): string {

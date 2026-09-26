@@ -38,7 +38,7 @@ function Shell({ children, subtitle, showModeSwitch = false, logo = null, logoPl
           {anwendungsname(state.integrations.organization?.appName) && (
             <h1 className="text-xl font-bold text-white">{anwendungsname(state.integrations.organization?.appName)}</h1>
           )}
-          <p className="text-sm text-slate-500 mt-1">{subtitle}</p>
+          <p className="text-sm text-faint-dunkel mt-1">{subtitle}</p>
         </div>
 
         {children}
@@ -107,7 +107,7 @@ export default function LoginScreen() {
         <label className="block">
           <span className="text-xs text-slate-400">E-Mail-Adresse</span>
           <div className="relative mt-1.5">
-            <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+            <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-faint-dunkel" />
             <input
               type="email"
               autoComplete="username"
@@ -123,7 +123,7 @@ export default function LoginScreen() {
         <label className="block">
           <span className="text-xs text-slate-400">Passwort</span>
           <div className="relative mt-1.5">
-            <KeyRound size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+            <KeyRound size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-faint-dunkel" />
             <input
               type={show ? 'text' : 'password'}
               autoComplete="current-password"
@@ -135,7 +135,7 @@ export default function LoginScreen() {
             <button
               type="button"
               onClick={() => setShow((v) => !v)}
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-slate-500 hover:text-slate-300"
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-faint-dunkel hover:text-slate-300"
               aria-label={show ? 'Passwort verbergen' : 'Passwort anzeigen'}
             >
               {show ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -160,7 +160,7 @@ export default function LoginScreen() {
 
         {setup?.sso && (
           <>
-            <div className="flex items-center gap-3 text-[11px] text-slate-500">
+            <div className="flex items-center gap-3 text-[11px] text-faint-dunkel">
               <span className="flex-1 h-px bg-slate-700" /> oder <span className="flex-1 h-px bg-slate-700" />
             </div>
             <button
@@ -222,7 +222,7 @@ export default function LoginScreen() {
                 onChange={(e) => setAdresse(e.target.value)}
                 placeholder={DEFAULT_SERVER_URL}
               />
-              <p className="text-[11px] text-slate-500 mt-2">
+              <p className="text-[11px] text-faint-dunkel mt-2">
                 Im Schulnetz z. B. <code>http://192.168.1.42:3001</code> – die IP-Adresse des Rechners, auf dem
                 der Alarmserver läuft.
               </p>
@@ -247,7 +247,7 @@ export default function LoginScreen() {
             <button
               type="button"
               onClick={() => { setAdresse(serverUrl()); setServerBearbeiten(true) }}
-              className="inline-flex items-center gap-1.5 text-[11px] text-slate-500 hover:text-slate-300 transition"
+              className="inline-flex items-center gap-1.5 text-[11px] text-faint-dunkel hover:text-slate-300 transition"
             >
               <ServerIcon size={12} />
               Alarmserver: {serverUrl()}
@@ -258,7 +258,7 @@ export default function LoginScreen() {
         </div>
       )}
 
-      <p className="text-center text-[11px] text-slate-600 mt-5 leading-relaxed">
+      <p className="text-center text-[11px] text-faint-dunkel mt-5 leading-relaxed">
         Anmeldung über Microsoft Entra ID (SSO) ist vorbereitet und kann unter Einstellungen & Konfiguration aktiviert werden,
         sobald der Verzeichnisdienst angebunden ist.
       </p>
@@ -332,7 +332,7 @@ export function ForcePasswordChange({ user }: { user: User }) {
         <button
           type="button"
           onClick={logout}
-          className="w-full text-xs text-slate-500 hover:text-slate-300 transition"
+          className="w-full text-xs text-faint-dunkel hover:text-slate-300 transition"
         >
           Abmelden
         </button>

@@ -100,14 +100,14 @@ export default function UpdateDialog({ onClose }: { onClose: () => void }) {
           <h3 className="font-semibold text-slate-800 flex items-center gap-2">
             <Download size={18} className="text-brand-600" /> Aktualisierung
           </h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="Schliessen">
+          <button onClick={onClose} className="text-faint hover:text-slate-600" aria-label="Schliessen">
             <X size={18} />
           </button>
         </div>
 
         <div className="p-5 space-y-4">
           {laedt && (
-            <div className="flex items-center gap-2 text-sm text-slate-500">
+            <div className="flex items-center gap-2 text-sm text-muted">
               <Loader2 size={16} className="animate-spin" /> Stand wird geprüft …
             </div>
           )}
@@ -197,18 +197,18 @@ function VersionsKarte({ version, onPruefen }: { version: VersionsInfo; onPruefe
     <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="text-xs text-slate-500">Aktueller Stand</div>
+          <div className="text-xs text-muted">Aktueller Stand</div>
           {/* Zuerst der Branch – der Titel des letzten Commits kann selbst
               Branch-Namen enthalten (z. B. «Merge branch …») und führt sonst
               in die Irre, auf welchem Branch der Server steht. */}
           <div className="text-sm font-medium text-slate-800 truncate">
             Branch <code className="bg-white border border-slate-200 rounded px-1">{version.branch}</code>
-            {version.commitKurz && <span className="text-slate-500 font-normal"> · {version.commitKurz}</span>}
+            {version.commitKurz && <span className="text-muted font-normal"> · {version.commitKurz}</span>}
             {version.commitDatum && (
-              <span className="text-slate-500 font-normal"> · {formatRelative(new Date(version.commitDatum).getTime())}</span>
+              <span className="text-muted font-normal"> · {formatRelative(new Date(version.commitDatum).getTime())}</span>
             )}
           </div>
-          <div className="text-xs text-slate-500 mt-0.5 truncate">
+          <div className="text-xs text-muted mt-0.5 truncate">
             Letzter Commit: {version.commitTitel || 'unbekannt'}
           </div>
         </div>
@@ -237,15 +237,15 @@ function VersionsKarte({ version, onPruefen }: { version: VersionsInfo; onPruefe
               <ul className="mt-2 rounded-lg border border-slate-200 bg-white divide-y divide-slate-100">
                 {aenderungen.map((a) => (
                   <li key={a.kurz} className="px-3 py-2 text-xs flex items-baseline gap-2">
-                    <code className="shrink-0 text-slate-400">{a.kurz}</code>
+                    <code className="shrink-0 text-faint">{a.kurz}</code>
                     <span className="text-slate-700 min-w-0">{a.titel}</span>
                     {a.datum && (
-                      <span className="ml-auto shrink-0 text-slate-400">{formatRelative(new Date(a.datum).getTime())}</span>
+                      <span className="ml-auto shrink-0 text-faint">{formatRelative(new Date(a.datum).getTime())}</span>
                     )}
                   </li>
                 ))}
                 {version.hinterher > aenderungen.length && (
-                  <li className="px-3 py-2 text-xs text-slate-400">… und {version.hinterher - aenderungen.length} weitere</li>
+                  <li className="px-3 py-2 text-xs text-faint">… und {version.hinterher - aenderungen.length} weitere</li>
                 )}
               </ul>
             )}
@@ -262,7 +262,7 @@ function VersionsKarte({ version, onPruefen }: { version: VersionsInfo; onPruefe
       </div>
 
       {version.remoteVorhanden === false && (
-        <p className="text-xs text-slate-500 mt-2.5">
+        <p className="text-xs text-muted mt-2.5">
           Die Aktualisierung funktioniert trotzdem: Sie überspringt das Holen und baut den vorhandenen
           Stand neu. Neue Änderungen kommen erst an, wenn der Branch auf dem Repository liegt oder der
           Server auf einen dort vorhandenen Branch wechselt.
@@ -270,7 +270,7 @@ function VersionsKarte({ version, onPruefen }: { version: VersionsInfo; onPruefe
       )}
 
       {!version.neustartMoeglich && (
-        <p className="text-xs text-slate-500 mt-2.5">
+        <p className="text-xs text-muted mt-2.5">
           Der automatische Neustart ist abgeschaltet. Nach der Aktualisierung muss der Server von Hand neu gestartet werden.
         </p>
       )}
@@ -297,14 +297,14 @@ function Auswahl({
           : 'border-slate-200 hover:border-brand-400 hover:bg-brand-50/40'
       }`}
     >
-      <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${gesperrt ? 'bg-slate-200 text-slate-500' : 'bg-slate-800 text-white'}`}>
+      <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${gesperrt ? 'bg-slate-200 text-muted' : 'bg-slate-800 text-white'}`}>
         <Icon size={17} />
       </div>
       <div className="min-w-0">
         <div className="font-semibold text-slate-800 text-sm">{titel}</div>
-        <div className="text-xs text-slate-500 mt-0.5 leading-relaxed">{beschreibung}</div>
+        <div className="text-xs text-muted mt-0.5 leading-relaxed">{beschreibung}</div>
       </div>
-      {!gesperrt && <ArrowRight size={16} className="ml-auto shrink-0 text-slate-400 mt-1" />}
+      {!gesperrt && <ArrowRight size={16} className="ml-auto shrink-0 text-faint mt-1" />}
     </button>
   )
 }
@@ -344,7 +344,7 @@ function JobFortschritt({
           {job.status === 'neustart' && 'Fertig – Server startet neu'}
           {job.status === 'fehlgeschlagen' && 'Aktualisierung fehlgeschlagen'}
         </span>
-        <span className="ml-auto text-xs text-slate-500">
+        <span className="ml-auto text-xs text-muted">
           {scopeLabel(job.scope)} · {job.gestartetVon}
         </span>
       </div>
@@ -361,11 +361,11 @@ function JobFortschritt({
                 onClick={() => setOffenerSchritt(offen ? null : schritt.id)}
               >
                 <SchrittSymbol status={schritt.status} />
-                <span className={`text-sm flex-1 ${schritt.status === 'übersprungen' ? 'text-slate-400' : 'text-slate-700'}`}>
+                <span className={`text-sm flex-1 ${schritt.status === 'übersprungen' ? 'text-faint' : 'text-slate-700'}`}>
                   {schritt.titel}
                 </span>
                 {schritt.startedAt && schritt.finishedAt && (
-                  <span className="text-xs text-slate-400">
+                  <span className="text-xs text-faint">
                     {Math.max(1, Math.round((schritt.finishedAt - schritt.startedAt) / 1000))} s
                   </span>
                 )}
@@ -402,7 +402,7 @@ function JobFortschritt({
           >
             <ExternalLink size={14} /> Build bei Expo öffnen
           </a>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-xs text-muted mt-1">
             {job.hinweis
               ? `Der Build läuft dort 20 bis 45 Minuten. Danach lässt er sich von Hand an ${storeName(job.scope)} übermitteln.`
               : `Der Build läuft dort 20 bis 45 Minuten und geht anschliessend automatisch an ${storeName(job.scope)}, das nochmals 5 bis 15 Minuten für die Verarbeitung braucht.`}

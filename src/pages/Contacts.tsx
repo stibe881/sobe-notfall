@@ -29,7 +29,7 @@ export default function Contacts() {
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-800">Notfallkontakte</h1>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-muted">
             Externe Notrufnummern (Blaulichtorganisationen) – in der App direkt anrufbar, Reihenfolge mit den Pfeilen anpassbar
           </p>
         </div>
@@ -46,7 +46,7 @@ export default function Contacts() {
               <div className="flex-1 min-w-0">
                 <div className="font-semibold text-slate-800">{c.name}</div>
                 <div className="text-2xl font-bold text-alarm-600">{c.number}</div>
-                <div className="text-xs text-slate-400">{c.description}</div>
+                <div className="text-xs text-faint">{c.description}</div>
               </div>
               <div className="flex flex-col gap-0.5 shrink-0">
                 <Button variant="ghost" disabled={i === 0} onClick={() => verschieben(c.id, -1)} title="Nach oben">

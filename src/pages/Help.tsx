@@ -36,7 +36,7 @@ export default function Help() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-slate-800">Handbücher</h1>
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-muted">
           Die Handbücher zur installierten Version – gezeigt werden die, die für Ihre Rolle gelten.
           Sie öffnen im Browser und lassen sich von dort drucken oder als PDF sichern.
         </p>
@@ -62,14 +62,14 @@ export default function Help() {
                     <span className="font-semibold text-slate-800 group-hover:text-brand-600 transition">
                       {info ? `Handbuch ${info.nr} – ${info.titel}` : titel}
                     </span>
-                    <ExternalLink size={13} className="text-slate-400 group-hover:text-brand-600 transition" />
+                    <ExternalLink size={13} className="text-faint group-hover:text-brand-600 transition" />
                   </div>
                   {info && (
                     <div className="mt-1">
                       <Badge>{`Für ${info.fuer}`}</Badge>
                     </div>
                   )}
-                  <p className="text-sm text-slate-500 mt-2">
+                  <p className="text-sm text-muted mt-2">
                     {info?.beschreibung ?? 'Handbuch öffnen.'}
                   </p>
                 </div>
@@ -79,7 +79,7 @@ export default function Help() {
         ))}
       </div>
 
-      <p className="text-xs text-slate-400 max-w-2xl">
+      <p className="text-xs text-faint max-w-2xl">
         Die Handbücher werden vom Alarmserver mit ausgeliefert und mit jeder Aktualisierung
         automatisch nachgeführt – sie passen immer zur Version, die gerade läuft.
       </p>

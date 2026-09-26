@@ -14,7 +14,7 @@ export default function Groups() {
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-800">Gruppen &amp; Krisenteams</h1>
-          <p className="text-sm text-slate-500">Nutzergruppen für zielgruppenspezifische Alarmierung und Krisenorganisation</p>
+          <p className="text-sm text-muted">Nutzergruppen für zielgruppenspezifische Alarmierung und Krisenorganisation</p>
         </div>
         <Button onClick={() => setEditing({ id: uid('gr'), name: '', description: '', isCrisisTeam: false })}>
           <Plus size={16} /> Neue Gruppe
@@ -27,14 +27,14 @@ export default function Groups() {
           return (
             <Card key={g.id}>
               <div className="flex items-start gap-3">
-                <UsersRound size={24} className={g.isCrisisTeam ? 'text-violet-500' : 'text-slate-400'} />
+                <UsersRound size={24} className={g.isCrisisTeam ? 'text-violet-500' : 'text-faint'} />
                 <div className="flex-1">
                   <div className="font-semibold text-slate-800 flex items-center gap-2">
                     {g.name}
                     {g.isCrisisTeam && <Badge color="violet">Krisenteam</Badge>}
                   </div>
-                  <div className="text-sm text-slate-500 mt-0.5">{g.description}</div>
-                  <div className="text-xs text-slate-400 mt-2">{members.length} Mitglieder</div>
+                  <div className="text-sm text-muted mt-0.5">{g.description}</div>
+                  <div className="text-xs text-faint mt-2">{members.length} Mitglieder</div>
                   <div className="flex flex-wrap gap-1 mt-1.5">
                     {members.slice(0, 6).map((m) => <Badge key={m.id}>{m.firstName} {m.lastName}</Badge>)}
                     {members.length > 6 && <Badge>+{members.length - 6}</Badge>}

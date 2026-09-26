@@ -22,7 +22,7 @@ function KanalBadge({ kanal, integ }: { kanal: Channel; integ: IntegrationSettin
           ? 'bg-emerald-50 text-emerald-700'
           : zustand === 'nicht eingerichtet'
             ? 'bg-amber-50 text-amber-700'
-            : 'bg-slate-100 text-slate-500'
+            : 'bg-slate-100 text-muted'
       }`}
     >
       {KANAL_KURZ[kanal]}
@@ -69,14 +69,14 @@ export function Ablauf({ plan }: { plan: AlarmPlan }) {
             <div className="flex flex-wrap items-baseline gap-x-2">
               <span className="text-xs font-semibold text-slate-700 tabular-nums">{s.frist}</span>
               <span className="text-sm text-slate-600 min-w-0">
-                {i > 0 && <span className="text-slate-400">zusätzlich </span>}
+                {i > 0 && <span className="text-faint">zusätzlich </span>}
                 {s.gruppen.join(', ')}
               </span>
             </div>
             <div className="flex flex-wrap items-center gap-1 mt-1">
               {s.kanaele.map((c) => <KanalBadge key={c} kanal={c} integ={integ} />)}
               {s.blaulicht && (
-                <span className="text-xs text-slate-400" title="Das System alarmiert keine Einsatzleitzentrale – der Notruf wird von Hand gewählt.">
+                <span className="text-xs text-faint" title="Das System alarmiert keine Einsatzleitzentrale – der Notruf wird von Hand gewählt.">
                   Blaulicht vorgemerkt
                 </span>
               )}
@@ -113,13 +113,13 @@ export default function AlarmPlans() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-slate-800">Alarmpläne</h1>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-muted">
             Wer bei welchem Ereignis alarmiert wird – und wer dazukommt, wenn niemand quittiert.
           </p>
         </div>
         <div className="flex items-center gap-2">
           <div className="relative">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-faint" />
             <input
               className={inputClass + ' pl-9 w-56'}
               placeholder="Plan suchen…"
@@ -135,7 +135,7 @@ export default function AlarmPlans() {
         <Card>
           <div className="text-center py-8">
             <ClipboardList size={32} className="mx-auto text-slate-300 mb-3" />
-            <p className="text-sm text-slate-500 mb-4">
+            <p className="text-sm text-muted mb-4">
               Noch kein Alarmplan. Der Assistent führt in fünf Schritten durch die Einrichtung.
             </p>
             <Button onClick={() => setWizardOffen(true)}><Plus size={16} /> Ersten Alarmplan erstellen</Button>
@@ -144,7 +144,7 @@ export default function AlarmPlans() {
       )}
 
       {state.plans.length > 0 && plaene.length === 0 && (
-        <p className="text-sm text-slate-400">Kein Alarmplan passt zu dieser Suche.</p>
+        <p className="text-sm text-faint">Kein Alarmplan passt zu dieser Suche.</p>
       )}
 
       <div className="grid xl:grid-cols-2 gap-4 items-start">
@@ -157,19 +157,19 @@ export default function AlarmPlans() {
               <div className="flex items-start gap-3">
                 <div className="min-w-0 flex-1">
                   <div className="font-semibold text-slate-800">{p.name}</div>
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-sm text-slate-500">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-sm text-muted">
                     {scenario ? (
                       <span className="inline-flex items-center gap-1.5">
-                        <ScenarioIcon name={scenario.icon} size={14} className="text-slate-400" /> {scenario.title}
+                        <ScenarioIcon name={scenario.icon} size={14} className="text-faint" /> {scenario.title}
                       </span>
                     ) : (
-                      <span className="text-slate-400">ohne festes Szenario</span>
+                      <span className="text-faint">ohne festes Szenario</span>
                     )}
                     <span className="inline-flex items-center gap-1.5">
-                      <Users size={13} className="text-slate-400" />
+                      <Users size={13} className="text-faint" />
                       {erreicht} {erreicht === 1 ? 'Person' : 'Personen'} sofort
                     </span>
-                    <span className="text-slate-400">{orte.length ? orte.join(', ') : 'alle Standorte'}</span>
+                    <span className="text-faint">{orte.length ? orte.join(', ') : 'alle Standorte'}</span>
                   </div>
                 </div>
                 <div className="flex gap-1 shrink-0">
@@ -255,7 +255,7 @@ function ArtWahl({ aktiv, onClick, titel, text }: { aktiv: boolean; onClick: () 
         {aktiv && <Check size={14} />}
         {titel}
       </div>
-      <div className="text-xs text-slate-500 mt-1 leading-snug">{text}</div>
+      <div className="text-xs text-muted mt-1 leading-snug">{text}</div>
     </button>
   )
 }
@@ -285,7 +285,7 @@ export function StufenEditor({
       </div>
 
       <div className="mt-3">
-        <div className="text-xs font-medium text-slate-500 mb-1.5">Zusätzlich alarmieren</div>
+        <div className="text-xs font-medium text-muted mb-1.5">Zusätzlich alarmieren</div>
         <div className="flex flex-wrap gap-2">
           {state.groups.map((g) => (
             <AuswahlChip key={g.id} aktiv={stufe.groupIds.includes(g.id)} onClick={() => onAendern({ groupIds: toggle(stufe.groupIds, g.id) })}>
@@ -296,12 +296,12 @@ export function StufenEditor({
       </div>
 
       <div className="mt-3">
-        <div className="text-xs font-medium text-slate-500 mb-1.5">Über diese Kanäle</div>
+        <div className="text-xs font-medium text-muted mb-1.5">Über diese Kanäle</div>
         <KanalWahl gewaehlt={stufe.channels} onToggle={(c) => onAendern({ channels: toggle(stufe.channels, c) })} />
       </div>
 
       <div className="mt-3">
-        <div className="text-xs font-medium text-slate-500 mb-1.5">Wann diese Stufe zündet</div>
+        <div className="text-xs font-medium text-muted mb-1.5">Wann diese Stufe zündet</div>
         <div className="grid sm:grid-cols-2 gap-2">
           <ArtWahl
             aktiv={!stufe.nurWennUnbeantwortet}
@@ -326,7 +326,7 @@ export function StufenEditor({
         Blaulichtorganisationen vormerken <Vorbereitet />
       </label>
       {stufe.notifyEmergencyServices && (
-        <p className="text-xs text-slate-500 mt-1.5 pl-6">
+        <p className="text-xs text-muted mt-1.5 pl-6">
           Das System alarmiert keine Einsatzleitzentrale – dafür gibt es keine Schnittstelle. Der Vermerk
           erscheint im Alarmjournal mit dem Hinweis, den Notruf von Hand zu wählen.
         </p>
@@ -375,11 +375,11 @@ export function PlanEditor({
 
         <section>
           <h4 className="font-semibold text-slate-700 text-sm mb-1">Wer wird sofort alarmiert</h4>
-          <p className="text-xs text-slate-500 mb-3">
+          <p className="text-xs text-muted mb-3">
             Ohne Auswahl gilt: alle Gruppen, alle Standorte. Aktuell erreicht der Plan{' '}
             <b className={erreicht === 0 ? 'text-alarm-600' : 'text-slate-700'}>{erreicht} {erreicht === 1 ? 'Person' : 'Personen'}</b>.
           </p>
-          <div className="text-xs font-medium text-slate-500 mb-1.5">Zielgruppen</div>
+          <div className="text-xs font-medium text-muted mb-1.5">Zielgruppen</div>
           <div className="flex flex-wrap gap-2 mb-4">
             {state.groups.map((g) => (
               <AuswahlChip key={g.id} aktiv={draft.groupIds.includes(g.id)} onClick={() => setDraft({ ...draft, groupIds: toggle(draft.groupIds, g.id) })}>
@@ -387,7 +387,7 @@ export function PlanEditor({
               </AuswahlChip>
             ))}
           </div>
-          <div className="text-xs font-medium text-slate-500 mb-1.5">Standorte</div>
+          <div className="text-xs font-medium text-muted mb-1.5">Standorte</div>
           <div className="flex flex-wrap gap-2">
             {state.locations.map((l) => (
               <AuswahlChip key={l.id} aktiv={draft.locationIds.includes(l.id)} onClick={() => setDraft({ ...draft, locationIds: toggle(draft.locationIds, l.id) })}>
@@ -420,12 +420,12 @@ export function PlanEditor({
               <Plus size={14} /> Stufe
             </Button>
           </div>
-          <p className="text-xs text-slate-500 mb-3">
+          <p className="text-xs text-muted mb-3">
             Eine Stufe zündet nur, solange <b>niemand</b> quittiert hat. Eine einzige Quittierung hält den
             ganzen Plan an.
           </p>
           {draft.escalation.length === 0 ? (
-            <p className="text-sm text-slate-400 rounded-xl border border-dashed border-slate-200 p-4 text-center">
+            <p className="text-sm text-faint rounded-xl border border-dashed border-slate-200 p-4 text-center">
               Keine Eskalation – es bleibt bei dieser einen Alarmierung.
             </p>
           ) : (
@@ -445,7 +445,7 @@ export function PlanEditor({
 
         <section className="rounded-xl bg-slate-50 p-4">
           <div className="flex items-center gap-2 mb-2">
-            <BellRing size={15} className="text-slate-400" />
+            <BellRing size={15} className="text-faint" />
             <h4 className="font-semibold text-slate-700 text-sm">So läuft der Plan ab</h4>
           </div>
           <Ablauf plan={draft} />
@@ -535,9 +535,9 @@ function PlanWizard({ onClose }: { onClose: () => void }) {
                       !draft.scenarioId ? 'border-brand-500 bg-brand-50 ring-2 ring-brand-100' : 'border-slate-200 hover:border-slate-400'
                     }`}
                   >
-                    <ClipboardList size={20} className="text-slate-400 mb-1.5" />
+                    <ClipboardList size={20} className="text-faint mb-1.5" />
                     <div className="text-sm font-medium text-slate-700">Ohne festes Szenario</div>
-                    <div className="text-[11px] text-slate-400">freier Plan</div>
+                    <div className="text-[11px] text-faint">freier Plan</div>
                   </button>
                   {state.scenarios.map((s) => (
                     <button
@@ -546,9 +546,9 @@ function PlanWizard({ onClose }: { onClose: () => void }) {
                         draft.scenarioId === s.id ? 'border-brand-500 bg-brand-50 ring-2 ring-brand-100' : 'border-slate-200 hover:border-slate-400'
                       }`}
                     >
-                      <ScenarioIcon name={s.icon} size={20} className={`mb-1.5 ${draft.scenarioId === s.id ? 'text-brand-600' : 'text-slate-400'}`} />
+                      <ScenarioIcon name={s.icon} size={20} className={`mb-1.5 ${draft.scenarioId === s.id ? 'text-brand-600' : 'text-faint'}`} />
                       <div className="text-sm font-medium text-slate-700 leading-tight">{s.title}</div>
-                      <div className="text-[11px] text-slate-400 mt-0.5">{s.category}</div>
+                      <div className="text-[11px] text-faint mt-0.5">{s.category}</div>
                     </button>
                   ))}
                 </div>
@@ -600,7 +600,7 @@ function PlanWizard({ onClose }: { onClose: () => void }) {
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-3">
                 <div>
                   <Toggle checked={draft.requireAck} onChange={(v) => setDraft({ ...draft, requireAck: v })} label="Aufgebot mit Quittierfunktion" />
-                  <p className="text-xs text-slate-500 mt-1 ml-11">
+                  <p className="text-xs text-muted mt-1 ml-11">
                     Empfänger:innen bestätigen den Erhalt. Ob eine Zusage die nächste Stufe abwendet, entscheiden Sie je Stufe unten.
                   </p>
                 </div>
@@ -616,7 +616,7 @@ function PlanWizard({ onClose }: { onClose: () => void }) {
           inhalt: (
             <>
               {draft.escalation.length === 0 && (
-                <p className="text-sm text-slate-400 border border-dashed border-slate-300 rounded-xl px-4 py-6 text-center mb-3">
+                <p className="text-sm text-faint border border-dashed border-slate-300 rounded-xl px-4 py-6 text-center mb-3">
                   Noch keine Eskalationsstufen – der Plan alarmiert dann nur einmal über die gewählten Kanäle.
                 </p>
               )}
@@ -637,7 +637,7 @@ function PlanWizard({ onClose }: { onClose: () => void }) {
                       <Trash2 size={14} />
                     </Button>
                   </div>
-                  <div className="text-xs text-slate-400 mb-1">Zusätzliche Gruppen</div>
+                  <div className="text-xs text-faint mb-1">Zusätzliche Gruppen</div>
                   <div className="flex flex-wrap gap-1.5 mb-2">
                     {state.groups.map((g) => (
                       <AuswahlChip key={g.id} aktiv={esc.groupIds.includes(g.id)} onClick={() => updateEscalation(i, { groupIds: toggleIn(esc.groupIds, g.id) })}>
@@ -645,7 +645,7 @@ function PlanWizard({ onClose }: { onClose: () => void }) {
                       </AuswahlChip>
                     ))}
                   </div>
-                  <div className="text-xs text-slate-400 mb-1">Kanäle dieser Stufe</div>
+                  <div className="text-xs text-faint mb-1">Kanäle dieser Stufe</div>
                   <div className="mb-2">
                     <KanalWahl gewaehlt={esc.channels} onToggle={(c) => updateEscalation(i, { channels: toggleIn(esc.channels, c) })} />
                   </div>
@@ -678,7 +678,7 @@ function PlanWizard({ onClose }: { onClose: () => void }) {
                 </span>
                 <div className="min-w-0">
                   <div className="font-semibold text-slate-800">{draft.name.trim() || 'Ohne Namen'}</div>
-                  <div className="text-sm text-slate-500">{szenario ? `Szenario: ${szenario.title}` : 'ohne festes Szenario'}</div>
+                  <div className="text-sm text-muted">{szenario ? `Szenario: ${szenario.title}` : 'ohne festes Szenario'}</div>
                   <div className="flex flex-wrap gap-1.5 mt-1.5">
                     {draft.requireAck && <Badge color="violet">Quittierung</Badge>}
                     {draft.respectOperatingHours && <Badge color="amber">nur Betriebszeiten</Badge>}

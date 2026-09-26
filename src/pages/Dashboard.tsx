@@ -29,7 +29,7 @@ export default function Dashboard() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-slate-800">Dashboard</h1>
-          <p className="text-sm text-slate-500">Lageübersicht Notfall- und Krisenmanagement</p>
+          <p className="text-sm text-muted">Lageübersicht Notfall- und Krisenmanagement</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Link
@@ -60,8 +60,8 @@ export default function Dashboard() {
           <Link key={s.label} to={s.to}>
             <div className={`bg-white rounded-xl border p-5 shadow-sm hover:shadow transition ${s.highlight ? 'border-alarm-500' : 'border-slate-200'}`}>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-500">{s.label}</span>
-                <s.icon size={18} className={s.highlight ? 'text-alarm-600' : 'text-slate-400'} />
+                <span className="text-sm text-muted">{s.label}</span>
+                <s.icon size={18} className={s.highlight ? 'text-alarm-600' : 'text-faint'} />
               </div>
               <div className={`text-3xl font-bold mt-2 ${s.highlight ? 'text-alarm-600' : 'text-slate-800'}`}>{s.value}</div>
             </div>
@@ -89,11 +89,11 @@ export default function Dashboard() {
         <Card title={<span className="flex items-center gap-2"><Activity size={16} /> Letzte Ereignisse</span>}>
           {state.audit.slice(0, 8).map((e) => (
             <div key={e.id} className="flex items-start gap-3 py-2 border-b border-slate-50 last:border-0 text-sm">
-              <span className="text-xs text-slate-400 whitespace-nowrap mt-0.5 w-20 shrink-0">{formatRelative(e.ts)}</span>
+              <span className="text-xs text-faint whitespace-nowrap mt-0.5 w-20 shrink-0">{formatRelative(e.ts)}</span>
               <span className="text-slate-700">{e.message}</span>
             </div>
           ))}
-          <Link to="/protokoll" className="inline-flex items-center gap-1 mt-3 text-sm text-slate-500 hover:text-slate-800 underline">
+          <Link to="/protokoll" className="inline-flex items-center gap-1 mt-3 text-sm text-muted hover:text-slate-800 underline">
             Vollständiges Protokoll <ArrowRight size={13} />
           </Link>
         </Card>
@@ -110,7 +110,7 @@ export default function Dashboard() {
                 <ScenarioIcon name={scenario?.icon ?? ''} size={22} className="text-alarm-600 shrink-0" />
                 <div className="flex-1">
                   <div className="font-medium text-slate-800">{scenario?.title}</div>
-                  <div className="text-slate-500 text-xs">{a.message}</div>
+                  <div className="text-muted text-xs">{a.message}</div>
                 </div>
                 {a.silent && <Badge color="violet">still</Badge>}
                 <Badge color="red">aktiv</Badge>
@@ -197,7 +197,7 @@ function BereitschaftKarte() {
                 )
               })}
             </ul>
-            <div className="text-xs text-slate-500 mt-2">
+            <div className="text-xs text-muted mt-2">
               {mitGeraet} von {gesamt} Personen erreichbar per Push. {daten.ohneGeraet.length > 0 && (
                 <>Ohne Gerät: {daten.ohneGeraet.slice(0, 6).map((p) => p.name).join(', ')}{daten.ohneGeraet.length > 6 ? ` und ${daten.ohneGeraet.length - 6} weitere` : ''}.</>
               )}
@@ -249,8 +249,8 @@ function StatusRow({ label, ok = false, vorbereitet = false, detail, to }: { lab
   const inhalt = (
     <>
       <span className={`w-2 h-2 rounded-full shrink-0 ${ok ? 'bg-emerald-500' : vorbereitet ? 'bg-slate-200' : 'bg-slate-300'}`} />
-      <span className={`flex-1 ${vorbereitet ? 'text-slate-500' : 'text-slate-700'}`}>{label}</span>
-      <span className="text-xs text-slate-400 truncate">{detail}</span>
+      <span className={`flex-1 ${vorbereitet ? 'text-muted' : 'text-slate-700'}`}>{label}</span>
+      <span className="text-xs text-faint truncate">{detail}</span>
       {vorbereitet
         ? <Badge color="slate">{VORBEREITET}</Badge>
         : <Badge color={ok ? 'green' : 'slate'}>{ok ? 'online' : 'inaktiv'}</Badge>}
@@ -265,7 +265,7 @@ function StatusRow({ label, ok = false, vorbereitet = false, detail, to }: { lab
         className="group flex items-center gap-2 rounded-lg px-2 py-1 -mx-2 hover:bg-slate-50 transition"
       >
         {inhalt}
-        <ArrowRight size={13} className="shrink-0 text-slate-300 group-hover:text-slate-500 transition" />
+        <ArrowRight size={13} className="shrink-0 text-slate-300 group-hover:text-muted transition" />
       </Link>
     </li>
   )

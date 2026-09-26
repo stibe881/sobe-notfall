@@ -134,7 +134,7 @@ export function StandortKarte({
 
   if (fehler) {
     return (
-      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-500" style={{ height: hoehe }}>
+      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-muted" style={{ height: hoehe }}>
         Die Karte konnte nicht geladen werden. Eckpunkte unten von Hand eintragen.
       </div>
     )
