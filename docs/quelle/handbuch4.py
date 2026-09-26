@@ -262,7 +262,7 @@ KOERPER = r"""
       <caption>Was Sie pro Anbindung brauchen</caption>
       <thead><tr><th>Anbindung</th><th>Vom Kunden nötig</th></tr></thead>
       <tbody>
-        <tr><td><b>SMS-Gateway</b></td><td>Konto bei eCall oder ASPSMS (Schweiz) mit Zugangsdaten &ndash; oder ein eigenes HTTP-Gateway mit URL-Vorlage</td></tr>
+        <tr><td><b>SMS-Gateway</b></td><td>Konto bei eCall oder ASPSMS (Schweiz), bei Twilio (international; mit eigener Nummer auch Sprachanrufe) &ndash; oder ein eigenes HTTP-Gateway mit URL-Vorlage</td></tr>
         <tr><td><b>Microsoft Teams: Kanalmeldungen</b></td><td>Workflow «Bei Webhookanforderung posten» im Zielkanal; die erzeugte URL hier eintragen</td></tr>
         <tr><td><b>Sprachanruf / Telefonkonferenz</b></td><td>App-Registrierung in Entra ID mit den Berechtigungen <code>OnlineMeetings.ReadWrite.All</code> und <code>Calls.Initiate.All</code></td></tr>
         <tr><td><b>Single Sign-On</b></td><td>App-Registrierung in Entra ID; als Umleitungs-URI die Adresse <code>https://ihre-domain.ch/api/auth/sso/callback</code> eintragen</td></tr>

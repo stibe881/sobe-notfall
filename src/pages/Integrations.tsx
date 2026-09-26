@@ -127,7 +127,7 @@ export default function Integrations() {
       bereich: 'int-kanaele',
       titel: 'SMS-Gateway',
       icon: MessageSquare,
-      suchbegriffe: 'ecall sms textmeldung absender gateway',
+      suchbegriffe: 'ecall aspsms twilio sms textmeldung absender gateway sprachanruf',
       status: integ.smsGateway.enabled
         ? { art: 'aktiv', text: `${integ.smsGateway.provider}${integ.smsGateway.sentCount ? ` · ${integ.smsGateway.sentCount} versendet` : ''}` }
         : { art: 'inaktiv', text: 'Kein Gateway – der Kanal «SMS» wird nicht zugestellt' },
@@ -1094,11 +1094,12 @@ function SmsEinstellungen() {
               <select className={inputClass} value={entwurf.provider} onChange={(e) => patch({ provider: e.target.value })}>
                 <option value="ecall">eCall (Schweiz)</option>
                 <option value="aspsms">ASPSMS (Schweiz)</option>
+                <option value="twilio">Twilio (auch Sprachanrufe)</option>
                 <option value="http">Eigenes HTTP-Gateway</option>
               </select>
             </Field>
-            <Field label="Absenderkennung">
-              <input className={inputClass} value={entwurf.senderId} onChange={(e) => patch({ senderId: e.target.value })} />
+            <Field label={entwurf.provider === 'twilio' ? 'Absender: Twilio-Nummer (+41…) oder Kurzname' : 'Absenderkennung'}>
+              <input className={inputClass} value={entwurf.senderId} onChange={(e) => patch({ senderId: e.target.value })} placeholder={entwurf.provider === 'twilio' ? '+41 44 000 00 00' : undefined} />
             </Field>
           </div>
           {entwurf.provider === 'http' ? (
@@ -1107,12 +1108,26 @@ function SmsEinstellungen() {
             </Field>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Field label={entwurf.provider === 'aspsms' ? 'Userkey' : 'Benutzername'}>
+              <Field label={entwurf.provider === 'aspsms' ? 'Userkey' : entwurf.provider === 'twilio' ? 'Account SID' : 'Benutzername'}>
                 <input className={inputClass} value={entwurf.username} onChange={(e) => patch({ username: e.target.value })} />
               </Field>
-              <Field label="Passwort / API-Schlüssel">
+              <Field label={entwurf.provider === 'twilio' ? 'Auth Token' : 'Passwort / API-Schlüssel'}>
                 <input className={inputClass} type="password" value={entwurf.password} onChange={(e) => patch({ password: e.target.value })} placeholder="gespeichert – zum Ändern neu eingeben" />
               </Field>
+            </div>
+          )}
+          {entwurf.provider === 'twilio' && (
+            <div className="rounded-lg border-l-4 border-brand-600 bg-brand-50 px-3 py-2.5 text-xs text-slate-700 space-y-1">
+              <p>
+                <b>Mit einer eigenen Twilio-Nummer als Absender führt das System auch Sprachanrufe</b> – der Kanal
+                «Sprachanruf» in den Alarmplänen wird damit wirksam, solange Teams-Telefonie nicht aktiv ist.
+                Ein Kurzname als Absender genügt nur für SMS.
+              </p>
+              <p>
+                In der Twilio-Konsole müssen unter <i>Messaging › Geo permissions</i> und <i>Voice › Geo permissions</i>
+                die Schweiz freigeschaltet sein. Ein Testkonto sendet nur an vorher verifizierte Nummern und
+                stellt jeder SMS einen Hinweis voran – für den Ernstbetrieb das Konto aufwerten.
+              </p>
             </div>
           )}
           <div className="flex items-center gap-2 flex-wrap">

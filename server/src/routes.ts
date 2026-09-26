@@ -1018,7 +1018,7 @@ router.post('/hooks/lorawan', async (req, res) => {
     triggeredByUserId: knopf.assignedUserId ?? 'system',
     triggeredVia: 'button',
     escalation: [
-      { afterMinutes: knopf.escalateToEmergencyServicesAfterMin, channels: ['voice', 'sms'], groupIds: ['gr-krisenstab'], notifyEmergencyServices: true },
+      { afterMinutes: knopf.escalateToEmergencyServicesAfterMin, channels: ['voice', 'sms'], groupIds: allGroups().filter((g) => g.isCrisisTeam).map((g) => g.id), notifyEmergencyServices: true },
     ],
   })
   saveAlarm(alarm)

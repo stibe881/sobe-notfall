@@ -327,10 +327,11 @@ export interface AccessCode {
 /** SMS-Versand über ein Schweizer Gateway – nur noch konfigurieren, nicht mehr programmieren */
 export interface SmsGatewaySettings {
   enabled: boolean
-  /** 'ecall' | 'aspsms' | 'http' (eigenes Gateway mit URL-Vorlage) */
+  /** 'ecall' | 'aspsms' | 'twilio' | 'http' (eigenes Gateway mit URL-Vorlage) */
   provider: string
+  /** Absender. Twilio: eigene Nummer (+41…) – nur damit gehen auch Anrufe – oder ein Kurzname */
   senderId: string
-  /** eCall: Benutzername · ASPSMS: Userkey */
+  /** eCall: Benutzername · ASPSMS: Userkey · Twilio: Account SID */
   username: string
   /** Geheimnis – der Server liefert nur einen Platzhalter zurück */
   password: string

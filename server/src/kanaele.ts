@@ -3,6 +3,7 @@ import {
   erstelleKonferenz, ladeIntegrationen, sendeSms, sendeTeamsKarte, speichereIntegrationen, starteAnrufe,
 } from './integrationen.js'
 import { sendPush } from './push.js'
+import { starteTwilioAnrufe, twilioKannAnrufen } from './twilio.js'
 import { allScenarios, allStoredUsers, findAlarm, saveAlarm } from './store.js'
 import type { Alarm, Channel, DeliveryStatus, StoredUser } from './types.js'
 
@@ -180,9 +181,31 @@ export async function sendeAlarmKanaele(alarm: Alarm, nurUserIds?: string[]): Pr
           ? `Sprachanruf über Teams an ${ok.size} Person(en) gestartet${fehl.size ? `, ${fehl.size} fehlgeschlagen` : ''}`
           : `Sprachanrufe fehlgeschlagen${fehlerText ? `: ${fehlerText}` : ''}`,
       )
+    } else if (twilioKannAnrufen(integ.smsGateway)) {
+      // Kein Teams – aber Twilio: Der Anruf liest den Alarmtext vor. Damit
+      // lebt der Kanal «Sprachanruf», den die Alarmpläne längst vorsehen.
+      const mitNummer = anrufEmpfaenger.filter((u) => u.phone?.trim())
+      const ohneNummer = anrufEmpfaenger.filter((u) => !u.phone?.trim())
+      const ergebnis = await starteTwilioAnrufe(integ.smsGateway, mitNummer.map((u) => u.phone), `${titel}. ${alarm.message}`)
+      const ok = new Set<string>()
+      const fehl = new Set<string>(ohneNummer.map((u) => u.id))
+      let fehlerText = ''
+      for (const u of mitNummer) {
+        const r = ergebnis.get(u.phone)
+        if (r?.ok) ok.add(u.id)
+        else { fehl.add(u.id); if (r?.fehler) fehlerText = r.fehler }
+      }
+      markiereKanal(alarm.id, ok, 'voice', 'sent')
+      markiereKanal(alarm.id, fehl, 'voice', 'failed')
+      protokolliere(
+        alarm.id,
+        ok.size > 0
+          ? `Sprachanruf über Twilio an ${ok.size} Person(en) gestartet${fehl.size ? `, ${fehl.size} fehlgeschlagen` : ''}${ohneNummer.length ? ` (${ohneNummer.length} ohne Telefonnummer)` : ''}`
+          : `Sprachanrufe fehlgeschlagen${fehlerText ? `: ${fehlerText}` : ohneNummer.length ? ': keine Telefonnummern hinterlegt' : ''}`,
+      )
     } else {
       markiereKanal(alarm.id, new Set(anrufEmpfaenger.map((u) => u.id)), 'voice', 'failed')
-      protokolliere(alarm.id, 'Sprachanrufe nicht gestartet: Sprachanrufe/Telefonkonferenz sind unter Integrationen nicht konfiguriert.')
+      protokolliere(alarm.id, 'Sprachanrufe nicht gestartet: Weder Teams-Telefonie noch Twilio (mit eigener Nummer) sind unter Integrationen eingerichtet.')
     }
     veraendert = true
   }

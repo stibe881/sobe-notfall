@@ -150,6 +150,39 @@ KOERPER = r"""
     Einstellung, die diesen Zustand bestimmt &ndash; die betreffende Karte wird kurz
     hervorgehoben. So muss niemand auf der langen Integrationsseite suchen.
   </p>
+  <h3>SMS und Sprachanruf über Twilio einrichten</h3>
+  <p>
+    Push ist der erste Zustellweg; er hängt an Expo, Apple und Google und am
+    Datenempfang des Telefons. Ein zweiter Weg über das Mobilfunknetz ist für ein
+    Alarmsystem keine Verbesserung, sondern die Voraussetzung. Twilio liefert
+    beides: SMS und &ndash; mit einer eigenen Nummer &ndash; Sprachanrufe, die den
+    Alarmtext vorlesen.
+  </p>
+  <ol class="schritte">
+    <li>In der Twilio-Konsole unter <b>Phone Numbers</b> eine Nummer kaufen, die
+        SMS <em>und</em> Voice kann (eine Schweizer oder eine beliebige
+        Mobilfunknummer). Ohne eigene Nummer gehen nur SMS mit Kurzname.</li>
+    <li>Unter <b>Messaging › Geo permissions</b> und <b>Voice › Geo permissions</b>
+        die Schweiz freischalten &ndash; sonst lehnt Twilio jeden Versand dorthin ab.</li>
+    <li>Von der Startseite der Konsole <b>Account SID</b> und <b>Auth Token</b> kopieren.</li>
+    <li>Im Portal unter <span class="ui">Einstellungen &amp; Konfiguration &rsaquo; SMS-Gateway</span>:
+        Anbieter <b>Twilio</b>, Absender die gekaufte Nummer im Format <code>+41…</code>,
+        Account SID und Auth Token eintragen, Versand einschalten, speichern.</li>
+    <li><span class="ui">Test-SMS an mich</span> antippen. Kommt sie an, ist der Weg offen.</li>
+    <li>In den Alarmplänen prüfen, dass <b>SMS</b> und <b>Sprachanruf</b> als Kanäle
+        gesetzt sind &ndash; bei den vorbereiteten Plänen sind sie es bereits.</li>
+  </ol>
+  <div class="hinweis hinweis--warnung">
+    <p class="marke-klein">Testkonto</p>
+    <p>
+      Ein Twilio-Testkonto sendet nur an Nummern, die Sie vorher in der Konsole
+      verifiziert haben, und stellt jeder SMS einen Hinweis voran. Für den
+      Ernstbetrieb muss das Konto aufgewertet (mit Guthaben versehen) sein &ndash;
+      sonst erreicht ein echter Alarm niemanden ausser den verifizierten Nummern.
+      Telefonnummern der Mitarbeitenden dürfen im Bestand schweizerisch stehen
+      («079 123 45 67»); der Server schreibt sie für Twilio um.
+    </p>
+  </div>
   <p>
     Darunter die Kachel <b>Bereitschaft</b> &ndash; die Antwort auf die Frage, ob ein
     Alarm die Leute überhaupt erreicht: pro Standort, wie viele Personen ein Gerät mit
@@ -775,7 +808,7 @@ KOERPER = r"""
       <caption>Vorbereitet, noch nicht aktiv</caption>
       <thead><tr><th>Funktion</th><th>Was heute gilt</th></tr></thead>
       <tbody>
-        <tr><td>SMS-Gateway, VoIP, Microsoft Teams</td><td>Kein Versand über diese Kanäle; Alarme gehen per Push</td></tr>
+        <tr><td>SMS-Gateway, VoIP, Microsoft Teams</td><td>Ohne eingerichtetes Gateway kein Versand über diese Kanäle; Alarme gehen per Push. Mit Twilio oder eCall/ASPSMS werden SMS &ndash; mit Twilio auch Sprachanrufe &ndash; wirksam</td></tr>
         <tr><td>Single Sign-On</td><td>Anmeldung mit E-Mail-Adresse und Passwort</td></tr>
         <tr><td>Synchronisation mit dem Personalsystem</td><td>Konten werden von Hand oder per Import gepflegt</td></tr>
         <tr><td>Mehrsprachige App-Inhalte</td><td>Alle Inhalte sind deutsch; die Sprache im Benutzerprofil ist eine Vormerkung</td></tr>

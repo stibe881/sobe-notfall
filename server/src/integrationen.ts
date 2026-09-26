@@ -1,5 +1,6 @@
 import { randomBytes } from 'node:crypto'
 import { fetchMitFrist } from './netz.js'
+import { sendeTwilioSms } from './twilio.js'
 import { getSetting, setSetting } from './db.js'
 import type { IntegrationSettings, LorawanSettings, MeridianKarte, MeridianSettings, SmsGatewaySettings, TeamsSettings, TelephonySettings } from './types.js'
 
@@ -154,6 +155,12 @@ export async function sendeSms(sms: SmsGatewaySettings, nummern: string[], text:
   const ergebnis = new Map<string, SmsErgebnis>()
   const ziele = [...new Set(nummern.map(normierteNummer).filter(Boolean))]
   if (ziele.length === 0) return ergebnis
+
+  if (sms.provider === 'twilio') {
+    const twilio = await sendeTwilioSms(sms, ziele, text)
+    for (const [z, r] of twilio) ergebnis.set(z, r)
+    return ergebnis
+  }
 
   if (sms.provider === 'aspsms') {
     // ASPSMS JSON-Schnittstelle – ein Aufruf für alle Empfänger
