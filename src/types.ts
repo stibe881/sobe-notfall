@@ -47,6 +47,8 @@ export interface User {
   geraete?: number
   /** Vom Alarmserver gesetzt: Erlaubt mindestens ein Gerät Critical Alerts? */
   criticalAlerts?: boolean
+  /** Vom Alarmserver gesetzt: letzte vom Push-Dienst bestätigte Zustellung – die ehrliche Grundlage für «erreichbar» */
+  letzteZustellung?: number | null
   /** Erzwingt eine Passwortänderung bei der nächsten Anmeldung */
   mustChangePassword?: boolean
   lastLoginAt?: number

@@ -142,8 +142,18 @@ KOERPER = r"""
     Alarm die Leute überhaupt erreicht: pro Standort, wie viele Personen ein Gerät mit
     der App registriert haben und wie viele Critical Alerts erlauben; ob der Push-Dienst
     erreichbar ist; wann die letzte Sicherung lief; wann die wöchentliche Testmeldung
-    an die Administration ging. Mit <span class="ui">Testmeldung an mein Telefon</span>
+    ging. Mit <span class="ui">Testmeldung an mein Telefon</span>
     prüfen Sie die Kette bis aufs eigene Gerät.
+  </p>
+  <p>
+    Die wöchentliche Prüfung erreicht seit September 2026 <b>alle</b> Geräte:
+    Die Administration sieht ihre Testmeldung, alle anderen bekommen eine
+    unsichtbare &ndash; ohne Titel, ohne Ton. Ihr Zweck ist die Quittung des
+    Push-Dienstes: Meldet er, dass die App gelöscht wurde, fällt das Gerät aus
+    der Erreichbarkeit, statt erst im Ernstfall aufzufallen. Unter
+    <span class="ui">Benutzende</span> steht bei jeder Person, wann ein Gerät
+    zuletzt eine Zustellung <em>bestätigt</em> hat &ndash; ein angemeldetes Gerät
+    allein beweist noch nichts.
   </p>
   <p>
     Ganz unten in der Seitenleiste steht, als wer Sie angemeldet sind, und ob das

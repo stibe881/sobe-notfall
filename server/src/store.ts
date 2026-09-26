@@ -104,11 +104,11 @@ export function saveIntegrations(value: IntegrationSettings): void {
  * Bewusst hier und nicht aus push.ts: Jenes Modul liest bereits aus store.ts,
  * ein Import zurück ergäbe einen Zirkelbezug.
  */
-function geraeteProPerson(): Map<string, { geraete: number; critical: boolean }> {
+function geraeteProPerson(): Map<string, { geraete: number; critical: boolean; letzteZustellung: number | null }> {
   const zeilen = db
-    .prepare('SELECT userId, COUNT(*) AS geraete, MAX(criticalAlerts) AS critical FROM push_tokens GROUP BY userId')
-    .all() as { userId: string; geraete: number; critical: number }[]
-  return new Map(zeilen.map((z) => [z.userId, { geraete: z.geraete, critical: Boolean(z.critical) }]))
+    .prepare('SELECT userId, COUNT(*) AS geraete, MAX(criticalAlerts) AS critical, MAX(letzteZustellung) AS letzte FROM push_tokens GROUP BY userId')
+    .all() as { userId: string; geraete: number; critical: number; letzte: number | null }[]
+  return new Map(zeilen.map((z) => [z.userId, { geraete: z.geraete, critical: Boolean(z.critical), letzteZustellung: z.letzte ?? null }]))
 }
 
 export function fullState(): ServerState {
@@ -119,7 +119,7 @@ export function fullState(): ServerState {
   return {
     users: allStoredUsers().map((u) => {
       const g = geraete.get(u.id)
-      return { ...publicUser(u), geraete: g?.geraete ?? 0, criticalAlerts: g?.critical ?? false }
+      return { ...publicUser(u), geraete: g?.geraete ?? 0, criticalAlerts: g?.critical ?? false, letzteZustellung: g?.letzteZustellung ?? null }
     }),
     groups: allGroups(),
     locations: allLocations(),

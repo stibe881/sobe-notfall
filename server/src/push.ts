@@ -78,24 +78,8 @@ export function tokensForUsers(userIds: string[]): PushZiel[] {
   return zeilen.map((r) => ({ token: r.token, userId: r.userId, criticalAlerts: Boolean(r.criticalAlerts), platform: r.platform }))
 }
 
-export interface PushNachricht {
-  title: string
-  body: string
-  data?: Record<string, unknown>
-  /**
-   * Nicht stiller Alarm: Ton auch bei stummgeschaltetem Telefon.
-   * Geräte ohne bewilligte Critical-Alert-Berechtigung erhalten stattdessen
-   * «time-sensitive» – das durchbricht immerhin Fokus-Modi.
-   */
-  critical?: boolean
-  /**
-   * Stiller Alarm: Die Mitteilung kommt an und erscheint auf dem Sperrbildschirm,
-   * aber ohne Ton und ohne Vibration – niemand soll auf sich aufmerksam machen.
-   */
-  silent?: boolean
-  /** Ohne Alarmton, aber wichtig genug, um Fokus-Modi zu durchbrechen (z. B. Entwarnung) */
-  wichtig?: boolean
-}
+export type { PushNachricht } from './pushnutzlast.js'
+import { pushNutzlast, type PushNachricht } from './pushnutzlast.js'
 
 /**
  * Android-Kanäle – die App legt sie beim Start an. «Alarme» läuft über den
@@ -103,8 +87,7 @@ export interface PushNachricht {
  * lautlos. Die Ids müssen mit der App übereinstimmen (notifications.ts);
  * «-v2», weil Android Kanal-Einstellungen nach dem Anlegen einfriert.
  */
-export const KANAL_ALARM = 'alarme-v2'
-export const KANAL_STILL = 'alarme-still-v2'
+export { KANAL_ALARM, KANAL_STILL } from './pushnutzlast.js'
 
 /**
  * Zahl auf dem App-Symbol: wie viele laufende Alarme eine Person betreffen.
@@ -135,45 +118,7 @@ export async function sendPush(userIds: string[], nachricht: PushNachricht): Pro
   if (ziele.length === 0) return 0
 
   const abzeichen = offeneAlarmeProPerson(userIds)
-  const nachrichten = ziele.map((ziel) => {
-    // sound als Objekt ({critical, name, volume}) und interruptionLevel sind APNs-/
-    // iOS-Eigenheiten. An ein Android-Gerät geschickt, kam das Sound-Objekt nicht als
-    // gültiger Ton an – die Meldung blieb aus, obwohl der Versand bei Expo als
-    // erfolgreich galt. Auf Android sorgt allein der Kanal (channelId, siehe
-    // notifications.ts) für Lautstärke und «Nicht stören»-Umgehung; hier braucht es
-    // nur einen simplen Ton oder gar keinen.
-    const ios = ziel.platform === 'ios'
-    return {
-      to: ziel.token,
-      title: nachricht.title,
-      body: nachricht.body,
-      data: nachricht.data ?? {},
-      // Stiller Alarm: kein Ton – auf iOS entfällt damit auch die Vibration.
-      // Echter Critical Alert braucht bei Apple das Sound-Objekt mit critical:
-      // interruptionLevel allein durchbricht nur Fokus-Modi, nicht die
-      // Stummschaltung. Nur an Geräte, deren Berechtigung gemeldet ist.
-      sound: nachricht.silent
-        ? null
-        : ios && nachricht.critical && ziel.criticalAlerts
-          ? { name: 'default', critical: true, volume: 1 }
-          : 'default',
-      priority: 'high',
-      channelId: nachricht.silent ? KANAL_STILL : KANAL_ALARM,
-      // Zahl auf dem App-Symbol (iOS; Android zeigt je nach Launcher Punkt oder Zahl)
-      badge: abzeichen.get(ziel.userId) ?? 0,
-      // Critical Alert nur an Geräte, die ihn tatsächlich dürfen – sonst lehnt
-      // Apple die Nachricht ab. Ohne Bewilligung bleibt «time-sensitive».
-      // Ein stiller Alarm bleibt «time-sensitive»: sichtbar trotz Fokus, aber lautlos.
-      // Nur für iOS gesetzt – auf Android ohne Bedeutung (dort zählt der Kanal).
-      interruptionLevel: !ios
-        ? undefined
-        : nachricht.critical && !nachricht.silent
-          ? (ziel.criticalAlerts ? 'critical' : 'time-sensitive')
-          : nachricht.silent || nachricht.wichtig ? 'time-sensitive' : 'active',
-      // Ein Alarm, der eine Stunde später eintrifft, hilft niemandem mehr
-      ttl: nachricht.critical || nachricht.silent ? 3600 : undefined,
-    }
-  })
+  const nachrichten = ziele.map((ziel) => pushNutzlast(ziel, nachricht, abzeichen.get(ziel.userId) ?? 0))
 
   try {
     const antwort = await fetch(EXPO_PUSH_URL, {
@@ -193,11 +138,12 @@ export async function sendPush(userIds: string[], nachricht: PushNachricht): Pro
       const ziel = ziele[i]
       if (!ziel) return
       if (eintrag.status === 'ok') {
-        // Angenommen – die Quittung kommt später (siehe pruefeEmpfangsbestaetigungen)
-        if (alarmId && eintrag.id) {
-          ticket.run(eintrag.id, ziel.token, ziel.userId, alarmId, Date.now())
-          if (markierePushZustellung(alarmId, ziel.userId, 'sent')) zustellungVeraendert = true
-        }
+        // Angenommen – die Quittung kommt später (siehe pruefeEmpfangsbestaetigungen).
+        // Auch ohne Alarm ein Ticket: Bis September 2026 wurden nur Alarm-
+        // Nachrichten quittiert, und eine gelöschte App fiel deshalb erst im
+        // Ernstfall auf. Erst die Quittung meldet «DeviceNotRegistered».
+        if (eintrag.id) ticket.run(eintrag.id, ziel.token, ziel.userId, alarmId ?? '', Date.now())
+        if (alarmId && markierePushZustellung(alarmId, ziel.userId, 'sent')) zustellungVeraendert = true
         return
       }
       // Von Expo abgelehnte Tokens (App deinstalliert) entfernen
@@ -269,16 +215,20 @@ export async function pruefeEmpfangsbestaetigungen(): Promise<number> {
   }
 
   const loeschen = db.prepare('DELETE FROM push_tickets WHERE id = ?')
+  // Wann hat dieses Gerät zuletzt nachweislich etwas erhalten? Das ist die
+  // ehrliche Grundlage für «erreichbar» – nicht das Vorhandensein eines Tokens.
+  const bestaetigt = db.prepare('UPDATE push_tokens SET letzteZustellung = ? WHERE token = ?')
   let veraendert = false
   let erledigt = 0
   for (const ticket of offen) {
     const q = quittungen[ticket.id]
     if (!q) continue // noch keine Quittung – später erneut
     if (q.status === 'ok') {
-      if (markierePushZustellung(ticket.alarmId, ticket.userId, 'delivered')) veraendert = true
+      bestaetigt.run(jetzt, ticket.token)
+      if (ticket.alarmId && markierePushZustellung(ticket.alarmId, ticket.userId, 'delivered')) veraendert = true
     } else {
       if (q.details?.error === 'DeviceNotRegistered') removePushToken(ticket.token)
-      if (markierePushZustellung(ticket.alarmId, ticket.userId, 'failed')) veraendert = true
+      if (ticket.alarmId && markierePushZustellung(ticket.alarmId, ticket.userId, 'failed')) veraendert = true
     }
     loeschen.run(ticket.id)
     erledigt++

@@ -3,7 +3,7 @@ import { KeyRound, Pencil, Plus, Trash2, Upload } from 'lucide-react'
 import { isLastAdmin, uid, useStore } from '../store'
 import { rollenkonflikte } from '../lib/scenarios'
 import { ROLE_LABELS, type Role, type User } from '../types'
-import { Badge, Button, Card, Field, Modal, inputClass, useConfirm } from '../components/ui'
+import { formatRelative, Badge, Button, Card, Field, Modal, inputClass, useConfirm } from '../components/ui'
 import { MIN_PASSWORD_LENGTH, hasPassword, passwordProblem } from '../lib/auth'
 
 /**
@@ -183,12 +183,19 @@ export default function UsersPage() {
                               `${u.geraete} Gerät${u.geraete === 1 ? '' : 'e'} angemeldet · ` +
                               (u.criticalAlerts
                                 ? 'Alarme werden auch bei stummem Telefon hörbar'
-                                : 'Critical Alerts nicht erlaubt – bei stummem Telefon bleibt der Alarm lautlos')
+                                : 'Critical Alerts nicht erlaubt – bei stummem Telefon bleibt der Alarm lautlos') +
+                              (u.letzteZustellung
+                                ? ` · letzte bestätigte Zustellung ${formatRelative(u.letzteZustellung)}`
+                                : ' · noch keine bestätigte Zustellung – die wöchentliche stille Prüfung holt sie nach')
                             }
                           >
                             <Badge color={u.criticalAlerts ? 'green' : 'amber'}>
                               {u.criticalAlerts ? 'erreichbar' : 'erreichbar · stumm möglich'}
                             </Badge>
+                            {/* Ein Token allein beweist nichts – erst die Quittung des Push-Dienstes */}
+                            <span className="block text-[11px] text-faint mt-0.5">
+                              {u.letzteZustellung ? `bestätigt ${formatRelative(u.letzteZustellung)}` : 'noch unbestätigt'}
+                            </span>
                           </span>
                         )}
                         {u.partTimeNote && <Badge color="blue">{u.partTimeNote}</Badge>}

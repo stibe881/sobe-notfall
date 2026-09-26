@@ -319,10 +319,19 @@ async function woechentlicherTestpush(jetzt: number): Promise<void> {
   const stunde = lokal.getHours()
   const wochentag = lokal.getDay()
   if (wochentag === 0 || wochentag === 6 || stunde < 8 || stunde > 11) return
-  const admins = allStoredUsers().filter((u) => u.role === 'admin').map((u) => u.id)
-  if (admins.length === 0) return
-  const anzahl = await testPush(admins)
-  addAudit('system', `Wöchentliche Testmeldung an ${anzahl} Gerät(e) der Administration gesendet.`)
+  const alle = allStoredUsers()
+  const admins = alle.filter((u) => u.role === 'admin').map((u) => u.id)
+  const uebrige = alle.filter((u) => u.role !== 'admin').map((u) => u.id)
+  // Die Administration sieht ihre Testmeldung – sie soll wissen, dass die Kette
+  // steht. Alle anderen bekommen eine unsichtbare: Kein Titel, kein Ton, aber
+  // eine Quittung. Meldet der Push-Dienst «DeviceNotRegistered», ist die App
+  // gelöscht, und der Token fällt weg – statt erst im Ernstfall.
+  const sichtbar = admins.length ? await testPush(admins) : 0
+  const still = uebrige.length
+    ? await sendPush(uebrige, { title: '', body: '', data: { kind: 'test-still' }, unsichtbar: true })
+    : 0
+  if (!admins.length) merkeTestpush()
+  addAudit('system', `Wöchentliche Testmeldung: ${sichtbar} Gerät(e) der Administration sichtbar, ${still} weitere Geräte still geprüft.`)
 }
 
 /**

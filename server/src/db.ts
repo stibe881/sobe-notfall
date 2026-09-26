@@ -128,6 +128,8 @@ function ensureColumn(table: string, column: string, definition: string): void {
 
 // Darf dieses Gerät Alarme auch bei stummem Telefon hörbar machen?
 ensureColumn('push_tokens', 'criticalAlerts', 'INTEGER NOT NULL DEFAULT 0')
+// Zeitpunkt der letzten vom Push-Dienst bestätigten Zustellung an dieses Gerät
+ensureColumn('push_tokens', 'letzteZustellung', 'INTEGER')
 
 // Letzte Anmeldung über Microsoft (SSO) – kennzeichnet SSO-Konten
 ensureColumn('users', 'ssoLoginAt', 'INTEGER')

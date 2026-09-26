@@ -44,6 +44,8 @@ export type User = Omit<StoredUser, 'passwordHash' | 'passwordSalt'> & {
   hasPassword: boolean
   geraete?: number
   criticalAlerts?: boolean
+  /** Letzte vom Push-Dienst bestätigte Zustellung an eines ihrer Geräte */
+  letzteZustellung?: number | null
 }
 
 export interface Group {

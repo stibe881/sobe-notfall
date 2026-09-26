@@ -6,12 +6,18 @@ import { Platform } from 'react-native'
 // Benachrichtigungen auch anzeigen, wenn die App im Vordergrund ist.
 // shouldSetBadge übernimmt die vom Server mitgeschickte Zahl aufs App-Symbol.
 Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowBanner: true,
-    shouldShowList: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-  }),
+  handleNotification: async (n) => {
+    // Die stille Wochenprüfung des Servers hat weder Titel noch Text – sie
+    // dient nur der Quittung. Käme sie doch bis hierher, bleibt sie unsichtbar.
+    const inhalt = n.request.content
+    const leer = !inhalt.title && !inhalt.body
+    return {
+      shouldShowBanner: !leer,
+      shouldShowList: !leer,
+      shouldPlaySound: !leer,
+      shouldSetBadge: true,
+    }
+  },
 })
 
 /**
@@ -31,7 +37,7 @@ const ALTE_KANAELE = ['alarme', 'alarme-still']
 
 /** Was der Server einer Mitteilung mitgibt – Antippen öffnet die passende Ansicht */
 export interface PushDaten {
-  kind?: 'alarm' | 'ended'
+  kind?: 'alarm' | 'ended' | 'test' | 'test-still'
   alarmId?: string
   scenarioId?: string
 }
