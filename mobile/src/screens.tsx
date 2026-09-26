@@ -383,7 +383,10 @@ export function StartScreen({ onOpenScenario, onWaehleSzenario }: {
           <Pressable style={styles.standortLeiste} onPress={() => setStandortWahl(true)}>
             <MapPin size={15} color={colors.brand} />
             <View style={{ flex: 1 }}>
-              <Text style={styles.standortName} numberOfLines={1}>{hierStandort?.name ?? 'Kein Standort'}</Text>
+              {/* Zwei Zeilen: «Aussenstelle Menzingen Schulhaus Nord» und «… Süd»
+                  unterscheiden sich erst am Ende – gekürzt wären sie nicht
+                  auseinanderzuhalten, und der Standort bestimmt, wer alarmiert wird. */}
+              <Text style={styles.standortName} numberOfLines={2}>{hierStandort?.name ?? 'Kein Standort'}</Text>
               <Text style={styles.standortHinweis}>
                 {indoorStandort ? 'aus der Ortung im Gebäude'
                   : aufenthalt ? 'aus der Standorterkennung'

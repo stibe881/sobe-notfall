@@ -91,7 +91,14 @@ export const inputClass =
 
 export function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
   return (
-    <button type="button" onClick={() => onChange(!checked)} className="flex items-center gap-2 text-sm text-slate-700">
+    // Die Antippfläche ist 44 Pixel hoch, nicht bloss so hoch wie der
+    // Schalter (20px). WCAG 2.2 AA verlangt mindestens 24; 44 ist das, was
+    // sich mit der Fingerkuppe zuverlässig trifft.
+    <button
+      type="button"
+      onClick={() => onChange(!checked)}
+      className="flex items-center gap-2 text-sm text-slate-700 min-h-[44px] py-1"
+    >
       <span className={`w-9 h-5 rounded-full transition relative ${checked ? 'bg-emerald-500' : 'bg-slate-300'}`}>
         <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all ${checked ? 'left-[18px]' : 'left-0.5'}`} />
       </span>

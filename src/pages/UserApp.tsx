@@ -69,26 +69,35 @@ export default function UserApp() {
 
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col max-w-lg mx-auto lg:border-x lg:border-slate-200">
-      <header className="sticky top-0 z-30 bg-slate-900 text-white px-4 py-3 flex items-center gap-2.5">
-        <Siren size={20} className="text-brand-500" />
-        <div className="min-w-0 flex-1">
+      {/*
+        Zwei Zeilen statt einer. Vorher standen Logo, Name, Standort und Knopf
+        nebeneinander – auf einem schmalen Gerät lief der Untertitel unter den
+        Knopf und verdeckte ausgerechnet den Standort, der bestimmt, wer
+        alarmiert wird.
+      */}
+      <header className="sticky top-0 z-30 bg-slate-900 text-white px-4 pt-3 pb-2">
+        <div className="flex items-center gap-2.5">
+          <Siren size={20} className="text-brand-500 shrink-0" />
           {anwendungsname(state.integrations.organization?.appName) && (
-            <div className="font-bold leading-tight">{anwendungsname(state.integrations.organization?.appName)}</div>
+            <div className="font-bold leading-tight truncate flex-1 min-w-0">
+              {anwendungsname(state.integrations.organization?.appName)}
+            </div>
           )}
-          <div className="text-xs text-faint-dunkel truncate flex items-center gap-1">
-            {me.firstName} {me.lastName} · <MapPin size={10} /> {myLocation?.name}
-          </div>
+          {/* Ein Weg zur Szenarienwahl, keine Auslösung. Vorher gefüllt rot wie
+              der SOS-Knopf darunter – zwei gleich dringliche rote Flächen mit
+              unterschiedlicher Wirkung kosten unter Druck Sekunden. */}
+          <button
+            className="shrink-0 flex items-center gap-1.5 rounded-full border-[1.5px] border-alarm-400 text-alarm-200 text-xs font-bold px-3 py-1.5 active:scale-95 transition"
+            onClick={() => { setOpenScenario(null); setAlarmWahl(true) }}
+            aria-label="Ereignis wählen und Alarm auslösen"
+          >
+            <Siren size={14} /> Ereignis wählen
+          </button>
         </div>
-        {/* Ein Weg zur Szenarienwahl, keine Auslösung. Vorher gefüllt rot wie
-            der SOS-Knopf darunter – zwei gleich dringliche rote Flächen mit
-            unterschiedlicher Wirkung kosten unter Druck Sekunden. */}
-        <button
-          className="shrink-0 flex items-center gap-1.5 rounded-full border-[1.5px] border-alarm-400 text-alarm-200 text-xs font-bold px-3 py-1.5 active:scale-95 transition"
-          onClick={() => { setOpenScenario(null); setAlarmWahl(true) }}
-          aria-label="Ereignis wählen und Alarm auslösen"
-        >
-          <Siren size={14} /> Ereignis wählen
-        </button>
+        <div className="text-xs text-faint-dunkel truncate flex items-center gap-1 mt-0.5">
+          {me.firstName} {me.lastName} · <MapPin size={10} className="shrink-0" />
+          <span className="truncate">{myLocation?.name}</span>
+        </div>
       </header>
 
       {darfVorschau && (
@@ -449,7 +458,7 @@ function StartTab({ onOpenScenario, onWaehleSzenario }: {
           <div className="flex items-center gap-2.5 rounded-2xl bg-brand-50 border border-slate-200 px-3.5 py-2.5">
             <MapPin size={15} className="text-brand-600 shrink-0" />
             <div className="min-w-0">
-              <div className="text-sm font-bold text-slate-800 truncate">{hierStandort?.name ?? 'Kein Standort'}</div>
+              <div className="text-sm font-bold text-slate-800 leading-tight">{hierStandort?.name ?? 'Kein Standort'}</div>
               <div className="text-xs text-muted">Bestimmt, wer bei einem Alarm aufgeboten wird</div>
             </div>
           </div>
@@ -1164,7 +1173,7 @@ function LoneWorkTab() {
             )
           })}
         </div>
-        <button className="text-xs text-muted underline underline-offset-2" onClick={() => setPersonenOffen(!personenOffen)}>
+        <button className="text-xs text-muted underline underline-offset-2 min-h-[44px] text-left self-start" onClick={() => setPersonenOffen(!personenOffen)}>
           {personenOffen ? 'Einzelne Personen ausblenden' : `Zusätzlich einzelne Personen wählen${alertUserIds.length ? ` (${alertUserIds.length} gewählt)` : ''}`}
         </button>
         {personenOffen && (

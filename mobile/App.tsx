@@ -163,6 +163,15 @@ function Root() {
   return (
     <SafeAreaView style={styles.root} edges={['top', 'left', 'right']}>
       <StatusBar style="light" />
+      {/*
+        Zwei Zeilen statt einer.
+        Vorher standen Logo, Name, Standort und Knopf nebeneinander: Der
+        Untertitel konnte nicht schrumpfen und lief unter den Knopf – auf
+        einem 360-Pixel-Gerät war der Standort halb verdeckt. Ausgerechnet
+        der Standort, der bestimmt, wer alarmiert wird.
+        Jetzt teilt sich die obere Zeile Logo, Name und Knopf; der
+        Untertitel bekommt die volle Breite darunter.
+      */}
       <View style={styles.header}>
         {state.integrations?.organization?.logoVersion ? (
           <View style={state.integrations.organization.logoPlatte ? styles.headerLogo : undefined}>
@@ -175,16 +184,11 @@ function Root() {
         ) : (
           <Siren size={20} color={colors.brandLight} />
         )}
-        <View style={{ flex: 1 }}>
-          {Boolean(anwendungsname(state.integrations?.organization?.appName)) && (
-            <Text style={styles.headerTitle}>{anwendungsname(state.integrations?.organization?.appName)}</Text>
-          )}
-          <View style={styles.headerSubRow}>
-            <Text style={styles.headerSub}>{me.firstName} {me.lastName} · </Text>
-            <MapPin size={10} color="#94a3b8" />
-            <Text style={styles.headerSub} numberOfLines={1}> {myLocation?.name}</Text>
-          </View>
-        </View>
+        {Boolean(anwendungsname(state.integrations?.organization?.appName)) && (
+          <Text style={styles.headerTitle} numberOfLines={1}>
+            {anwendungsname(state.integrations?.organization?.appName)}
+          </Text>
+        )}
         <Pressable
           style={styles.headerAlarmButton}
           onPress={() => { setOpenScenario(null); setAlarmWahl(true) }}
@@ -194,6 +198,13 @@ function Root() {
           <Siren size={15} color="#fca5a5" />
           <Text style={styles.headerAlarmText}>Ereignis wählen</Text>
         </Pressable>
+      </View>
+
+      <View style={styles.headerSubRow}>
+        <Text style={styles.headerSub} numberOfLines={1}>{me.firstName} {me.lastName}</Text>
+        <Text style={styles.headerSubTrenner}> · </Text>
+        <MapPin size={10} color="#a0aec0" />
+        <Text style={[styles.headerSub, { flexShrink: 1 }]} numberOfLines={1}> {myLocation?.name}</Text>
       </View>
 
       {/* Akzentlinie in der Kundenfarbe – das Branding des verbundenen Alarmservers */}
@@ -302,12 +313,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingTop: 10,
+    paddingBottom: 4,
     backgroundColor: colors.dark,
   },
-  headerTitle: { color: '#fff', fontWeight: '800', fontSize: 16 },
+  // flexShrink, damit ein langer Anwendungsname den Knopf nicht wegdrückt
+  headerTitle: { color: '#fff', fontWeight: '800', fontSize: 16, flex: 1, flexShrink: 1 },
   headerLogo: { backgroundColor: '#fff', borderRadius: 6, paddingHorizontal: 5, paddingVertical: 3 },
-  headerSubRow: { flexDirection: 'row', alignItems: 'center' },
+  // Eigene Zeile unter dem Kopf: volle Breite, nichts kann darüberliegen
+  headerSubRow: {
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: 16, paddingBottom: 9,
+    backgroundColor: colors.dark, overflow: 'hidden',
+  },
+  headerSubTrenner: { color: '#a0aec0', fontSize: 11 },
   // Heller Grauton: Der Kopf ist dunkel, dort muss die Schrift heller
   // werden statt dunkler (7.9:1 auf dem Kopfhintergrund).
   headerSub: { color: '#a0aec0', fontSize: 11 },
