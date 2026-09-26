@@ -228,6 +228,14 @@ export interface Alarm {
   ohneEskalation?: boolean
   deliveries: Delivery[]
   log: AlarmLogEntry[]
+  /**
+   * Welche Schritte der Krisenteam-Ansicht (alle Schritte aller Gruppen)
+   * schon erledigt sind – Indizes in responseStepsOf(scenario). Geteilt
+   * zwischen allen, die die Krisenteam-Ansicht offen haben, damit sich zwei
+   * Koordinierende nicht doppelt um denselben Schritt kümmern. Die normale,
+   * rollenbezogene Ansicht bleibt bewusst unabhängig davon (persönliche Liste).
+   */
+  sharedChecklist?: number[]
 }
 
 /**
@@ -250,8 +258,12 @@ export interface AlarmUpdate {
   ts: number
   message: string
   byUserId?: string
-  /** lage: Krisenstab informiert · meldung: zweite Auslösung zusammengeführt · fehlalarm: Auslösende:r meldet Irrtum */
-  kind: 'lage' | 'meldung' | 'fehlalarm' | 'standort'
+  /**
+   * lage: Krisenstab informiert · meldung: zweite Auslösung zusammengeführt ·
+   * fehlalarm: Auslösende:r meldet Irrtum · uebergabe: Führung der
+   * Koordination wechselt an eine andere Person
+   */
+  kind: 'lage' | 'meldung' | 'fehlalarm' | 'standort' | 'uebergabe'
 }
 
 export interface AlarmButton {

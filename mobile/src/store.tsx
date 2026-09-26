@@ -156,8 +156,9 @@ export type Action =
   | { type: 'SET_USER'; userId: string }
   | { type: 'TRIGGER_ALARM'; alarm: Alarm }
   | { type: 'END_ALARM'; alarmId: string; note?: string }
-  | { type: 'ALARM_UPDATE'; alarmId: string; message: string; kind: 'lage' | 'fehlalarm' }
+  | { type: 'ALARM_UPDATE'; alarmId: string; message: string; kind: 'lage' | 'fehlalarm' | 'uebergabe' }
   | { type: 'ACK_ALARM'; alarmId: string; userId: string; ack: 'acknowledged' | 'declined' }
+  | { type: 'TOGGLE_CHECKLIST'; alarmId: string; stepIndex: number; checked: boolean }
   | { type: 'START_LONE_WORK'; session: LoneWorkSession }
   | { type: 'EXTEND_LONE_WORK'; sessionId: string; minutes: number }
   | { type: 'COMPLETE_LONE_WORK'; sessionId: string }
@@ -233,7 +234,9 @@ function reducer(state: MobileState, action: Action): MobileState {
       const name = person ? `${person.firstName} ${person.lastName}` : '?'
       const text = action.kind === 'fehlalarm'
         ? `FEHLALARM gemeldet von ${name}${action.message ? `: ${action.message}` : ''} – bitte auf die Entwarnung durch den Krisenstab warten.`
-        : action.message
+        : action.kind === 'uebergabe'
+          ? `${name} übergibt die Führung: ${action.message}`
+          : action.message
       return {
         ...state,
         alarms: state.alarms.map((a) =>
@@ -241,7 +244,7 @@ function reducer(state: MobileState, action: Action): MobileState {
             ? {
                 ...a,
                 updates: [...(a.updates ?? []), { ts: Date.now(), kind: action.kind, byUserId: state.currentUserId, message: text }],
-                log: [...a.log, { ts: Date.now(), message: action.kind === 'fehlalarm' ? text : `Lagemeldung von ${name}: ${action.message}` }],
+                log: [...a.log, { ts: Date.now(), message: action.kind === 'lage' ? `Lagemeldung von ${name}: ${action.message}` : text }],
               }
             : a,
         ),
@@ -255,6 +258,16 @@ function reducer(state: MobileState, action: Action): MobileState {
             ? { ...a, deliveries: a.deliveries.map((d) => (d.userId === action.userId ? { ...d, ack: action.ack } : d)) }
             : a,
         ),
+      }
+    case 'TOGGLE_CHECKLIST':
+      return {
+        ...state,
+        alarms: state.alarms.map((a) => {
+          if (a.id !== action.alarmId) return a
+          const bisher = new Set(a.sharedChecklist ?? [])
+          action.checked ? bisher.add(action.stepIndex) : bisher.delete(action.stepIndex)
+          return { ...a, sharedChecklist: [...bisher].sort((x, y) => x - y) }
+        }),
       }
     case 'START_LONE_WORK':
       return { ...state, loneWorkSessions: [action.session, ...state.loneWorkSessions].slice(0, 20) }
@@ -331,7 +344,9 @@ function toastForAction(action: Action): Toast['message'] | { message: string; k
     case 'TRIGGER_ALARM':
       return { message: 'Alarm ausgelöst – Empfänger:innen werden benachrichtigt', kind: 'alarm' }
     case 'ALARM_UPDATE':
-      return action.kind === 'fehlalarm' ? 'Fehlalarm gemeldet – der Krisenstab gibt die Entwarnung' : 'Lagemeldung gesendet'
+      return action.kind === 'fehlalarm' ? 'Fehlalarm gemeldet – der Krisenstab gibt die Entwarnung'
+        : action.kind === 'uebergabe' ? 'Führungsübergabe gemeldet'
+          : 'Lagemeldung gesendet'
     case 'END_ALARM':
       return 'Alarm beendet – Entwarnung versendet'
     case 'ACK_ALARM':
@@ -503,6 +518,9 @@ async function serverEffekt(action: Action): Promise<boolean | 'merged'> {
       return true
     case 'ACK_ALARM':
       await api.ackAlarm(action.alarmId, action.ack)
+      return true
+    case 'TOGGLE_CHECKLIST':
+      await api.toggleChecklist(action.alarmId, action.stepIndex, action.checked)
       return true
     case 'START_LONE_WORK': {
       const s = action.session

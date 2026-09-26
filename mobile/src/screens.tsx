@@ -24,6 +24,14 @@ import { activeScenarios, allClearStepsOf, brauchtRollentrennung, eigeneSchritte
 
 type Dispatch = ReturnType<typeof useStore>['dispatch']
 
+/** Häufige Lagemeldungen als Textbaustein – ein Antippen füllt das Feld, gesendet wird bewusst erst über «Senden» */
+const LAGE_VORLAGEN = [
+  'Gebäude ist evakuiert.',
+  'Rettungsdienst ist eingetroffen.',
+  'Lage ist unter Kontrolle.',
+  'Fehlalarm bestätigt.',
+]
+
 /** Text abfragen – iOS kennt Alert.prompt, Android bekommt eine Bestätigung ohne Text */
 function frageText(titel: string, text: string, knopf: string, weiter: (eingabe: string) => void) {
   if (Platform.OS === 'ios') {
@@ -85,7 +93,7 @@ function Rueckmeldestand({ alarm }: { alarm: Alarm }) {
 }
 
 const meldungsFarbe = (kind: NonNullable<Alarm['updates']>[number]['kind']) =>
-  kind === 'fehlalarm' ? colors.amber : kind === 'standort' ? colors.brand : colors.violet
+  kind === 'fehlalarm' ? colors.amber : kind === 'standort' ? colors.brand : kind === 'uebergabe' ? colors.green : colors.violet
 
 /** Klarname einer Meridian-Karte (Stockwerk), wie ihn das Portal führt */
 export function indoorOrt(position: IndoorPosition, integrations: IntegrationSettings | undefined): string {
@@ -126,11 +134,45 @@ function Lagemeldungen({ alarm }: { alarm: Alarm }) {
       {updates.map((u, i) => (
         <View key={i} style={{ borderLeftWidth: 3, borderLeftColor: meldungsFarbe(u.kind), paddingLeft: 8 }}>
           <Text style={[styles.faint, { color: meldungsFarbe(u.kind), fontWeight: '700' }]}>
-            {u.kind === 'fehlalarm' ? 'Fehlalarm gemeldet' : u.kind === 'meldung' ? 'Weitere Meldung' : u.kind === 'standort' ? 'Position im Gebäude' : 'Lagemeldung'} · {formatRelative(u.ts)}
+            {u.kind === 'fehlalarm' ? 'Fehlalarm gemeldet'
+              : u.kind === 'meldung' ? 'Weitere Meldung'
+                : u.kind === 'standort' ? 'Position im Gebäude'
+                  : u.kind === 'uebergabe' ? 'Führungsübergabe'
+                    : 'Lagemeldung'} · {formatRelative(u.ts)}
           </Text>
           <Text style={[styles.body, { marginTop: 0 }]}>{u.message}</Text>
         </View>
       ))}
+    </View>
+  )
+}
+
+/**
+ * Durchgehender Zeitstrahl für die Krisenteam-Ansicht: alarm.log hält von
+ * Auslösung über Eskalationsstufen bis zu jeder Quittierung bereits alles in
+ * chronologischer Reihenfolge – bisher nur im Admin-Ereignismonitor sichtbar,
+ * nicht in der App. Eingeklappt, damit die Ansicht nicht überladen wirkt.
+ */
+function Zeitstrahl({ alarm }: { alarm: Alarm }) {
+  const [offen, setOffen] = useState(false)
+  const eintraege = [...alarm.log].reverse()
+  return (
+    <View style={{ marginTop: 8 }}>
+      <Pressable onPress={() => setOffen((v) => !v)}>
+        <Text style={[styles.muted, { textDecorationLine: 'underline', fontSize: 12 }]}>
+          {offen ? 'Zeitstrahl ausblenden' : `Zeitstrahl anzeigen (${eintraege.length} Ereignisse)`}
+        </Text>
+      </Pressable>
+      {offen && (
+        <View style={{ marginTop: 6, gap: 4 }}>
+          {eintraege.map((e, i) => (
+            <View key={i} style={[styles.row, { alignItems: 'flex-start', gap: 8 }]}>
+              <Text style={[styles.faint, { width: 76 }]}>{formatRelative(e.ts)}</Text>
+              <Text style={[styles.body, { flex: 1, marginTop: 0 }]}>{e.message}</Text>
+            </View>
+          ))}
+        </View>
+      )}
     </View>
   )
 }
@@ -549,6 +591,8 @@ export function ScenarioDetailScreen({
   const [checkedSteps, setCheckedSteps] = useState<Record<number, boolean>>({})
   const [checkedList, setCheckedList] = useState<Record<number, boolean>>({})
   const [notifiedUserIds, setNotifiedUserIds] = useState<string[]>([])
+  // Damit der Krisenstab das Aufbieten üben kann, ohne echte Betroffenheit vorzutäuschen
+  const [krisenteamAlsUebung, setKrisenteamAlsUebung] = useState(false)
 
   const me = state.users.find((u) => u.id === state.currentUserId) ?? state.users[0]
   // Vorausgewählt ist der Standort, an dem die auslösende Person gerade ist
@@ -617,10 +661,14 @@ export function ScenarioDetailScreen({
       type: 'TRIGGER_ALARM',
       alarm: createAlarm(state, {
         scenarioId: scenario.id,
-        message: `Krisenteam-Aufgebot (${scenario.title}) durch ${me.firstName} ${me.lastName} – bitte quittieren.`,
-        silent: false,
+        message: `Krisenteam-Aufgebot (${scenario.title}) durch ${me.firstName} ${me.lastName}${krisenteamAlsUebung ? ' – Übung' : ''} – bitte quittieren.`,
+        // Als Übung: still und ohne die Anrufe/SMS eines echten Aufgebots –
+        // so kann der Krisenstab die Krisenteam-Ansicht üben, ohne beim Rest
+        // des Teams den Eindruck eines echten Ereignisses zu erwecken.
+        silent: krisenteamAlsUebung,
+        drill: krisenteamAlsUebung,
         requireAck: true,
-        channels: ['push', 'sms', 'voice'],
+        channels: krisenteamAlsUebung ? ['push'] : ['push', 'sms', 'voice'],
         groupIds: crisisGroups.map((g) => g.id),
         locationIds: [],
         triggeredByUserId: me.id,
@@ -881,7 +929,15 @@ export function ScenarioDetailScreen({
           {myCrisisAlarm ? (
             <AlarmStatus alarm={myCrisisAlarm} />
           ) : (
-            <HoldButton label="Krisenteam aufbieten" hint="Zum Aufbieten gedrückt halten" onTrigger={triggerCrisisTeam} />
+            <>
+              <Pressable style={styles.checkRow} onPress={() => setKrisenteamAlsUebung((v) => !v)}>
+                <View style={[styles.checkbox, krisenteamAlsUebung && { backgroundColor: colors.brand, borderColor: colors.brand }]}>
+                  {krisenteamAlsUebung && <Check size={13} color="#fff" />}
+                </View>
+                <Text style={styles.body}>Als Übung kennzeichnen – still, nur Push, ohne SMS/Anruf</Text>
+              </Pressable>
+              <HoldButton label="Krisenteam aufbieten" hint="Zum Aufbieten gedrückt halten" onTrigger={triggerCrisisTeam} />
+            </>
           )}
           <Text style={styles.faint}>
             Aufgebot per Push, SMS und Sprachanruf mit Quittierung – oder einzelne Mitglieder direkt kontaktieren:
@@ -1100,6 +1156,7 @@ function EmpfaengerScreen({
   const [erledigt, setErledigt] = useState<Record<number, boolean>>({})
   const [zeigeAndere, setZeigeAndere] = useState(false)
   const [lage, setLage] = useState('')
+  const [uebergabeOffen, setUebergabeOffen] = useState(false)
   // Mitglieder des Krisenstabs können zwischen der eigenen Empfänger-Ansicht und der
   // Koordinationsansicht wechseln; öffnet direkt auf der passenden, je nachdem, ob
   // der Alarm (aktuell, inkl. bereits ausgelöster Eskalation) den Krisenstab betrifft.
@@ -1139,12 +1196,26 @@ function EmpfaengerScreen({
     ? alarm.locationIds.map((id) => state.locations.find((l) => l.id === id)?.name).filter(Boolean).join(', ')
     : ''
   const myAck = alarm?.deliveries.find((d) => d.userId === me.id)?.ack ?? 'none'
+  // Andere Krisenstab-Mitglieder, an die die Führung übergeben werden kann
+  const krisenstabKollegen = state.users.filter((u) => u.id !== me.id && u.groupIds.includes('gr-krisenstab'))
 
   function lagemeldungSenden() {
     const text = lage.trim()
     if (!text || !alarm) return
     dispatch({ type: 'ALARM_UPDATE', alarmId: alarm.id, message: text, kind: 'lage' })
     setLage('')
+  }
+
+  function fuehrungUebergeben(userId: string) {
+    const person = state.users.find((u) => u.id === userId)
+    if (!alarm || !person) return
+    dispatch({ type: 'ALARM_UPDATE', alarmId: alarm.id, message: `an ${person.firstName} ${person.lastName}`, kind: 'uebergabe' })
+    setUebergabeOffen(false)
+  }
+
+  function checklistUmschalten(stepIndex: number) {
+    if (!alarm) return
+    dispatch({ type: 'TOGGLE_CHECKLIST', alarmId: alarm.id, stepIndex, checked: !alarm.sharedChecklist?.includes(stepIndex) })
   }
 
   return (
@@ -1189,9 +1260,17 @@ function EmpfaengerScreen({
           </Text>
           <Rueckmeldestand alarm={alarm} />
           <Lagemeldungen alarm={alarm} />
+          {krisenteam && <Zeitstrahl alarm={alarm} />}
           {krisenteam && (
             <>
-              <View style={[styles.row, { marginTop: 8, gap: 8, alignItems: 'flex-start' }]}>
+              <View style={[styles.row, { flexWrap: 'wrap', gap: 6, marginTop: 8 }]}>
+                {LAGE_VORLAGEN.map((vorlage) => (
+                  <Pressable key={vorlage} style={styles.chip} onPress={() => setLage(vorlage)}>
+                    <Text style={styles.chipText}>{vorlage}</Text>
+                  </Pressable>
+                ))}
+              </View>
+              <View style={[styles.row, { marginTop: 6, gap: 8, alignItems: 'flex-start' }]}>
                 <TextInput
                   style={[styles.input, { flex: 1 }]}
                   placeholder="Lagemeldung an alle Empfänger:innen"
@@ -1203,7 +1282,23 @@ function EmpfaengerScreen({
                   <Text style={styles.outlineButtonText}>Senden</Text>
                 </Pressable>
               </View>
-              <Pressable style={[styles.outlineButton, { backgroundColor: colors.alarmLight, borderColor: colors.alarmLight }]} onPress={() => entwarnungGeben(dispatch, alarm.id)}>
+              <Pressable style={[styles.outlineButton, { marginTop: 8 }]} onPress={() => setUebergabeOffen((v) => !v)}>
+                <Text style={styles.outlineButtonText}>Führung übergeben</Text>
+              </Pressable>
+              {uebergabeOffen && (
+                <View style={{ marginTop: 6, gap: 4 }}>
+                  {krisenstabKollegen.length === 0 ? (
+                    <Text style={styles.faint}>Keine weitere Krisenstab-Person im Bestand.</Text>
+                  ) : (
+                    krisenstabKollegen.map((u) => (
+                      <Pressable key={u.id} style={styles.checkRow} onPress={() => fuehrungUebergeben(u.id)}>
+                        <Text style={styles.body}>{u.firstName} {u.lastName}</Text>
+                      </Pressable>
+                    ))
+                  )}
+                </View>
+              )}
+              <Pressable style={[styles.outlineButton, { backgroundColor: colors.alarmLight, borderColor: colors.alarmLight, marginTop: 8 }]} onPress={() => entwarnungGeben(dispatch, alarm.id)}>
                 <Text style={[styles.outlineButtonText, { color: '#fff' }]}>Entwarnung geben</Text>
               </Pressable>
             </>
@@ -1263,23 +1358,26 @@ function EmpfaengerScreen({
         </View>
       )}
       {krisenteam
-        ? alleSchritte.map((step, i) => (
-            <Pressable
-              key={i}
-              style={[styles.row, { alignItems: 'flex-start', backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: 12, padding: 12 }]}
-              onPress={() => setErledigt({ ...erledigt, [i]: !erledigt[i] })}
-            >
-              <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: erledigt[i] ? colors.green : '#d97706', alignItems: 'center', justifyContent: 'center' }}>
-                {erledigt[i] ? <Check size={14} color="#fff" /> : <Text style={{ color: '#fff', fontWeight: '800', fontSize: 12 }}>{i + 1}</Text>}
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.body, { marginTop: 0, color: erledigt[i] ? colors.faint : colors.text, textDecorationLine: erledigt[i] ? 'line-through' : 'none' }]}>{step.text}</Text>
-                {step.groupIds && step.groupIds.length > 0 && (
-                  <Text style={{ fontSize: 11, color: '#b45309', marginTop: 2 }}>{gruppenName(step.groupIds)}</Text>
-                )}
-              </View>
-            </Pressable>
-          ))
+        ? alleSchritte.map((step, i) => {
+            const erledigtGeteilt = alarm?.sharedChecklist?.includes(i) ?? false
+            return (
+              <Pressable
+                key={i}
+                style={[styles.row, { alignItems: 'flex-start', backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: 12, padding: 12 }]}
+                onPress={() => checklistUmschalten(i)}
+              >
+                <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: erledigtGeteilt ? colors.green : '#d97706', alignItems: 'center', justifyContent: 'center' }}>
+                  {erledigtGeteilt ? <Check size={14} color="#fff" /> : <Text style={{ color: '#fff', fontWeight: '800', fontSize: 12 }}>{i + 1}</Text>}
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.body, { marginTop: 0, color: erledigtGeteilt ? colors.faint : colors.text, textDecorationLine: erledigtGeteilt ? 'line-through' : 'none' }]}>{step.text}</Text>
+                  {step.groupIds && step.groupIds.length > 0 && (
+                    <Text style={{ fontSize: 11, color: '#b45309', marginTop: 2 }}>{gruppenName(step.groupIds)}</Text>
+                  )}
+                </View>
+              </Pressable>
+            )
+          })
         : bloeckeMitNummer.map((block, bi) => (
             <View key={bi} style={{ marginTop: nachRollen ? 8 : 0 }}>
               {nachRollen && (

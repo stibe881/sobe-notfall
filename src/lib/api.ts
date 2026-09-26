@@ -299,9 +299,12 @@ export const api = {
     anfrage<{ alarm: AppState['alarms'][number] }>(`/alarms/${id}/ack`, { method: 'POST', body: JSON.stringify({ ack }) }),
   endAlarm: (id: string, note = '') =>
     anfrage<{ alarm: AppState['alarms'][number] }>(`/alarms/${id}/end`, { method: 'POST', body: JSON.stringify({ note }) }),
-  /** Lagemeldung (Führung) oder Fehlalarm-Meldung (auslösende Person) zu einem laufenden Alarm */
-  updateAlarm: (id: string, message: string, kind: 'lage' | 'fehlalarm') =>
+  /** Lagemeldung/Übergabe (Führung) oder Fehlalarm-Meldung (auslösende Person) zu einem laufenden Alarm */
+  updateAlarm: (id: string, message: string, kind: 'lage' | 'fehlalarm' | 'uebergabe') =>
     anfrage<{ alarm: AppState['alarms'][number] }>(`/alarms/${id}/update`, { method: 'POST', body: JSON.stringify({ message, kind }) }),
+  /** Haken in der Krisenteam-Ansicht setzen/entfernen – geteilt zwischen allen Koordinierenden */
+  toggleChecklist: (id: string, stepIndex: number, checked: boolean) =>
+    anfrage<{ alarm: AppState['alarms'][number] }>(`/alarms/${id}/checklist`, { method: 'POST', body: JSON.stringify({ stepIndex, checked }) }),
 
   /** Bereitschaft: Geräte pro Standort, Sicherung, Push-Dienst, Testmeldung */
   bereitschaft: () => anfrage<Bereitschaft>('/bereitschaft'),

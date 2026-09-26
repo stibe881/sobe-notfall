@@ -196,6 +196,14 @@ export default function UserApp() {
 
 // ---------- Start: Alarme + SOS ----------
 
+/** Häufige Lagemeldungen als Textbaustein – ein Klick füllt das Feld, gesendet wird bewusst erst über «Senden» */
+const LAGE_VORLAGEN = [
+  'Gebäude ist evakuiert.',
+  'Rettungsdienst ist eingetroffen.',
+  'Lage ist unter Kontrolle.',
+  'Fehlalarm bestätigt.',
+]
+
 /** Meldungen zum laufenden Alarm, neueste zuoberst */
 function Lagemeldungen({ alarm }: { alarm: Alarm }) {
   const updates = [...(alarm.updates ?? [])].reverse()
@@ -203,13 +211,45 @@ function Lagemeldungen({ alarm }: { alarm: Alarm }) {
   return (
     <div className="mt-2 space-y-1.5">
       {updates.map((u, i) => (
-        <div key={i} className={`border-l-[3px] pl-2 ${u.kind === 'fehlalarm' ? 'border-amber-500' : u.kind === 'standort' ? 'border-brand-600' : 'border-violet-500'}`}>
-          <div className={`text-[11px] font-bold ${u.kind === 'fehlalarm' ? 'text-amber-700' : u.kind === 'standort' ? 'text-brand-700' : 'text-violet-700'}`}>
-            {u.kind === 'fehlalarm' ? 'Fehlalarm gemeldet' : u.kind === 'meldung' ? 'Weitere Meldung' : u.kind === 'standort' ? 'Position im Gebäude' : 'Lagemeldung'} · {formatRelative(u.ts)}
+        <div key={i} className={`border-l-[3px] pl-2 ${u.kind === 'fehlalarm' ? 'border-amber-500' : u.kind === 'standort' ? 'border-brand-600' : u.kind === 'uebergabe' ? 'border-emerald-500' : 'border-violet-500'}`}>
+          <div className={`text-[11px] font-bold ${u.kind === 'fehlalarm' ? 'text-amber-700' : u.kind === 'standort' ? 'text-brand-700' : u.kind === 'uebergabe' ? 'text-emerald-700' : 'text-violet-700'}`}>
+            {u.kind === 'fehlalarm' ? 'Fehlalarm gemeldet'
+              : u.kind === 'meldung' ? 'Weitere Meldung'
+                : u.kind === 'standort' ? 'Position im Gebäude'
+                  : u.kind === 'uebergabe' ? 'Führungsübergabe'
+                    : 'Lagemeldung'} · {formatRelative(u.ts)}
           </div>
           <div className="text-sm text-slate-700">{u.message}</div>
         </div>
       ))}
+    </div>
+  )
+}
+
+/**
+ * Durchgehender Zeitstrahl für die Krisenteam-Ansicht: alarm.log hält von
+ * Auslösung über Eskalationsstufen bis zu jeder Quittierung bereits alles in
+ * chronologischer Reihenfolge – bisher nur im Admin-Ereignismonitor sichtbar,
+ * nicht in der App-Vorschau. Eingeklappt, damit die Ansicht nicht überladen wirkt.
+ */
+function Zeitstrahl({ alarm }: { alarm: Alarm }) {
+  const [offen, setOffen] = useState(false)
+  const eintraege = [...alarm.log].reverse()
+  return (
+    <div className="mt-2">
+      <button className="text-xs text-muted underline" onClick={() => setOffen((v) => !v)}>
+        {offen ? 'Zeitstrahl ausblenden' : `Zeitstrahl anzeigen (${eintraege.length} Ereignisse)`}
+      </button>
+      {offen && (
+        <div className="mt-1.5 space-y-1">
+          {eintraege.map((e, i) => (
+            <div key={i} className="flex gap-2 text-sm">
+              <span className="text-xs text-faint whitespace-nowrap w-20 shrink-0">{formatRelative(e.ts)}</span>
+              <span className="text-slate-700">{e.message}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -611,6 +651,8 @@ function ScenarioView({
   const [checkedSteps, setCheckedSteps] = useState<Record<number, boolean>>({})
   const [checkedList, setCheckedList] = useState<Record<number, boolean>>({})
   const [notifiedUserIds, setNotifiedUserIds] = useState<string[]>([])
+  // Damit der Krisenstab das Aufbieten üben kann, ohne echte Betroffenheit vorzutäuschen
+  const [krisenteamAlsUebung, setKrisenteamAlsUebung] = useState(false)
 
   const me = state.users.find((u) => u.id === (state.previewUserId ?? state.currentUserId)) ?? state.users[0]
   const [alarmLocationIds, setAlarmLocationIds] = useState<string[]>([me.locationId])
@@ -671,17 +713,21 @@ function ScenarioView({
   function triggerCrisisTeam() {
     const alarm = createAlarm(state, {
       scenarioId: scenario.id,
-      message: `Krisenteam-Aufgebot (${scenario.title}) durch ${me.firstName} ${me.lastName} – bitte quittieren.`,
-      silent: false,
+      message: `Krisenteam-Aufgebot (${scenario.title}) durch ${me.firstName} ${me.lastName}${krisenteamAlsUebung ? ' – Übung' : ''} – bitte quittieren.`,
+      // Als Übung: still und ohne die Anrufe/SMS eines echten Aufgebots – so
+      // kann der Krisenstab die Krisenteam-Ansicht üben, ohne beim Rest des
+      // Teams den Eindruck eines echten Ereignisses zu erwecken.
+      silent: krisenteamAlsUebung,
+      drill: krisenteamAlsUebung,
       requireAck: true,
-      channels: ['push', 'sms', 'voice'],
+      channels: krisenteamAlsUebung ? ['push'] : ['push', 'sms', 'voice'],
       groupIds: crisisGroups.map((g) => g.id),
       locationIds: [],
       triggeredByUserId: me.id,
       triggeredVia: 'app',
       ohneEskalation: true,
     })
-    dispatch({ type: 'TRIGGER_ALARM', alarm, audit: `Krisenteam-Aufgebot aus Szenario «${scenario.title}»: ${me.firstName} ${me.lastName}` })
+    dispatch({ type: 'TRIGGER_ALARM', alarm, audit: `Krisenteam-Aufgebot aus Szenario «${scenario.title}»${krisenteamAlsUebung ? ' (Übung)' : ''}: ${me.firstName} ${me.lastName}` })
   }
 
   function notifyMember(userId: string) {
@@ -945,9 +991,16 @@ function ScenarioView({
           {myCrisisAlarm ? (
             alarmStatus(myCrisisAlarm)
           ) : (
-            <HoldButton onTrigger={triggerCrisisTeam} hint="Zum Aufbieten gedrückt halten" className="w-full">
-              <Users size={20} /> Krisenteam aufbieten
-            </HoldButton>
+            <>
+              <Toggle
+                checked={krisenteamAlsUebung}
+                onChange={setKrisenteamAlsUebung}
+                label="Als Übung kennzeichnen – still, nur Push, ohne SMS/Anruf"
+              />
+              <HoldButton onTrigger={triggerCrisisTeam} hint="Zum Aufbieten gedrückt halten" className="w-full">
+                <Users size={20} /> Krisenteam aufbieten
+              </HoldButton>
+            </>
           )}
           <div className="text-xs text-muted">
             Aufgebot per Push, SMS und Sprachanruf mit Quittierung – oder einzelne Mitglieder direkt kontaktieren:
@@ -1351,6 +1404,7 @@ function EmpfaengerAnsicht({
   const [erledigt, setErledigt] = useState<Record<number, boolean>>({})
   const [zeigeAndere, setZeigeAndere] = useState(false)
   const [lage, setLage] = useState('')
+  const [uebergabeOffen, setUebergabeOffen] = useState(false)
   const { frage, promptEl } = usePrompt()
   // Mitglieder des Krisenstabs können zwischen der eigenen Empfänger-Ansicht und der
   // Koordinationsansicht wechseln; öffnet direkt auf der passenden, je nachdem, ob
@@ -1389,6 +1443,8 @@ function EmpfaengerAnsicht({
     ? alarm.locationIds.map((id) => state.locations.find((l) => l.id === id)?.name).filter(Boolean).join(', ')
     : ''
   const myAck = alarm?.deliveries.find((d) => d.userId === me.id)?.ack ?? 'none'
+  // Andere Krisenstab-Mitglieder, an die die Führung übergeben werden kann
+  const krisenstabKollegen = state.users.filter((u) => u.id !== me.id && u.groupIds.includes('gr-krisenstab'))
 
   function lagemeldungSenden() {
     const text = lage.trim()
@@ -1399,6 +1455,16 @@ function EmpfaengerAnsicht({
   function entwarnungGeben() {
     if (!alarm) return
     frage('Entwarnung geben', ENTWARNUNG_TEXT, (text) => dispatch({ type: 'END_ALARM', alarmId: alarm.id, byUserId: state.currentUserId, note: text }), 'Entwarnung senden', 'z. B. Rückkehr ab 10:30 über den Haupteingang')
+  }
+  function fuehrungUebergeben(userId: string) {
+    const person = state.users.find((u) => u.id === userId)
+    if (!alarm || !person) return
+    dispatch({ type: 'ALARM_UPDATE', alarmId: alarm.id, message: `an ${person.firstName} ${person.lastName}`, kind: 'uebergabe' })
+    setUebergabeOffen(false)
+  }
+  function checklistUmschalten(stepIndex: number) {
+    if (!alarm) return
+    dispatch({ type: 'TOGGLE_CHECKLIST', alarmId: alarm.id, stepIndex, checked: !alarm.sharedChecklist?.includes(stepIndex) })
   }
 
   return (
@@ -1446,9 +1512,21 @@ function EmpfaengerAnsicht({
           </div>
           <Rueckmeldestand alarm={alarm} />
           <Lagemeldungen alarm={alarm} />
+          {krisenteam && <Zeitstrahl alarm={alarm} />}
           {krisenteam && (
             <>
-              <div className="flex gap-2 mt-3 items-start">
+              <div className="flex flex-wrap gap-1.5 mt-3">
+                {LAGE_VORLAGEN.map((vorlage) => (
+                  <button
+                    key={vorlage}
+                    className="rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-semibold text-slate-700"
+                    onClick={() => setLage(vorlage)}
+                  >
+                    {vorlage}
+                  </button>
+                ))}
+              </div>
+              <div className="flex gap-2 mt-2 items-start">
                 <Megaphone size={16} className="text-violet-600 mt-2.5 shrink-0" />
                 <input
                   className={inputClass}
@@ -1465,6 +1543,29 @@ function EmpfaengerAnsicht({
                   <Send size={14} /> Senden
                 </button>
               </div>
+              <button
+                className="w-full mt-3 rounded-xl border border-slate-300 text-slate-700 py-2.5 text-sm font-semibold"
+                onClick={() => setUebergabeOffen((v) => !v)}
+              >
+                Führung übergeben
+              </button>
+              {uebergabeOffen && (
+                <div className="mt-1.5 space-y-1">
+                  {krisenstabKollegen.length === 0 ? (
+                    <p className="text-xs text-faint">Keine weitere Krisenstab-Person im Bestand.</p>
+                  ) : (
+                    krisenstabKollegen.map((u) => (
+                      <button
+                        key={u.id}
+                        className="w-full text-left rounded-xl border border-slate-200 px-3 py-2 text-sm hover:bg-slate-50"
+                        onClick={() => fuehrungUebergeben(u.id)}
+                      >
+                        {u.firstName} {u.lastName}
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
               <button
                 className="w-full mt-3 rounded-xl bg-alarm-600 text-white py-2.5 text-sm font-semibold"
                 onClick={entwarnungGeben}
@@ -1527,23 +1628,26 @@ function EmpfaengerAnsicht({
       )}
       {krisenteam ? (
         <div className="space-y-2">
-          {alleSchritte.map((step, i) => (
-            <button
-              key={i}
-              className="w-full flex gap-2.5 text-sm bg-white rounded-xl border border-slate-200 p-3 text-left"
-              onClick={() => setErledigt({ ...erledigt, [i]: !erledigt[i] })}
-            >
-              <span className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${erledigt[i] ? 'bg-emerald-500 text-white' : 'bg-amber-500 text-white'}`}>
-                {erledigt[i] ? <Check size={14} /> : i + 1}
-              </span>
-              <span className="min-w-0 pt-0.5">
-                <span className={erledigt[i] ? 'text-faint line-through' : 'text-slate-700'}>{step.text}</span>
-                {step.groupIds && step.groupIds.length > 0 && (
-                  <span className="block text-[11px] text-amber-700 mt-0.5">{gruppenName(step.groupIds)}</span>
-                )}
-              </span>
-            </button>
-          ))}
+          {alleSchritte.map((step, i) => {
+            const erledigtGeteilt = alarm?.sharedChecklist?.includes(i) ?? false
+            return (
+              <button
+                key={i}
+                className="w-full flex gap-2.5 text-sm bg-white rounded-xl border border-slate-200 p-3 text-left"
+                onClick={() => checklistUmschalten(i)}
+              >
+                <span className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${erledigtGeteilt ? 'bg-emerald-500 text-white' : 'bg-amber-500 text-white'}`}>
+                  {erledigtGeteilt ? <Check size={14} /> : i + 1}
+                </span>
+                <span className="min-w-0 pt-0.5">
+                  <span className={erledigtGeteilt ? 'text-faint line-through' : 'text-slate-700'}>{step.text}</span>
+                  {step.groupIds && step.groupIds.length > 0 && (
+                    <span className="block text-[11px] text-amber-700 mt-0.5">{gruppenName(step.groupIds)}</span>
+                  )}
+                </span>
+              </button>
+            )
+          })}
         </div>
       ) : (
         bloeckeMitNummer.map((block, bi) => (
